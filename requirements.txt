@@ -1,0 +1,7 @@
+pynput>=1.7
+mss>=9
+Pillow>=10.1
+psutil>=5.9
+uiautomation>=2.0; sys_platform == "win32"
+openai>=1.40
+ddgs>=9

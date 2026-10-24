@@ -1,0 +1,77 @@
+# FlowSME settings. Copy this file to config.toml and edit it.
+sessions_dir = "sessions"
+
+[recorder]
+screenshot_max_width = 1280
+screenshot_quality = 70
+min_screenshot_interval = 0.4
+# false = keystrokes are counted and shortcuts logged, but the text you type is never stored
+capture_typed_text = false
+# Store a salted one-way fingerprint of copied and typed values (never the values), so the analysis can prove
+# "the Vendor typed here is the Vendor copied there". The salt exists only in memory while recording.
+fingerprint_values = true
+# While one of these apps or window titles is in front, nothing about it is captured
+excluded_apps = ["1password.exe", "keepass.exe", "keepassxc.exe", "bitwarden.exe", "lastpass.exe",
+                 "credentialuibroker.exe", "consent.exe", "lockapp.exe", "pickerhost.exe"]
+excluded_title_keywords = ["password", "sign in", "log in", "login", "inprivate", "incognito", "windows security"]
+pause_hotkey = "ctrl+alt+p"
+stop_hotkey = "ctrl+alt+q"
+
+[llm]
+# "offline" = no AI model, heuristics only.
+# "openai_compatible" = any OpenAI-style endpoint (Ollama, Meta Llama API, Groq, Together, OpenRouter...).
+provider = "offline"
+
+# Option A: Llama running locally with Ollama. Screenshots never leave your computer.
+#   ollama pull llama3.2-vision
+#   ollama pull llama3.1:8b
+base_url = "http://localhost:11434/v1"
+vision_model = "llama3.2-vision"
+text_model = "llama3.1:8b"
+
+# Option B: Llama hosted by a third party (Meta retired its own hosted Llama API in July 2026).
+# Example for Together AI. Hosts retire models often, so check the provider's current model list.
+# base_url = "https://api.together.xyz/v1"
+# vision_model = "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
+# text_model = "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
+
+# The API key is read from this environment variable (not needed for Ollama).
+api_key_env = "LLM_API_KEY"
+
+# false = never send screenshots to the model; steps are described from window/element names only
+send_screenshots = true
+max_vision_steps = 300
+temperature = 0.2
+timeout = 120.0
+# Using a 'thinking' model (Qwen, DeepSeek...) on Ollama? Set this to "none" so it answers directly.
+# Leave it empty for Llama models.
+reasoning_effort = ""
+
+# Screenshots and text can use different models AND different endpoints, e.g. a local vision model
+# (private, free) with a stronger hosted text model for task names and recommendations.
+# Empty = same as base_url / api_key_env above.
+vision_base_url = ""
+vision_api_key_env = ""
+# Requests in flight at once. Hosted APIs: 8-16. Local Ollama on one GPU: about 4.
+concurrency = 4
+# Consecutive screenshots sent together (plus the screen right after them), so the model can see what
+# changed, e.g. what was typed. Use 1 for models that accept only one image (e.g. llama3.2-vision).
+screenshots_per_call = 3
+# Width of each screenshot sent. 1024 for hosted models; 768 keeps local models inside a 4k context.
+vision_image_width = 1024
+
+[analysis]
+# A pause longer than this splits the recording into separate blocks of work
+idle_gap_seconds = 60
+# Used to turn minutes saved into hours and money per month
+runs_per_month = 20
+hourly_cost = 30
+currency = "$"
+# Search the web (DuckDuckGo) for existing tools that fit each task
+web_search = true
+max_recommended_tasks = 5
+
+[customer]
+# Tools the customer already has, e.g. ["Microsoft 365", "Power Automate", "Power BI"],
+# or describe any other application by what it can do: "MyERP: database, reporting"
+tools = []

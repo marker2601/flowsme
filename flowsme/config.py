@@ -1,0 +1,108 @@
+"""Settings: built-in defaults, overridden by config.toml."""
+from __future__ import annotations
+
+import tomllib
+from dataclasses import dataclass, field, fields
+from pathlib import Path
+
+
+@dataclass
+class RecorderConfig:
+    screenshot_max_width: int = 1280
+    screenshot_quality: int = 70
+    min_screenshot_interval: float = 0.4
+    # False = keystrokes are counted and shortcuts logged, but the text you type is never stored.
+    capture_typed_text: bool = False
+    # Store a salted one-way fingerprint of copied and typed values (never the values), so the analysis can
+    # prove "the Vendor typed here is the Vendor copied there". The salt is never saved.
+    fingerprint_values: bool = True
+    # While one of these apps or titles is in front: no screenshot, no title, no text, no UI element.
+    excluded_apps: list[str] = field(default_factory=lambda: [
+        "1password.exe", "keepass.exe", "keepassxc.exe", "bitwarden.exe", "lastpass.exe",
+        "credentialuibroker.exe", "consent.exe", "lockapp.exe", "pickerhost.exe",
+    ])
+    excluded_title_keywords: list[str] = field(default_factory=lambda: [
+        "password", "sign in", "log in", "login", "inprivate", "incognito", "windows security",
+    ])
+    pause_hotkey: str = "ctrl+alt+p"
+    stop_hotkey: str = "ctrl+alt+q"
+
+
+@dataclass
+class LLMConfig:
+    # "offline" (heuristics only) or "openai_compatible" (Ollama, Meta Llama API, Groq, OpenRouter...)
+    provider: str = "offline"
+    base_url: str = "http://localhost:11434/v1"
+    api_key_env: str = "LLM_API_KEY"
+    vision_model: str = "llama3.2-vision"
+    text_model: str = "llama3.1:8b"
+    send_screenshots: bool = True
+    max_vision_steps: int = 300
+    temperature: float = 0.2
+    timeout: float = 120.0
+    # Sent as reasoning_effort when set; "none" stops 'thinking' models (Qwen, DeepSeek...) on Ollama
+    # from spending the token budget on reasoning. Leave empty for Llama.
+    reasoning_effort: str = ""
+    # Screenshot model on a different endpoint than the text model (e.g. local vision + hosted text).
+    # Empty = same as base_url / api_key_env.
+    vision_base_url: str = ""
+    vision_api_key_env: str = ""
+    # Requests in flight at once, and consecutive screenshots sent together in one request
+    # (1 = one screenshot per request, needed for models that accept a single image).
+    concurrency: int = 4
+    screenshots_per_call: int = 3
+    vision_image_width: int = 1024
+
+
+@dataclass
+class AnalysisConfig:
+    idle_gap_seconds: float = 60.0
+    runs_per_month: int = 20
+    hourly_cost: float = 30.0
+    currency: str = "$"
+    web_search: bool = True
+    max_recommended_tasks: int = 5
+
+
+@dataclass
+class CustomerConfig:
+    # Tools the customer already has: catalog names ("Microsoft 365", "Power BI", "n8n") or any other
+    # application described by what it can do ("MyERP: database, reporting").
+    tools: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Config:
+    sessions_dir: Path = Path("sessions")
+    recorder: RecorderConfig = field(default_factory=RecorderConfig)
+    llm: LLMConfig = field(default_factory=LLMConfig)
+    analysis: AnalysisConfig = field(default_factory=AnalysisConfig)
+    customer: CustomerConfig = field(default_factory=CustomerConfig)
+
+
+def _apply(section_name: str, section, values: dict) -> None:
+    known = {f.name for f in fields(section)}
+    for key, value in values.items():
+        if key not in known:
+            raise SystemExit(f"Unknown setting '{key}' in [{section_name}] of config.toml")
+        setattr(section, key, value)
+
+
+def load_config(path: str | Path | None = None) -> Config:
+    cfg = Config()
+    if path is None:
+        path = Path("config.toml")
+        if not path.exists():
+            return cfg
+    path = Path(path)
+    if not path.exists():
+        raise SystemExit(f"Config file not found: {path}")
+    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    if "sessions_dir" in data:
+        cfg.sessions_dir = Path(data.pop("sessions_dir"))
+    for name in ("recorder", "llm", "analysis", "customer"):
+        if name in data:
+            _apply(name, getattr(cfg, name), data.pop(name))
+    if data:
+        raise SystemExit(f"Unknown section(s) in config.toml: {', '.join(data)}")
+    return cfg

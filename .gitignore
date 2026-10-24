@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+# Recordings contain screenshots of your screen: keep them out of version control.
+sessions/
+config.toml
