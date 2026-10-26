@@ -4,3 +4,5 @@ __pycache__/
 # Recordings contain screenshots of your screen: keep them out of version control.
 sessions/
 config.toml
+build/
+dist/

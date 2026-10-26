@@ -7,7 +7,41 @@ recommends how to automate it, with links to existing tools and a draft automati
 It works like a process consultant shadowing you. It sees what you click, type and copy, not just which apps
 were open.
 
-## Quick start (Windows)
+## The desktop app (Windows)
+
+For people who don't use a terminal. Run `FlowSME-Setup-0.3.0.exe`, click **Install**, then **Open FlowSME**.
+
+- **No administrator rights needed.** It installs for the current Windows user in
+  `%LOCALAPPDATA%\Programs\FlowSME`, with Start menu and desktop shortcuts, and appears in Settings > Apps
+  for uninstalling.
+- **Record:** type the process name, tick **Narrate** to explain as you work, click **Record**. The window
+  steps aside and a small bar with the timer, **Pause** and **Stop** stays on top. Ctrl+Alt+P and Ctrl+Alt+Q
+  still work. Clicks and typing in FlowSME's own windows are never recorded.
+- **Report:** select a recording and click **Make report**; it opens when ready. With a Meta API key
+  (**Settings**, saved as the `MODEL_API_KEY` user variable) the report uses Muse Spark, capped at $2 per
+  report. Without one it uses the built-in rules.
+- **Save for the FlowSME team** zips a recording to the desktop, to send for analysis.
+- Recordings and settings stay in `%LOCALAPPDATA%\FlowSME`, which OneDrive doesn't sync. Uninstalling keeps
+  them.
+- The installer isn't code-signed yet. When it's downloaded, Windows may show "Windows protected your PC":
+  click **More info**, then **Run anyway**.
+- **Something not working?** Run `FlowSME.exe --self-test` from the install folder. It checks input hooks,
+  UI Automation, screen capture, the microphone and the AI clients, makes a 2-second recording and an
+  offline report, and saves the result to `%TEMP%\FlowSME-self-test.txt`.
+
+Silent install for IT: `FlowSME-Setup-0.3.0.exe /S` (add `/nodesktop` to skip the desktop shortcut).
+
+Build the app and the installer:
+
+```bash
+uv pip install --python .venv/Scripts/python.exe pyinstaller
+.venv/Scripts/python.exe packaging/build_installer.py
+```
+
+This writes `dist/FlowSME/` and `dist/FlowSME-Setup-<version>.exe`. From source, `python -m flowsme app`
+opens the same window.
+
+## Quick start (command line)
 
 ```bash
 uv venv --python 3.12 .venv

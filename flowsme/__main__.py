@@ -1,4 +1,4 @@
-"""Command line: python -m flowsme {record, analyze, sessions, demo}."""
+"""Command line: python -m flowsme {app, record, analyze, build, sessions, demo}."""
 from __future__ import annotations
 
 import argparse
@@ -16,6 +16,9 @@ def main(argv: list[str] | None = None) -> None:
                                      "and find what can be automated.")
     parser.add_argument("--config", help="path to config.toml (default: ./config.toml if it exists)")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    app = sub.add_parser("app", help="open the FlowSME window: Record, Pause, Stop and Report (Windows)")
+    app.add_argument("--self-test", action="store_true", help="check that recording and reports work, then exit")
 
     rec = sub.add_parser("record", help="record your screen activity (Windows)")
     rec.add_argument("--name", help="short label for the session, e.g. 'invoice processing'")
@@ -40,6 +43,11 @@ def main(argv: list[str] | None = None) -> None:
     _analysis_flags(demo)
 
     args = parser.parse_args(argv)
+    if args.command == "app":
+        from .app import main as app_main
+
+        app_main(args.config, check=args.self_test)  # its own settings: %LOCALAPPDATA%\FlowSME\config.toml unless --config is given
+        return
     cfg = load_config(args.config)
     if getattr(args, "offline", False):
         cfg.llm.provider = "offline"

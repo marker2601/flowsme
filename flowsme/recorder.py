@@ -21,6 +21,7 @@ import ctypes
 import hashlib
 import hmac
 import json
+import os
 import queue
 import secrets
 import sys
@@ -140,6 +141,13 @@ def _root_window_at(x: int, y: int):
     if not hwnd:
         return None
     return user32.GetAncestor(hwnd, 2) or hwnd  # GA_ROOT
+
+
+def _own_window(hwnd) -> bool:
+    """A window of FlowSME itself (the app's control window): not part of the work being recorded."""
+    pid = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    return pid.value == os.getpid()
 
 
 def _window_center(hwnd) -> tuple[int, int]:
@@ -288,6 +296,13 @@ class Recorder:
         print(f"Saved {self.n_events} events and {self.n_shots} screenshots.")
         return self.dir
 
+    def toggle_pause(self) -> None:
+        """Pause or resume from another thread (the app's Pause button), like the pause hotkey."""
+        self.q.put(("toggle_pause", time.time()))
+
+    def stop(self) -> None:
+        self.stop_event.set()
+
     # Hooks run inside the OS input hook: keep them tiny or Windows drops the hook.
     def _hook_click(self, x, y, button, pressed):
         if pressed:
@@ -349,6 +364,8 @@ class Recorder:
                 self.mods.pop(MOD_NAMES[name], None)
         elif kind == "press":
             self._key(t, item[2])
+        elif kind == "toggle_pause":
+            self._toggle_pause(t)
         elif self.paused:
             return
         elif kind == "click":
@@ -366,6 +383,8 @@ class Recorder:
         if held == {"shift"} and name in ("insert", "delete"):  # Shift+Insert pastes, Shift+Delete cuts
             if not self.paused:
                 self._poll_focus(t)
+                if self.window is None:
+                    return
                 self._flush_typing()
                 self._flush_scroll()
                 self._emit(t, "shortcut", keys=f"shift+{name}", **self._focus_fields())
@@ -383,6 +402,8 @@ class Recorder:
             if self.paused:
                 return
             self._poll_focus(t)
+            if self.window is None:  # FlowSME's own window is in front
+                return
             self._flush_typing()
             self._flush_scroll()
             self._emit(t, "shortcut", keys=combo, **(self._focus_fields() if combo in DATA_COMBOS else {}))
@@ -390,6 +411,8 @@ class Recorder:
         if self.paused:
             return
         self._poll_focus(t)
+        if self.window is None:  # typing into FlowSME's own window
+            return
         if name == "space":
             char = " "
         if char is not None or name == "backspace":
@@ -457,7 +480,9 @@ class Recorder:
         except BlockingIOError:
             return  # another app holds the clipboard: try again on the next event
         self.clip_seq = seq
-        _, exe, title = self.window or (None, "unknown", "")
+        if self.window is None:
+            return
+        _, exe, title = self.window
         if self.paused or not text or not text.strip() or self._is_excluded(exe, title):
             return
         self._emit(self.last_t + 0.001, "clipboard", hash=self._fingerprint(text), chars=len(text.strip()))
@@ -466,6 +491,8 @@ class Recorder:
         self._flush_typing()
         self._flush_scroll()
         root = _root_window_at(x, y)
+        if root and _own_window(root):  # a click on FlowSME's own buttons
+            return
         window = _window_info(root, self.pid_names) if root else self.window
         fields: dict = {"x": x, "y": y, "button": button}
         if window and not self._is_excluded(window[1], window[2]):
@@ -480,6 +507,8 @@ class Recorder:
         self._poll_focus(t)
 
     def _scroll(self, t: float, x: int, y: int) -> None:
+        if self.window is None:
+            return
         self._flush_typing()
         sc = self.scroll
         if sc and t - sc["t_end"] <= SCROLL_IDLE and sc["window"] == self.window:
@@ -505,6 +534,12 @@ class Recorder:
     def _poll_focus(self, t: float) -> None:
         hwnd = user32.GetForegroundWindow()
         if not hwnd:
+            return
+        if _own_window(hwnd):
+            if self.window is not None:
+                self._flush_typing()
+                self._flush_scroll()
+                self.window = None  # back in another app later = a fresh focus event
             return
         info = _window_info(hwnd, self.pid_names)
         if info == self.window:
