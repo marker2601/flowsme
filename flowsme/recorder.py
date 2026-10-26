@@ -46,6 +46,8 @@ IGNORED_KEYS = {
     "up", "down", "left", "right", "home", "end", "page_up", "page_down", "insert", "caps_lock",
     "num_lock", "scroll_lock", "print_screen", "menu", "pause",
 }
+# Shortcuts that move data: log which element had focus, i.e. where the data really came from or went.
+DATA_COMBOS = {"ctrl+c", "ctrl+x", "ctrl+v", "ctrl+shift+v", "ctrl+insert"}
 STUCK_MODIFIER = 5.0  # seconds; held keys auto-repeat, so an older press means we missed its release
 TYPING_IDLE = 3.0
 SCROLL_IDLE = 1.5
@@ -213,10 +215,10 @@ class Recorder:
         ]
         for listener in listeners:
             listener.start()
-        print(f"Recording to {self.dir}")
-        print(f"  {self.pause_combo} = pause/resume   {self.stop_combo} (or Ctrl+C here) = stop")
+        print(f"Recording to {self.dir}", flush=True)
+        print(f"  {self.pause_combo} = pause/resume   {self.stop_combo} (or Ctrl+C here) = stop", flush=True)
         if not self.cfg.capture_typed_text:
-            print("  Typed text is counted, not stored.")
+            print("  Typed text is counted, not stored.", flush=True)
 
         deadline = time.monotonic() + duration if duration else None
         try:
@@ -315,7 +317,7 @@ class Recorder:
                 self._poll_focus(t)
                 self._flush_typing()
                 self._flush_scroll()
-                self._emit(t, "shortcut", keys=f"shift+{name}")
+                self._emit(t, "shortcut", keys=f"shift+{name}", **self._focus_fields())
             return
         # AltGr (reported as ctrl+alt) types characters such as @ on many keyboards: treat it as typing.
         is_combo = "altgr" not in held and bool(held & {"ctrl", "alt", "win"})
@@ -332,7 +334,7 @@ class Recorder:
             self._poll_focus(t)
             self._flush_typing()
             self._flush_scroll()
-            self._emit(t, "shortcut", keys=combo)
+            self._emit(t, "shortcut", keys=combo, **(self._focus_fields() if combo in DATA_COMBOS else {}))
             return
         if self.paused:
             return
@@ -355,7 +357,8 @@ class Recorder:
             private = self._is_excluded(exe, title) or (self.last_click[0] == hwnd and self.last_click[1])
             # "secret" holds the typed characters in memory only, to fingerprint them; it is never written.
             self.typing = {"t": t, "t_end": t, "chars": 0, "edits": 0, "text": [], "secret": [],
-                           "window": self.window, "private": private}
+                           "window": self.window, "private": private,
+                           "focus": None if private else self._focus_fields().get("focus")}
         tb = self.typing
         tb["t_end"] = t
         keep_text = self.cfg.capture_typed_text and not tb["private"]
@@ -381,6 +384,8 @@ class Recorder:
             fields["text"] = "".join(tb["text"])
         if tb["secret"] and self.cfg.fingerprint_values:
             fields["value_hash"] = self._fingerprint("".join(tb["secret"]))
+        if tb["focus"]:
+            fields["focus"] = tb["focus"]
         tb["secret"].clear()
         self._emit(tb["t"], "type", window=tb["window"], **fields)
 
@@ -413,7 +418,7 @@ class Recorder:
         window = _window_info(root, self.pid_names) if root else self.window
         fields: dict = {"x": x, "y": y, "button": button}
         if window and not self._is_excluded(window[1], window[2]):
-            element = self._element_at(x, y)
+            element = self._element_at(x, y, root)
             if element:
                 fields["element"] = element
             path, xy = self._screenshot(x, y)
@@ -471,19 +476,41 @@ class Recorder:
         if not self.paused:
             self._emit(t, "pause")
             self.paused = True
-            print("  Paused. Press the pause hotkey again to resume.")
+            print("  Paused. Press the pause hotkey again to resume.", flush=True)
         else:
             self.paused = False
             self._emit(t, "resume")
             self.window = None
             self._poll_focus(t)
-            print("  Recording again.")
+            print("  Recording again.", flush=True)
 
-    def _element_at(self, x: int, y: int) -> dict | None:
+    def _focus_fields(self) -> dict:
+        """The element that has keyboard focus: where a paste or typing really lands, even when the user
+        moved there with Tab or Enter, or a click didn't select what it aimed at."""
+        if not self.auto:
+            return {}
+        try:
+            ctrl = self.auto.GetFocusedControl()
+            if ctrl and ctrl.Name:
+                return {"focus": {"name": ctrl.Name.strip()[:120], "role": ctrl.ControlTypeName}}
+        except Exception:
+            pass
+        return {}
+
+    def _element_at(self, x: int, y: int, root=None) -> dict | None:
         if not self.auto:
             return None
         try:
             ctrl = self.auto.ControlFromPoint(x, y)
+            pid = wintypes.DWORD()
+            if root:
+                user32.GetWindowThreadProcessId(root, ctypes.byref(pid))
+            if ctrl and pid.value and ctrl.ProcessId != pid.value:
+                # A click-through overlay from another app sits on top: look inside the clicked window instead.
+                ctrl = self._descend(self.auto.ControlFromHandle(root), x, y, depth=12)
+            if ctrl and ctrl.ControlTypeName in ("PaneControl", "WindowControl", "CustomControl", "MenuControl"):
+                # Some menus (e.g. Notepad's) answer with their host window: find the item actually clicked.
+                ctrl = self._descend(ctrl, x, y, depth=6) or ctrl
             if not ctrl:
                 return None
             name, probe = ctrl.Name or "", ctrl
@@ -502,6 +529,24 @@ class Recorder:
             return info
         except Exception:
             return None
+
+    @staticmethod
+    def _descend(ctrl, x: int, y: int, depth: int = 8):
+        """Walk down to the smallest element whose rectangle contains the point."""
+        for _ in range(depth):
+            if not ctrl:
+                break
+            best, best_area = None, None
+            for child in ctrl.GetChildren():
+                r = child.BoundingRectangle
+                if r.left <= x < r.right and r.top <= y < r.bottom:
+                    area = (r.right - r.left) * (r.bottom - r.top)
+                    if best_area is None or area < best_area:
+                        best, best_area = child, area
+            if best is None:
+                break
+            ctrl = best
+        return ctrl
 
     def _screenshot(self, x: int, y: int) -> tuple[str | None, list[float] | None]:
         now = time.time()
@@ -537,7 +582,7 @@ class Recorder:
         event = {"t": self._rel(t), "type": kind, "app": exe, "title": title}
         if self._is_excluded(exe, title):
             event.update(title="[excluded]", excluded=True)
-            fields = {k: v for k, v in fields.items() if k not in ("text", "element", "shot", "shot_xy")}
+            fields = {k: v for k, v in fields.items() if k not in ("text", "element", "focus", "shot", "shot_xy")}
         event.update(fields)
         self.fp.write(json.dumps(event, ensure_ascii=False) + "\n")
         self.fp.flush()

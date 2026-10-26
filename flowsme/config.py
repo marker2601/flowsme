@@ -52,6 +52,16 @@ class LLMConfig:
     concurrency: int = 4
     screenshots_per_call: int = 3
     vision_image_width: int = 1024
+    # Reasoning effort for the screenshot model only (empty = same as reasoning_effort). Describing a
+    # screenshot needs little thought; recommendations deserve more.
+    vision_reasoning_effort: str = ""
+    # Reasoning models count their thinking as output: never ask for fewer output tokens than this.
+    min_output_tokens: int = 0
+    # Use the model's own web search with citations (Meta Model API: Responses API web_search tool)
+    # instead of DuckDuckGo, when the endpoint supports it.
+    grounded_search: bool = False
+    # Meta "contributor" models may use what you send for training: refused unless you opt in here.
+    allow_contributor: bool = False
 
 
 @dataclass
@@ -98,6 +108,10 @@ def load_config(path: str | Path | None = None) -> Config:
     if not path.exists():
         raise SystemExit(f"Config file not found: {path}")
     data = tomllib.loads(path.read_text(encoding="utf-8"))
+    if "extends" in data:
+        # Start from another config file (e.g. your privacy settings) and override only what this one sets.
+        base = path.parent / data.pop("extends")
+        cfg = load_config(base) if base.exists() else cfg
     if "sessions_dir" in data:
         cfg.sessions_dir = Path(data.pop("sessions_dir"))
     for name in ("recorder", "llm", "analysis", "customer"):

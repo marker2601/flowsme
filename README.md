@@ -51,6 +51,7 @@ endpoint works:
 
 | Option | Settings | Privacy |
 |---|---|---|
+| **Meta Model API (Muse Spark)** | Ready-made: `config.meta.toml` (base URL `https://api.meta.ai/v1`, model `muse-spark-1.3`). Set your key with `setx MODEL_API_KEY "..."`, then run with `--config config.meta.toml` | Screenshots are sent to Meta. Use standard models, not "contributor" ones, for customer recordings |
 | **Llama on your PC (Ollama)** | `base_url = "http://localhost:11434/v1"`; run `ollama pull llama3.2-vision` and `ollama pull llama3.1:8b` | Nothing leaves your computer |
 | **Hosted Llama (Together AI, DeepInfra...)** | For example `base_url = "https://api.together.xyz/v1"`, a Llama 4 model from the host's list, and your key in the `LLM_API_KEY` environment variable | Screenshots are sent to that host |
 | OpenRouter, vLLM, other hosts | Their OpenAI-compatible URL and model names | Sent to that provider |

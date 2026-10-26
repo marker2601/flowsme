@@ -8,6 +8,7 @@ from .config import AnalysisConfig
 from .integration import label
 from .llm import LLM
 from .models import Task, base_app
+from .schemas import RECOMMENDATION
 from .search import catalog_matches, search_web, task_tags
 from .workflow import handoffs, step_lines
 
@@ -95,7 +96,7 @@ def recommend(tasks: list[Task], llm: LLM, cfg: AnalysisConfig, out_dir: Path, c
               log=print) -> None:
     chosen = candidates(tasks, cfg)
     # Searches run one after another (search engines rate-limit); the AI calls run in parallel.
-    found = [(_search(t) if cfg.web_search else [], catalog_matches(t)) for t in chosen]
+    found = [(_search(t, llm) if cfg.web_search else [], catalog_matches(t)) for t in chosen]
 
     def ask(item):
         task, (web, catalog) = item
@@ -122,7 +123,7 @@ def recommend(tasks: list[Task], llm: LLM, cfg: AnalysisConfig, out_dir: Path, c
         log(f"Recommendations ready for task {task.id} ({rec['source']}, {len(web)} web results)")
 
 
-def _search(task: Task) -> list[dict]:
+def _search(task: Task, llm: LLM | None = None) -> list[dict]:
     queries = []
     top = handoffs(task.steps).most_common(1)
     if top:
@@ -133,6 +134,12 @@ def _search(task: Task) -> list[dict]:
     else:
         apps = list(dict.fromkeys(base_app(a) for a in task.apps))
         queries.append(f"automate {' '.join(apps[:3])} workflow")
+    grounded = llm.grounded("Which existing tools, connectors or official APIs can do this, and where are they "
+                            f"documented? {'; '.join(queries)}. Prefer official vendor documentation.") if llm else None
+    if grounded and grounded["citations"]:
+        # The model's own cited web search: keep only sources it actually cited.
+        snippets = {r["url"]: r["snippet"] for r in grounded["results"]}
+        return [{**c, "snippet": snippets.get(c["url"], "")} for c in grounded["citations"][:6]]
     seen, results = set(), []
     for query in queries:
         for r in search_web(query):
@@ -191,7 +198,7 @@ def _ai_recommendation(task: Task, web: list[dict], catalog: list[dict], llm: LL
         web="\n".join(f"- {r['title']} ({r['url']}): {r['snippet'][:160]}" for r in web) or "- none",
         catalog="\n".join(f"- {c['name']}: {c['fit']}" for c in catalog) or "- none",
     )
-    data = llm.chat_json(prompt, role="text", system=SYSTEM, max_tokens=2500)
+    data = llm.chat_json(prompt, schema=RECOMMENDATION, role="text", system=SYSTEM, max_tokens=12000)
     if not isinstance(data, dict) or not isinstance(data.get("recommendations"), list):
         return None
     data["recommendations"] = [r for r in data["recommendations"] if isinstance(r, dict) and r.get("title")]

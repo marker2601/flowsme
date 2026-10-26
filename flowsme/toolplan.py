@@ -11,6 +11,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 
+from .integration import field_of, source_of
 from .models import Task
 
 CAPABILITIES = {
@@ -134,7 +135,10 @@ def stage_minutes(task: Task, plan: dict) -> dict:
     finish = {s["system"]: s["n"] for s in seq if s["stage"] == "Finish"}
     trigger = next((s for s in seq if s["stage"] == "Trigger"), None)
     known = {s["system"] for s in plan["systems"]}
+    unknown = {(r["to"]["system"], r["to"]["field"]) for r in plan["data_flows"]
+               if r["how"] == "typed" and source_of(r)[1] == "unknown"}
     seconds: dict = defaultdict(float)
+    manual: dict = defaultdict(float)
     current, left_trigger = (trigger["n"] if trigger else None), False
     for step in task.representative:
         app = step.app
@@ -152,9 +156,19 @@ def stage_minutes(task: Task, plan: dict) -> dict:
         if app in known and (not trigger or app != trigger["system"]):
             left_trigger = True
         seconds[current] += step.duration
+        if step.chars_typed and (step.app, field_of(step)) in unknown:
+            manual[current] += step.duration
     total = sum(seconds.values()) or 1
     per_run = task.minutes / task.runs
-    return {n: per_run * secs / total for n, secs in seconds.items()}
+    return ({n: per_run * secs / total for n, secs in seconds.items()},
+            {n: per_run * secs / total for n, secs in manual.items()})
+
+
+def _after(stage: dict, option: dict | None) -> float:
+    """Minutes left in a stage: values with no known source stay manual until the business decides."""
+    if not option:
+        return stage["minutes"]
+    return stage["manual"] + (stage["minutes"] - stage["manual"]) * (1 - option["rate"])
 
 
 def _evaluate(stages: list[dict], caps: set[str]) -> float:
@@ -163,23 +177,24 @@ def _evaluate(stages: list[dict], caps: set[str]) -> float:
     left = 0.0
     for st in stages:
         option = next((o for o in st["options"] if set(o["caps"]) <= caps), None) if can_run else None
-        left += st["minutes"] * (1 - option["rate"]) if option else st["minutes"]
+        left += _after(st, option)
     return left
 
 
 def tool_plan(task: Task, plan: dict, customer_tools: list[str]) -> dict:
     systems = {s["system"]: s for s in plan["systems"]}
-    mins = stage_minutes(task, plan)
+    mins, manual = stage_minutes(task, plan)
     stages = []
     for s in plan["sequence"]:
-        if s["stage"] not in ("Trigger", "Extract", "Write", "Finish"):
+        if s["stage"] not in ("Trigger", "Extract", "Write", "Finish") or not s["system"]:
             continue
         system = systems.get(s["system"])
         stages.append({"n": s["n"], "stage": s["stage"], "system": s["system"], "minutes": mins.get(s["n"], 0.0),
-                       "options": _options(s, system),
+                       "manual": manual.get(s["n"], 0.0), "options": _options(s, system),
                        "vendor_api": next((o for o in (system or {}).get("options", []) if o["method"] == "API"
                                            and system["kind"] in ("web", "desktop")), None)})
-    other = mins.get("other", 0.0) + mins.get(None, 0.0)
+    in_stages = {st["n"] for st in stages}
+    other = sum(m for n, m in mins.items() if n not in in_stages)  # time no stage can automate
 
     owned = parse_tools(customer_tools)
     owned_caps = {c for t in owned for c in t["caps"]}
@@ -193,7 +208,7 @@ def tool_plan(task: Task, plan: dict, customer_tools: list[str]) -> dict:
             option = next((o for o in st["options"] if set(o["caps"]) <= caps), None) if can_run else None
             tools = [t["tool"] for t in available if option and set(t["caps"]) & set(option["caps"])]
             picks.append({"n": st["n"], "method": option["method"] if option else "stays manual", "tools": tools,
-                          "minutes_after": st["minutes"] * (1 - option["rate"]) if option else st["minutes"]})
+                          "minutes_after": _after(st, option)})
         return picks
 
     def runner(available: list[dict]) -> str | None:

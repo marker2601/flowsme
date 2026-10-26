@@ -8,6 +8,7 @@ Checks come from three places, each with its evidence:
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from difflib import SequenceMatcher
 
 from .integration import label, source_of
@@ -38,7 +39,7 @@ def _rules_for(*names: str) -> list[tuple[str, str]]:
     return found
 
 
-def _rework(task: Task) -> list[dict]:
+def _rework(task: Task, flows: list[dict], context: list | None = None) -> list[dict]:
     """Retries and extra steps seen in the recording."""
     seen = []
     runs = task.iterations or [task.steps]
@@ -58,10 +59,25 @@ def _rework(task: Task) -> list[dict]:
                 seen.append({"run": run_no, "kind": "extra_steps",
                              "text": f"Run {run_no} needed {len(extra)} extra step(s): "
                                      + "; ".join(s.description for s in extra[:3]) + "."})
+    # A value whose fingerprint usually matches its source but not in some run: likely the wrong item.
+    for row in flows:
+        for run_no in row.get("mismatched_runs") or []:
+            seen.append({"run": run_no, "kind": "mismatch",
+                         "text": f"In run {run_no}, {label(row['to'])} did not match {label(row['confirmed_source'])} "
+                                 "for that item (the fingerprints differ): a likely wrong-item or duplicate entry."})
+    # The same cell or field written more than once: something had to be corrected.
+    apps, writes = set(task.apps), defaultdict(list)
+    for s in context or task.steps:
+        if s.app in apps and s.target and not s.excluded and (s.pastes or s.chars_typed or "ctrl+x" in s.shortcuts):
+            writes[(s.app, s.title, s.target)].append(s)
+    for (app, _, target), hits in writes.items():
+        if len(hits) > 1 and not re.fullmatch(r"(text editor|document|edit cell)", target, re.I):
+            seen.append({"run": None, "kind": "overwrite",
+                         "text": f"'{target}' in {app} was written {len(hits)} times: a value had to be corrected."})
     return seen
 
 
-def checklist(task: Task, plan: dict) -> dict:
+def checklist(task: Task, plan: dict, context: list | None = None) -> dict:
     checks = []
     flows = plan["data_flows"]
     for row in flows:
@@ -85,7 +101,7 @@ def checklist(task: Task, plan: dict) -> dict:
         for kind, text in _rules_for(*names):
             checks.append({"where": target, "type": "detect", "method": "validation_rule", "check": text,
                            "evidence": f"field '{row['to']['field']}'" + (f" holds '{src['field']}'" if src else "")})
-    rework = _rework(task)
+    rework = _rework(task, flows, context)
     for item in [r for r in rework if r["kind"] == "retry"]:
         checks.append({"where": item["text"].split(" was ")[0], "type": "prevent", "method": "defects",
                        "check": "Capture the confirmation or reference number after submitting, and check it "
@@ -97,6 +113,17 @@ def checklist(task: Task, plan: dict) -> dict:
                        "check": "Route items that need extra handling (unclear scans, missing data) to a person "
                                 "instead of forcing them through the automation.",
                        "evidence": " ".join(r["text"] for r in extra)})
+    for item in [r for r in rework if r["kind"] == "mismatch"]:
+        checks.append({"where": item["text"].split(", ")[1].split(" did not")[0], "type": "detect", "method": "defects",
+                       "check": "Before saving, check that the fields of one row belong to the same item (e.g. "
+                                "invoice number and reference); stop and ask a person if they don't.",
+                       "evidence": item["text"]})
+    fixes = [r for r in rework if r["kind"] == "overwrite"]
+    if fixes:
+        checks.append({"where": "corrections", "type": "detect", "method": "defects",
+                       "check": "Values had to be corrected after entry. Check each value against its source before "
+                                "writing, and log corrections so their causes can be found (5 Whys).",
+                       "evidence": " ".join(r["text"] for r in fixes[:5])})
     checks += [
         {"where": "every run", "type": "control", "method": "control_plan",
          "check": "Reconcile counts: items received = rows written = records submitted. Investigate any gap.",

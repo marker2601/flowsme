@@ -1,0 +1,34 @@
+# FlowSME on Meta Model API (Muse Spark). Keeps everything else from config.toml.
+#
+# 1. Put your key in an environment variable (Windows, then open a new terminal):
+#      setx MODEL_API_KEY "your-key"
+# 2. Run with this file:
+#      .venv/Scripts/python.exe -m flowsme --config config.meta.toml analyze <session>
+#
+# Screenshots are sent to Meta. Standard mode only: "contributor" models are cheaper but may let Meta use
+# what you send, so never use them for customer recordings.
+extends = "config.toml"
+
+[llm]
+provider = "openai_compatible"
+base_url = "https://api.meta.ai/v1"
+api_key_env = "MODEL_API_KEY"
+vision_model = "muse-spark-1.3"
+text_model = "muse-spark-1.3"
+vision_base_url = ""
+vision_api_key_env = ""
+# Valid efforts: minimal, low, medium, high, xhigh, max ("none" is rejected). Reading a screenshot needs
+# little thought; task names and recommendations get more.
+reasoning_effort = "medium"
+vision_reasoning_effort = "low"
+# Reasoning counts as output tokens, so give every reply room (you only pay for what is used).
+min_output_tokens = 4096
+# Meta recommends the model's tuned default temperature.
+temperature = 1.0
+# Tool and API discovery through Muse Spark's own web search, with citations ($2.50 per 1,000 searches).
+grounded_search = true
+send_screenshots = true
+concurrency = 8
+screenshots_per_call = 4
+vision_image_width = 1024
+timeout = 180.0

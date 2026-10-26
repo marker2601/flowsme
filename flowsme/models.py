@@ -114,9 +114,11 @@ class Task:
     def repeated(self) -> bool:
         return len(self.iterations) >= 3
 
+    rep: int = 0  # which run is the most typical one (set when runs are found)
+
     @property
     def representative(self) -> list[Step]:
-        return self.iterations[0] if self.iterations else self.steps
+        return self.iterations[self.rep] if self.iterations else self.steps
 
     @property
     def start(self) -> float:

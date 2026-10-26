@@ -32,6 +32,11 @@ class LLM:
             "text": (cfg.base_url, cfg.api_key_env),
             "vision": (cfg.vision_base_url or cfg.base_url, cfg.vision_api_key_env or cfg.api_key_env),
         }
+        contributor = [m for m in (cfg.vision_model, cfg.text_model) if m.endswith("-contributor")]
+        if self.enabled and contributor and not cfg.allow_contributor:
+            raise SystemExit(f"{', '.join(contributor)} is a contributor model: Meta may use what you send (screenshots "
+                             "included) to train its models, and its terms forbid confidential or personal data. Use "
+                             "the standard model, or set allow_contributor = true for test data only.")
 
     def model(self, role: str) -> str:
         return self.cfg.vision_model if role == "vision" else self.cfg.text_model
@@ -41,7 +46,7 @@ class LLM:
 
     def chat(self, prompt: str, *, role: str = "text", system: str | None = None,
              images: tuple[str, ...] | list[str] = (), max_tokens: int = 800, json_mode: bool = False,
-             _plain: bool = False) -> str | None:
+             schema: dict | None = None, _plain: bool = False) -> str | None:
         """Send one prompt (plus optional base64 JPEG images); return the reply text or None."""
         if not self.available(role):
             return None
@@ -60,10 +65,20 @@ class LLM:
         # Optional features; an endpoint that rejects them gets the plain request from then on.
         unsupported = self._unsupported.setdefault(url, set())
         extras: dict = {}
-        if not _plain and self.cfg.reasoning_effort and "reasoning_effort" not in unsupported:
-            extras["extra_body"] = {"reasoning_effort": self.cfg.reasoning_effort}
-        if not _plain and json_mode and "json_mode" not in unsupported:
+        used: list[str] = []
+        effort = (self.cfg.vision_reasoning_effort if role == "vision" else "") or self.cfg.reasoning_effort
+        if not _plain and effort and "reasoning_effort" not in unsupported:
+            extras["extra_body"] = {"reasoning_effort": effort}
+            used.append("reasoning_effort")
+        max_tokens = max(max_tokens, self.cfg.min_output_tokens)
+        if not _plain and schema and "json_schema" not in unsupported:
+            # Structured output: the reply must match the schema (no broken or partial JSON).
+            extras["response_format"] = {"type": "json_schema",
+                                         "json_schema": {"name": "result", "schema": schema, "strict": True}}
+            used.append("json_schema")
+        elif not _plain and (json_mode or schema) and "json_mode" not in unsupported:
             extras["response_format"] = {"type": "json_object"}
+            used.append("json_mode")
         try:
             resp = client.chat.completions.create(model=model, messages=messages, temperature=self.cfg.temperature,
                                                   max_tokens=max_tokens, **extras)
@@ -72,8 +87,7 @@ class LLM:
                 text = self.chat(prompt, role=role, system=system, images=images, max_tokens=max_tokens, _plain=True)
                 if text is not None:  # the plain request worked, so the extras were the problem
                     with self._lock:
-                        unsupported.update({"extra_body": "reasoning_effort", "response_format": "json_mode"}[k]
-                                           for k in extras)
+                        unsupported.update(used)
                 return text
             self._fail(role, f"call failed: {exc}")
             return None
@@ -99,10 +113,58 @@ class LLM:
             self.used_roles.add(role)
         return text or None
 
-    def chat_json(self, prompt: str, **kwargs):
+    def grounded(self, question: str, schema: dict | None = None) -> dict | None:
+        """Answer with the model's own web search (Responses API `web_search` tool, e.g. Meta Model API).
+        Returns {"answer", "data" (parsed when a schema is given), "citations", "results"}, or None when
+        grounding is off, the endpoint has no web search, or the call fails (callers then use DuckDuckGo)."""
+        if not (self.cfg.grounded_search and self.available("text")):
+            return None
+        import openai
+
+        url, client = self._client("text")
+        unsupported = self._unsupported.setdefault(url, set())
+        if "web_search" in unsupported:
+            return None
+        request = {"model": self.model("text"), "input": question, "store": False,
+                   "tools": [{"type": "web_search", "search_context_size": "medium"}],
+                   "include": ["web_search_call.results"],
+                   "max_output_tokens": max(2000, self.cfg.min_output_tokens)}
+        if self.cfg.reasoning_effort:
+            request["reasoning"] = {"effort": self.cfg.reasoning_effort}
+        if schema:
+            request["text"] = {"format": {"type": "json_schema", "name": "result", "schema": schema, "strict": True}}
+        try:
+            data = client.responses.create(**request).model_dump()
+        except openai.APIError as exc:
+            # Only web search is switched off: the model itself may be fine for everything else.
+            with self._lock:
+                if "web_search" not in unsupported:
+                    unsupported.add("web_search")
+                    print(f"  {self.model('text')}: web search unavailable on {url} "
+                          f"({getattr(exc, 'status_code', None) or type(exc).__name__}); using DuckDuckGo instead.")
+            return None
+        answer, citations, results = "", {}, []
+        for item in data.get("output") or []:
+            if item.get("type") == "web_search_call":
+                results += [{"title": r.get("title") or "", "url": r.get("url") or "",
+                             "snippet": (r.get("snippet") or "")[:300]} for r in item.get("results") or []]
+            elif item.get("type") == "message":
+                for part in item.get("content") or []:
+                    if part.get("type") == "output_text":
+                        answer += part.get("text") or ""
+                        for note in part.get("annotations") or []:
+                            if note.get("type") == "url_citation" and note.get("url"):
+                                citations[note["url"]] = {"title": note.get("title") or "", "url": note["url"]}
+        with self._lock:
+            self.used_roles.add("text")
+        return {"answer": answer.strip(), "data": parse_json(answer) if schema else None,
+                "citations": list(citations.values()), "results": results}
+
+    def chat_json(self, prompt: str, schema: dict | None = None, **kwargs):
+        """A JSON reply: schema-exact where the endpoint supports structured output, else JSON mode."""
         prompt += "\n\nReply with valid JSON only, no other text."
         for _ in range(2):  # small models now and then emit broken JSON; one retry fixes most of it
-            data = parse_json(self.chat(prompt, json_mode=True, **kwargs))
+            data = parse_json(self.chat(prompt, json_mode=True, schema=schema, **kwargs))
             if data is not None or not self.available(kwargs.get("role", "text")):
                 return data
         return None

@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw
 from .config import LLMConfig
 from .llm import LLM
 from .models import Step, Task
+from .schemas import STEP_GROUP
 
 SYSTEM = (
     "You document desktop workflows for business process analysis. Write factual, concise descriptions "
@@ -30,7 +31,9 @@ SHORTCUT_WORDS = {
     "ctrl+s": "save", "ctrl+z": "undo", "ctrl+y": "redo", "ctrl+f": "search", "ctrl+p": "print",
     "ctrl+a": "select all", "ctrl+n": "create new", "ctrl+w": "close tab", "ctrl+t": "open a new tab",
     "ctrl+l": "go to the address bar", "ctrl+enter": "send", "ctrl+end": "jump to the end",
-    "ctrl+home": "jump to the start", "alt+tab": "switch window",
+    "ctrl+home": "jump to the start", "alt+tab": "switch window", "ctrl+insert": "copy", "shift+insert": "paste",
+    "shift+delete": "cut", "menu:copy": "copy (from a menu)", "menu:cut": "cut (from a menu)",
+    "menu:paste": "paste (from a menu)", "clipboard": "copy",
 }
 
 
@@ -44,11 +47,13 @@ def heuristic_description(step: Step) -> str:
         what = f'"{step.target}"{" " + role if role else ""}' if step.target else "in the window"
         head = f"{'Double-click' if step.double else 'Click'} {what}"
     elif step.action == "type":
-        head = f"Type {step.chars_typed} characters"
+        head = f"Type {step.chars_typed} characters" + (f' into "{step.target}"' if step.target else "")
     elif step.action == "shortcut":
-        head = shortcut_phrase(step.target).capitalize()
+        combo = step.shortcuts[0] if step.shortcuts else step.target
+        head = shortcut_phrase(combo).capitalize() + (f' in "{step.target}"' if step.target != combo else "")
     elif step.action == "key":
-        head = f"Press {step.target.title()}"
+        key = step.keys[0] if step.keys else step.target
+        head = f"Press {key.title()}" + (f' in "{step.target}"' if step.target != key else "")
     else:
         head = "Scroll"
     extras = []
@@ -58,6 +63,7 @@ def heuristic_description(step: Step) -> str:
     extras += [f"press {k.title()}" for k in (step.keys[1:] if step.action == "key" else step.keys)]
     if step.scrolls and step.action != "scroll":
         extras.append("scroll")
+    extras = [e for e in dict.fromkeys(extras) if e.lower() not in head.lower()]  # "copy" once, not twice
     return f"{head}{', then ' + ', '.join(extras) if extras else ''} in {step.app}"
 
 
@@ -145,7 +151,8 @@ def _describe_group(group: list[Step], by_index: dict, llm: LLM, cfg: LLMConfig,
                       "taken at the moment of the action (a red circle marks the click).\n\n" + "\n".join(lines) +
                       f"\n\nFor each step, {INSTRUCTION} Use the neighbouring screenshots to work out what was typed "
                       f'or changed.\n\nReturn JSON: {{"steps": [one sentence per step, exactly {n} sentences]}}')
-            data = llm.chat_json(prompt, role="vision", system=SYSTEM, images=images, max_tokens=60 * n + 60)
+            data = llm.chat_json(prompt, schema=STEP_GROUP, role="vision", system=SYSTEM, images=images,
+                                 max_tokens=60 * n + 60)
             texts = data.get("steps") if isinstance(data, dict) else None
             if isinstance(texts, list) and len(texts) == n and all(isinstance(t, str) and t.strip() for t in texts):
                 state["group_failures"] = 0

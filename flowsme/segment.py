@@ -8,6 +8,9 @@ from .models import Step, Task, context_label
 
 FOLLOW_WINDOW = 6.0   # seconds a click keeps "owning" the typing/shortcuts that follow it
 DOUBLE_CLICK = 0.6
+ACTIVATION_WINDOW = 3.0  # a second click on the same thing right after switching windows
+# Editors that take focus while you type into the thing you clicked (Excel's in-cell editor, formula bar).
+IN_PLACE_EDITORS = {"edit cell", "formula bar"}
 MENU_WINDOW = 15.0    # seconds between clicking a field and choosing Copy/Paste from a menu
 CLIPBOARD_WINDOW = 5.0
 MENU_VERB = re.compile(r"^(copy|cut|paste|keep text only|keep source formatting|merge formatting)\b", re.I)
@@ -55,10 +58,15 @@ def build_steps(events: list[dict], idle_gap: float) -> list[Step]:
                 current.double = True
                 current.end = ev["t"]
                 continue
+            if (same_window and current.action == "click" and target == current.target and not current.shortcuts
+                    and not current.chars_typed and ev["t"] - current.end <= ACTIVATION_WINDOW
+                    and (len(steps) < 2 or steps[-2].app != current.app)):
+                current.end = ev["t"]  # the first click only brought the window forward; this one did the work
+                continue
             current = _new_step(len(steps), ev)
             steps.append(current)
             last_field = current
-        elif same_window and ev["t"] - current.end <= FOLLOW_WINDOW:
+        elif same_window and ev["t"] - current.end <= FOLLOW_WINDOW and not _elsewhere(current, ev):
             _merge(current, ev)
         else:
             current = _new_step(len(steps), ev)
@@ -74,12 +82,19 @@ def build_steps(events: list[dict], idle_gap: float) -> list[Step]:
     return steps
 
 
+def _elsewhere(step: Step, ev: dict) -> bool:
+    """A paste or typing landed in a different element than the step's (Tab/Enter moved on, or the click
+    didn't select what it aimed at). The recorder logs the focused element for exactly this."""
+    focus = (ev.get("focus") or {}).get("name")
+    return bool(focus) and focus != step.target and focus.lower() not in IN_PLACE_EDITORS
+
+
 def _new_step(index: int, ev: dict) -> Step:
     exe, title = ev.get("app", ""), ev.get("title", "")
-    element = ev.get("element") or {}
+    element = ev.get("element") or ev.get("focus") or {}
     step = Step(
         index=index, start=ev["t"], end=ev["t"], app=context_label(exe, title), exe=exe, title=title,
-        action=ev["type"], target=element.get("name", "") if ev["type"] == "click" else ev.get("keys", ""),
+        action=ev["type"], target=element.get("name", "") or ("" if ev["type"] == "click" else ev.get("keys", "")),
         role=element.get("role", ""), excluded=bool(ev.get("excluded")), right_click=ev.get("button") == "right",
     )
     _merge(step, ev)
@@ -156,7 +171,11 @@ def _tasks_in_block(block: list[Step]) -> list[Task]:
         pattern = sigs[starts[0]:starts[0] + length]
         spans = _absorb_gaps(sigs, _add_variants(sigs, pattern, starts), length)
         iterations = [block[a:b] for a, b in spans]
-        tasks.append(Task(id=0, steps=[s for it in iterations for s in it], iterations=iterations))
+        shapes = [[s.signature for s in it] for it in iterations]
+        # The most typical run (least different from all the others) describes the routine, not simply the
+        # first one, which may contain a one-off mistake.
+        rep = min(range(len(shapes)), key=lambda i: sum(_edit_distance(shapes[i], o) for o in shapes))
+        tasks.append(Task(id=0, steps=[s for it in iterations for s in it], iterations=iterations, rep=rep))
         for a, b in spans:
             for k in range(a, b):
                 sigs[k] = None

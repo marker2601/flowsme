@@ -38,9 +38,9 @@ def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
         task.features = task_features(task)
         task.score, task.level, task.reasons = (0, "", []) if task.misc else score_task(task.features)
     for task in candidates(tasks, cfg.analysis):
-        task.integration = plan(task, cfg.analysis.web_search)
+        task.integration = plan(task, cfg.analysis.web_search, steps, llm)
         tools = tool_plan(task, task.integration, cfg.customer.tools)
-        checks = checklist(task, task.integration)
+        checks = checklist(task, task.integration, steps)
         lean = analyse(task, task.integration, tools, checks, task.runs * cfg.analysis.runs_per_month)
         task.improvement = {"tools": tools, "validation": checks, "lean": lean}
     log("Integration design ready: data flow, connections, tool plan, checklist, Lean Six Sigma analysis"

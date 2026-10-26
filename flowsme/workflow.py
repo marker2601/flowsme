@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from .describe import SYSTEM
 from .llm import LLM
 from .models import Step, Task, fmt_minutes
+from .schemas import TASK
 
 TASK_PROMPT = """Below are the steps of one task from a recorded desktop session{runs_note}.
 
@@ -44,7 +45,7 @@ def summarize_tasks(tasks: list[Task], llm: LLM, concurrency: int = 4, log=print
         if not llm.available("text") or task.misc:
             return None
         note = f" (this routine ran {task.runs} times; one run is shown)" if task.repeated else ""
-        return llm.chat_json(TASK_PROMPT.format(runs_note=note, steps=step_lines(task.representative)),
+        return llm.chat_json(TASK_PROMPT.format(runs_note=note, steps=step_lines(task.representative)), schema=TASK,
                              role="text", system=SYSTEM, max_tokens=600)
 
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:

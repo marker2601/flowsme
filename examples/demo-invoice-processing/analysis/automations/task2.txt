@@ -1,0 +1,7 @@
+TRIGGER: Power Automate Cloud Flow - When a new email arrives in shared AP inbox (from vendor / subject contains Invoice) including attachments
+ACTION 1: Get attachment content (Microsoft Graph mail API) - save INV-#.pdf to SharePoint /AP Invoices/{invoiceReceivedDate}_{sender}/
+ACTION 2: Call Azure Document Intelligence invoice model (prebuilt-invoice) on PDF bytes -> returns invoiceNumber, vendorName, invoiceTotal, invoiceDate, dueDate_candidate + confidence
+ACTION 3: Condition - if confidence < 0.85 OR duplicate invoiceNumber exists in AP Tracker.xlsx -> route to manual review (Teams Adaptive Card / Outlook flag), stop auto-post
+ACTION 4: Excel Online (Business) - Add a row into AP Tracker.xlsx table: Column A = invoiceNumber, Column B = vendorName, Column C = invoiceTotal, Column D = dueDate (from model OR Net-30 rule pending confirmation), Column E = blank for GL review
+ACTION 5: If Vendor Portal accessible: start Desktop flow / Playwright with parameters (vendorName, invoiceNumber, amount, dueDate, SharePoint file path) to create payment request - no retyping
+ACTION 6: Graph moveMessage - move source email to Processed folder, set categories = Posted, link SharePoint file + tracker row ID in email body

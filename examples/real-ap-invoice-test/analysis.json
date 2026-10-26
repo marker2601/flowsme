@@ -1,0 +1,4072 @@
+{
+  "session": "20261024-161537-ap-invoice-final",
+  "meta": {
+    "session": "20261024-161537-ap-invoice-final",
+    "started": "2026-10-24T16:15:37",
+    "ended": "2026-10-24T16:21:14",
+    "duration_seconds": 336.5,
+    "events": 196,
+    "screenshots": 50,
+    "privacy": {
+      "capture_typed_text": false,
+      "excluded_apps": [
+        "1password.exe",
+        "keepass.exe",
+        "keepassxc.exe",
+        "bitwarden.exe",
+        "lastpass.exe",
+        "credentialuibroker.exe",
+        "consent.exe",
+        "lockapp.exe",
+        "pickerhost.exe"
+      ],
+      "excluded_title_keywords": [
+        "password",
+        "sign in",
+        "log in",
+        "login",
+        "inprivate",
+        "incognito",
+        "windows security",
+        ".env"
+      ]
+    }
+  },
+  "engine": "muse-spark-1.3 for screenshots and muse-spark-1.3 for text",
+  "apps": {
+    "apps": [
+      {
+        "app": "Excel",
+        "minutes": 3.1,
+        "steps": 32
+      },
+      {
+        "app": "Notepad",
+        "minutes": 0.9,
+        "steps": 22
+      }
+    ],
+    "switches": [
+      {
+        "from": "Notepad",
+        "to": "Excel",
+        "count": 17
+      },
+      {
+        "from": "Excel",
+        "to": "Notepad",
+        "count": 16
+      }
+    ],
+    "handoffs": [
+      {
+        "from": "Notepad",
+        "to": "Excel",
+        "count": 17
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "name": "Transfer supplier invoice data to tracker",
+      "summary": "The task creates a new entry in the Excel invoice tracker to record a supplier invoice for monitoring. The user copies the invoice number, vendor name, total, and due date from the invoice file in the text editor and pastes or enters them into the corresponding tracker columns.",
+      "misc": false,
+      "runs": 3,
+      "minutes": 2.1,
+      "apps": [
+        "Notepad",
+        "Excel"
+      ],
+      "inputs": [
+        "Supplier invoice file in text editor",
+        "Excel invoice tracker"
+      ],
+      "outputs": [
+        "Updated Excel invoice tracker with new invoice entry"
+      ],
+      "decision_points": [],
+      "score": 50,
+      "level": "Medium",
+      "reasons": [
+        "The same 10-step routine ran 3 times",
+        "8 values copied by hand from one application to another",
+        "15 switches between applications"
+      ],
+      "features": {
+        "steps": 27,
+        "steps_per_run": 10,
+        "runs": 3,
+        "minutes": 2.1,
+        "minutes_per_run": 0.7,
+        "pastes": 8,
+        "cross_app_transfers": 8,
+        "chars_typed": 54,
+        "app_switches": 15,
+        "apps": 2
+      },
+      "estimate": {
+        "automatable_fraction": 0.86,
+        "minutes_saved_per_run": 1.8,
+        "hours_saved_per_month": 0.6,
+        "cost_saved_per_month": 18
+      },
+      "recommendation": {
+        "assumptions": [
+          "INV-#.txt files have consistent labels/separators for invoice number, vendor name, total and due date that can be parsed with regex - not proven in recording",
+          "AP Tracker can be moved to OneDrive/SharePoint so Microsoft Graph Excel API / Excel Online (Business) connector can write it - local-only file would block API",
+          "Column mapping to confirm: col A=invoice number, col B=vendor, col C=total, col D=due date, col E=to confirm - recording shows conflicting writes to B2 and multiple writes to A4/B4/C4/B5",
+          "Where column D (10-char typed due date) comes from is unknown - not assumed to be invoice date + terms or copy from file; business owner must confirm rule",
+          "Where column E comes from is unknown beyond fingerprint match to Notepad text in 2 runs and mismatch in run 3 - must confirm if duplicate, status, or lookup",
+          "No Notepad API is assumed - status is unknown per evidence; ask vendor/IT if text editor exposes any API, otherwise use direct file read",
+          "User/service account has read access to invoice folder and write access to tracker and volume stays low-medium batch suitable for flow"
+        ],
+        "automatable_fraction": 0.86,
+        "automation_potential": "high",
+        "automation_sketch": {
+          "code": "import re, pathlib\nimport openpyxl\n\nINV_DIR = pathlib.Path(r\"C:\\AP\\Invoices\")\nTRACKER = pathlib.Path(r\"C:\\AP\\AP Tracker.xlsx\") # move to OneDrive/SharePoint for Graph API in production\n\n# Adjust patterns after inspecting 5-10 real INV files\nPATTERNS = {\n    \"inv_no\": re.compile(r\"Invoice\\s*(No|Number|#)\\s*[:#]?\\s*(\\S+)\", re.I),\n    \"vendor\": re.compile(r\"Vendor\\s*[:]?\\s*(.+)\", re.I),\n    \"total\": re.compile(r\"Total\\s*[:]?\\s*\\$?\\s*([0-9,]+\\.\\d{2})\", re.I),\n    \"due\": re.compile(r\"Due\\s*Date\\s*[:]?\\s*(\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{4})\", re.I),\n}\n\ndef parse_txt(p):\n    t = p.read_text(encoding=\"utf-8\", errors=\"ignore\")\n    def get(k):\n        m = PATTERNS[k].search(t)\n        return m.group(m.lastindex).strip() if m else \"\"\n    total = get(\"total\").replace(\",\",\"\")\n    return [get(\"inv_no\"), get(\"vendor\"), total, get(\"due\")]\n\nwb = openpyxl.load_workbook(TRACKER)\nws = wb[\"AP Tracker\"]\n# Assumes header in row 1: A=InvoiceNo, B=Vendor, C=Total, D=DueDate, E=Reserved - CONFIRM before run\nexisting = {c.value for c in ws[\"A\"][1:] if c.value}\n\nadded = 0\nfor f in sorted(INV_DIR.glob(\"INV-*.txt\")):\n    inv_no, vendor, total, due = parse_txt(f)\n    if not inv_no or inv_no in existing:\n        print(f\"SKIP {f.name}: missing or duplicate {inv_no}\")\n        continue\n    ws.append([inv_no, vendor, float(total) if total else \"\", due, \"\"])\n    existing.add(inv_no)\n    added += 1\n\nwb.save(TRACKER)\nprint(f\"Added {added} rows\")",
+          "description": "Python equivalent of top Power Automate recommendation: batch-parse INV-*.txt files and append new rows to AP Tracker, skipping duplicates. In production run same logic as Power Automate Desktop File reads + Excel Update range via Graph.",
+          "language": "python",
+          "file": "automations/task1.py"
+        },
+        "bottlenecks": [
+          "Write in Excel 0.62 min per item (bottleneck) - 0.66 min NVA vs 0.03 min VA, 4% efficiency",
+          "Transportation + motion: 4 values carried Notepad->Excel per item, 8 hand copies and 15 app switches in 3 runs (~5 switches per item)",
+          "Rework loop: B2 written 4x, A4/B4/C4/B5 written 2x each, plus run 3 column E mismatch vs Notepad source indicates wrong-item/duplicate entry"
+        ],
+        "quick_wins": [
+          "Immediately stop re-typing column E - copy or leave blank until rule confirmed; it already exists in Notepad and caused run 3 defect",
+          "Add Excel Data Validation: column D = Date only, column A = Unique/no duplicates, column C = Decimal; add Conditional Formatting to highlight duplicate invoice numbers",
+          "Open Notepad and Excel side-by-side and process all 3+ invoices in one batch instead of 1-by-1 switching to cut 15 switches",
+          "Freeze header row and add filter on invoice number to avoid overwriting B2/A4/B4/C4 during paste"
+        ],
+        "recommendations": [
+          {
+            "approach": "api_integration",
+            "effort": "days",
+            "how": "Use Power Automate Desktop File actions to list INV-*.txt in one folder and parse invoice number, vendor, total and due date with regex/Text actions. Append each new invoice as one row to AP Tracker hosted on SharePoint/OneDrive using Excel Online (Business) Add a row or Microsoft Graph Update range. Run batched once per day with skip-if-invoice-number-exists check; no Notepad UI automation.",
+            "steps_covered": "1-8",
+            "time_saved_pct": 70,
+            "title": "Batch-read INV text files and append to AP Tracker via Excel API",
+            "tools": [
+              "Power Automate Desktop",
+              "Excel Online (Business)",
+              "Microsoft Graph Excel API"
+            ],
+            "why": "Theory of Constraints + ECRS automate: fixes the 0.62 min Write bottleneck and eliminates 4 copy-pastes and 5 switches per item. Evidence: 8 Notepad->Excel hand copies, 15 switches, B2 corrected 4x."
+          },
+          {
+            "approach": "built_in_feature",
+            "effort": "hours",
+            "how": "Remove manual entry of column E. If it is truly a duplicate of a Notepad field, replace with formula (=C2 or =source) or delete column. Add Conditional Formatting + COUNTIF on column A to block duplicate invoice numbers and Data Validation to lock column types before automation go-live.",
+            "steps_covered": "3, 10",
+            "time_saved_pct": 10,
+            "title": "Eliminate column E re-typing and add duplicate poka-yoke",
+            "tools": [
+              "Excel"
+            ],
+            "why": "ECRS eliminate + poka-yoke: recording proves column E was typed but already existed in Notepad, and run 3 fingerprint mismatch plus A4/B4/C4/B5 rewrites show defect risk from re-typing."
+          },
+          {
+            "approach": "process_change",
+            "effort": "hours",
+            "how": "Ask AP owner: is due date copied from invoice or calculated (e.g., invoice date + 30)? Document rule. Until then set column D to Date-only validation with calendar picker, and if calculated implement =EDATE(InvoiceDate,1) or XLOOKUP to terms table. Do not automate free-typed dates.",
+            "steps_covered": "9",
+            "time_saved_pct": 8,
+            "title": "Replace free-typed due date in column D with rule + validation",
+            "tools": [
+              "Excel"
+            ],
+            "why": "ECRS simplify: column D was 10-char hand typing with unknown origin per open questions; free typing invites late-payment defects. Turns judgement into rule/lookup/dropdown."
+          },
+          {
+            "approach": "process_change",
+            "effort": "days",
+            "how": "Change from one-item-at-a-time (3 runs) to validate-all-then-submit: stage parsed rows in a Staging sheet, show parse failures/missing totals/dates, person approves exceptions only, then one-click append. Track added vs skipped vs errors in Power BI or Excel table for control plan.",
+            "steps_covered": "1-10",
+            "time_saved_pct": 7,
+            "title": "Validate first, submit in batch with exception queue and control measure",
+            "tools": [
+              "Power Automate",
+              "Excel",
+              "Power BI"
+            ],
+            "why": "ECRS rearrange + control plan: reduces motion waste (5 switches/item) and prevents B2/A4 rework from propagating; measures defect rate after go-live using customer M365/Power BI tools they already own."
+          }
+        ],
+        "risks": [
+          "INV txt format varies (different labels, missing due date/total) causing parse failures - needs staging review and regex tuning on 10+ samples",
+          "Tracker must move from local file to SharePoint/OneDrive for Graph/connector writes; concurrent edits can cause sync conflicts or range overwrites (B2/A4 issue)",
+          "Column mapping ambiguous (flows show Notepad->A,B,C and PopupHost->B plus Esc in B2) - wrong-column write could corrupt tracker if not confirmed",
+          "Automating column D/E without confirming business rules risks wrong due dates, duplicate payments, or hiding run-3 type wrong-item errors"
+        ],
+        "source": "ai",
+        "web_results": [
+          {
+            "title": "File actions reference - Power Automate",
+            "url": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file",
+            "snippet": ""
+          },
+          {
+            "title": "Excel actions reference - Power Automate",
+            "url": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/excel",
+            "snippet": ""
+          },
+          {
+            "title": "Excel Online (Business)",
+            "url": "https://learn.microsoft.com/en-us/connectors/excelonlinebusiness/",
+            "snippet": ""
+          },
+          {
+            "title": "Update range - Microsoft Graph v1.0",
+            "url": "https://learn.microsoft.com/en-us/graph/api/range-update?view=graph-rest-1.0",
+            "snippet": ""
+          },
+          {
+            "title": "Invoice processing prebuilt AI model",
+            "url": "https://learn.microsoft.com/en-us/ai-builder/prebuilt-invoice-processing",
+            "snippet": ""
+          }
+        ],
+        "catalog": [
+          {
+            "name": "Microsoft Power Automate",
+            "url": "https://www.microsoft.com/power-platform/products/power-automate",
+            "fit": "Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors"
+          },
+          {
+            "name": "UiPath",
+            "url": "https://www.uipath.com",
+            "fit": "Enterprise RPA for desktop and legacy apps without APIs (SAP GUI, Citrix, mainframe screens)"
+          },
+          {
+            "name": "Excel Power Query and Office Scripts",
+            "url": "https://learn.microsoft.com/office/dev/scripts/overview/excel",
+            "fit": "Repeatable imports, clean-up and transformations inside Excel"
+          },
+          {
+            "name": "Python with pandas / openpyxl",
+            "url": "https://pandas.pydata.org",
+            "fit": "Scripts that read, merge and write spreadsheets and CSV files"
+          }
+        ]
+      },
+      "integration": {
+        "data_flows": [
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column A"
+            },
+            "how": "copy-paste",
+            "steps": [
+              3
+            ],
+            "chars": 0,
+            "runs": "2 of 3",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column B"
+            },
+            "how": "copy-paste",
+            "steps": [
+              5,
+              8
+            ],
+            "chars": 0,
+            "runs": "2 of 3",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": null,
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column D"
+            },
+            "how": "typed",
+            "steps": [
+              9
+            ],
+            "chars": 10,
+            "runs": "3 of 3",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": null,
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column E"
+            },
+            "how": "typed",
+            "steps": [
+              10
+            ],
+            "chars": 8,
+            "runs": "3 of 3",
+            "confirmed_source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "value_match": "2 of 3 runs",
+            "mismatched_runs": [
+              3
+            ],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "PopupHost",
+              "field": "PopupHost"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column B"
+            },
+            "how": "copy-paste",
+            "steps": [],
+            "chars": 0,
+            "runs": "1 of 3",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column C"
+            },
+            "how": "copy-paste",
+            "steps": [],
+            "chars": 0,
+            "runs": "2 of 3",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          }
+        ],
+        "open_questions": [
+          "Where does **Excel · AP Tracker · column D** come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?"
+        ],
+        "systems": [
+          {
+            "system": "Notepad",
+            "kind": "desktop",
+            "role": "source",
+            "documents": [
+              "INV-#.txt",
+              "PopupHost"
+            ],
+            "options": [
+              {
+                "method": "API",
+                "name": "Notepad API",
+                "status": "unknown, ask the vendor or IT",
+                "url": "",
+                "note": "Notepad is described as 'the quick and straightforward text editor for Windows' for 'plain text documents and source code files' and as 'a basic text editing solution with essential features'. Search results found no official public API documentation for creating or reading records. No cited public API documentation: ask the vendor or IT."
+              },
+              {
+                "method": "RPA",
+                "name": "Power Automate Desktop or UiPath",
+                "status": "works without an API",
+                "url": "https://learn.microsoft.com/power-automate/desktop-flows/introduction",
+                "note": "Screen automation for desktop applications without an API."
+              }
+            ],
+            "search_results": [
+              {
+                "title": "GitHub - spinchange/notepad: A single-file browser notepad with real file system access · GitHub",
+                "url": "https://github.com/spinchange/notepad",
+                "snippet": ""
+              },
+              {
+                "title": "craxcurl/sahayak-software - README.md",
+                "url": "https://github.com/craxcurl/sahayak-software/blob/HEAD/README.md",
+                "snippet": ""
+              },
+              {
+                "title": "GitHub - Daskott/NotePad: A simple NotePad Application built with react-js · GitHub",
+                "url": "https://github.com/Daskott/NotePad",
+                "snippet": ""
+              },
+              {
+                "title": "How to open a web page in notepad++-notepad-php.cn",
+                "url": "https://m.php.cn/faq/738747.html",
+                "snippet": ""
+              }
+            ]
+          },
+          {
+            "system": "Excel",
+            "kind": "spreadsheet",
+            "role": "target",
+            "documents": [
+              "AP Tracker"
+            ],
+            "options": [
+              {
+                "method": "API",
+                "name": "Microsoft Graph Excel API",
+                "status": "documented",
+                "url": "https://learn.microsoft.com/graph/api/resources/excel",
+                "note": "Only for workbooks stored in OneDrive or SharePoint, with the data formatted as an Excel table."
+              },
+              {
+                "method": "n8n",
+                "name": "n8n Microsoft Excel 365 node",
+                "status": "documented",
+                "url": "https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftexcel/"
+              },
+              {
+                "method": "SQL",
+                "name": "Keep the tracker in a database table instead",
+                "status": "option",
+                "url": "https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/",
+                "note": "Safer than a shared workbook for automation. `flowsme build` writes a starter SQL script."
+              },
+              {
+                "method": "File",
+                "name": "Read and write the file directly (n8n Read/Write Files)",
+                "status": "documented",
+                "url": "https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.readwritefile/",
+                "note": "If the workbook stays on a PC or file share."
+              }
+            ],
+            "search_results": []
+          }
+        ],
+        "ui_actions": [
+          {
+            "step": 1,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "INV-1001.txt. Unmodified.",
+            "role": "TabItemControl",
+            "action": "click",
+            "copies": false
+          },
+          {
+            "step": 2,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 3,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "A2",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 4,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 5,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B2",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "PopupHost",
+              "field": "PopupHost"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 6,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 7,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "C2",
+            "role": "DataItemControl",
+            "action": "click",
+            "copies": false
+          },
+          {
+            "step": 8,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B2",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "PopupHost",
+              "field": "PopupHost"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 9,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "D2",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": null,
+            "confirmed": false,
+            "typed_chars": 10
+          },
+          {
+            "step": 10,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "E2",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 8
+          }
+        ],
+        "sequence": [
+          {
+            "n": 1,
+            "stage": "Trigger",
+            "system": "",
+            "what": "Start on a schedule or by hand: the recording shows no clear trigger.",
+            "fields": [],
+            "method": "n8n Schedule Trigger",
+            "status": "option"
+          },
+          {
+            "n": 2,
+            "stage": "Extract",
+            "system": "Notepad",
+            "what": "Read Text editor, PopupHost from INV-#.txt.",
+            "fields": [],
+            "method": "Screen automation (Power Automate Desktop / UiPath) unless the vendor offers an API",
+            "status": "unknown, ask the vendor or IT"
+          },
+          {
+            "n": 3,
+            "stage": "Write",
+            "system": "Excel",
+            "what": "Write into AP Tracker.",
+            "fields": [
+              "column A ← Text editor (Notepad)",
+              "column B ← Text editor (Notepad)",
+              "column D ← typed by hand (10 characters): open question",
+              "column E ← Text editor (Notepad): typed by hand, but the fingerprints prove it is the same value (2 of 3 runs)",
+              "column B ← PopupHost (Notepad)",
+              "column C ← Text editor (Notepad)"
+            ],
+            "method": "Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table",
+            "status": "documented"
+          },
+          {
+            "n": 4,
+            "stage": "Decide",
+            "system": "",
+            "what": "Where does Excel · AP Tracker · column D come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?",
+            "fields": [],
+            "method": "Business decision before building",
+            "status": "open"
+          }
+        ]
+      },
+      "improvement": {
+        "tools": {
+          "customer_tools": [
+            {
+              "given": "Microsoft 365",
+              "tool": "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+              "caps": [
+                "email",
+                "spreadsheet"
+              ],
+              "note": "often already licensed; API access needs an Entra ID app and admin consent"
+            },
+            {
+              "given": "Power Automate",
+              "tool": "Power Automate (cloud flows)",
+              "caps": [
+                "orchestration",
+                "email",
+                "spreadsheet"
+              ],
+              "note": "standard connectors come with many Microsoft 365 plans; premium connectors cost extra"
+            },
+            {
+              "given": "Power BI",
+              "tool": "Power BI",
+              "caps": [
+                "reporting"
+              ],
+              "note": "Pro licence per user to share reports"
+            }
+          ],
+          "stages": [
+            {
+              "n": 2,
+              "stage": "Extract",
+              "system": "Notepad",
+              "minutes": 0.07329469986675007,
+              "manual": 0.0,
+              "options": [
+                {
+                  "method": "Desktop automation",
+                  "caps": [
+                    "desktop_automation"
+                  ],
+                  "rate": 0.8
+                }
+              ],
+              "vendor_api": {
+                "method": "API",
+                "name": "Notepad API",
+                "status": "unknown, ask the vendor or IT",
+                "url": "",
+                "note": "Notepad is described as 'the quick and straightforward text editor for Windows' for 'plain text documents and source code files' and as 'a basic text editing solution with essential features'. Search results found no official public API documentation for creating or reading records. No cited public API documentation: ask the vendor or IT."
+              },
+              "with_your_tools": {
+                "n": 2,
+                "method": "stays manual",
+                "tools": [],
+                "minutes_after": 0.07329469986675007
+              },
+              "with_suggestions": {
+                "n": 2,
+                "method": "Desktop automation",
+                "tools": [
+                  "Power Automate Desktop"
+                ],
+                "minutes_after": 0.01465893997335001
+              }
+            },
+            {
+              "n": 3,
+              "stage": "Write",
+              "system": "Excel",
+              "minutes": 0.6186608556888055,
+              "manual": 0.027674223057040537,
+              "options": [
+                {
+                  "method": "Spreadsheet API",
+                  "caps": [
+                    "spreadsheet"
+                  ],
+                  "rate": 0.95
+                },
+                {
+                  "method": "Database table instead of the workbook",
+                  "caps": [
+                    "database"
+                  ],
+                  "rate": 0.95
+                },
+                {
+                  "method": "Desktop automation",
+                  "caps": [
+                    "desktop_automation"
+                  ],
+                  "rate": 0.8
+                }
+              ],
+              "vendor_api": null,
+              "with_your_tools": {
+                "n": 3,
+                "method": "Spreadsheet API",
+                "tools": [
+                  "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+                  "Power Automate (cloud flows)"
+                ],
+                "minutes_after": 0.05722355468862882
+              },
+              "with_suggestions": {
+                "n": 3,
+                "method": "Spreadsheet API",
+                "tools": [
+                  "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+                  "Power Automate (cloud flows)"
+                ],
+                "minutes_after": 0.05722355468862882
+              }
+            }
+          ],
+          "runner_yours": "Power Automate (cloud flows)",
+          "runner_suggested": "Power Automate (cloud flows)",
+          "other_minutes": 0,
+          "minutes_per_run": 0.7,
+          "with_your_tools": 0.1,
+          "with_suggestions": 0.1,
+          "suggested_additions": [
+            {
+              "tool": "Power Automate Desktop",
+              "adds": [
+                "desktop_automation",
+                "browser_automation",
+                "pdf_text"
+              ],
+              "cost": "free on Windows for attended runs; unattended runs need a licence",
+              "minutes_saved_per_run": 0.1,
+              "minutes_left_per_run": 0.1
+            }
+          ],
+          "report_tool": "Power BI",
+          "rates": {
+            "api": 0.95,
+            "database": 0.95,
+            "ai_extraction": 0.85,
+            "pdf_rules": 0.7,
+            "api_wrapper": 0.9,
+            "browser": 0.85,
+            "rpa": 0.8
+          }
+        },
+        "validation": {
+          "checks": [
+            {
+              "where": "Excel · AP Tracker · column A",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step 3"
+            },
+            {
+              "where": "Excel · AP Tracker · column B",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step 5, 8"
+            },
+            {
+              "where": "Excel · AP Tracker · column D",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Replace free typing with a rule, a lookup or a drop-down.",
+              "evidence": "typed by hand (10 characters) at step 9"
+            },
+            {
+              "where": "Excel · AP Tracker · column E",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-typing it; after writing, compare the two automatically.",
+              "evidence": "typed by hand at step 10; the fingerprints show it is the same value as Notepad · INV-#.txt · Text editor (2 of 3 runs)"
+            },
+            {
+              "where": "Excel · AP Tracker · column B",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · PopupHost · PopupHost directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step "
+            },
+            {
+              "where": "Excel · AP Tracker · column C",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step "
+            },
+            {
+              "where": "Excel · AP Tracker · column E",
+              "type": "detect",
+              "method": "defects",
+              "check": "Before saving, check that the fields of one row belong to the same item (e.g. invoice number and reference); stop and ask a person if they don't.",
+              "evidence": "In run 3, Excel · AP Tracker · column E did not match Notepad · INV-#.txt · Text editor for that item (the fingerprints differ): a likely wrong-item or duplicate entry."
+            },
+            {
+              "where": "corrections",
+              "type": "detect",
+              "method": "defects",
+              "check": "Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys).",
+              "evidence": "'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "where": "every run",
+              "type": "control",
+              "method": "control_plan",
+              "check": "Reconcile counts: items received = rows written = records submitted. Investigate any gap.",
+              "evidence": "standard control for multi-system hand-offs"
+            },
+            {
+              "where": "every run",
+              "type": "control",
+              "method": "control_plan",
+              "check": "Log each item with its result (done / exception / failed) and review exceptions daily.",
+              "evidence": "needed to measure error rate after go-live"
+            }
+          ],
+          "rework": [
+            {
+              "run": 3,
+              "kind": "mismatch",
+              "text": "In run 3, Excel · AP Tracker · column E did not match Notepad · INV-#.txt · Text editor for that item (the fingerprints differ): a likely wrong-item or duplicate entry."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B2' in Excel was written 4 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'A4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'C4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B5' in Excel was written 2 times: a value had to be corrected."
+            }
+          ],
+          "manual_entries_per_item": 6,
+          "manual_entries_after": 1
+        },
+        "lean": {
+          "steps": [
+            {
+              "step": 1,
+              "class": "NVA",
+              "waste": "motion",
+              "why": "navigating: opening, finding, switching, scrolling",
+              "seconds": 2.2779999999999987,
+              "description": "Selects the supplier invoice file in the text editor"
+            },
+            {
+              "step": 2,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.693999999999999,
+              "description": "Copies the invoice number from the supplier invoice"
+            },
+            {
+              "step": 3,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 3.116000000000003,
+              "description": "Pastes the invoice number into the invoice tracker"
+            },
+            {
+              "step": 4,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.6899999999999977,
+              "description": "Copies the vendor name from the supplier invoice"
+            },
+            {
+              "step": 5,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 3.118000000000002,
+              "description": "Pastes the vendor name from the invoice file into the tracker"
+            },
+            {
+              "step": 6,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.668999999999997,
+              "description": "Copies the invoice total from the invoice file for entry"
+            },
+            {
+              "step": 7,
+              "class": "NVA",
+              "waste": "motion",
+              "why": "navigating: opening, finding, switching, scrolling",
+              "seconds": 1.6310000000000002,
+              "description": "Selects the amount column in the tracker for the invoice total"
+            },
+            {
+              "step": 8,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.5100000000000016,
+              "description": "Paste in \"B2\", then press Esc in Excel"
+            },
+            {
+              "step": 9,
+              "class": "VA?",
+              "waste": "",
+              "why": "enters information whose source the recording doesn't show: may be judgement",
+              "seconds": 2.767999999999997,
+              "description": "Enters the due date from the invoice into column D of the tracker"
+            },
+            {
+              "step": 10,
+              "class": "NVA",
+              "waste": "over_processing",
+              "why": "re-types a value that already exists elsewhere",
+              "seconds": 49.736,
+              "description": "Enters a value in column E of the tracker"
+            }
+          ],
+          "time_by_class": {
+            "NVA": 0.66,
+            "VA?": 0.03
+          },
+          "process_cycle_efficiency": 0.04,
+          "wastes": [
+            {
+              "id": "transportation",
+              "name": "Transportation waste",
+              "evidence": "4 values per item carried between applications by copy-paste",
+              "steps": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                8
+              ],
+              "minutes_per_item": 0.13
+            },
+            {
+              "id": "motion",
+              "name": "Motion waste",
+              "evidence": "5 window switches and 2 navigation steps per item",
+              "steps": [
+                1,
+                7
+              ],
+              "minutes_per_item": 0.04
+            },
+            {
+              "id": "over_processing",
+              "name": "Over-processing waste",
+              "evidence": "1 value(s) typed by hand that the fingerprints prove already exist elsewhere (column E = Notepad · INV-#.txt · Text editor)",
+              "steps": [
+                10
+              ],
+              "minutes_per_item": 0.5
+            },
+            {
+              "id": "defects",
+              "name": "Defects and rework",
+              "evidence": "In run 3, Excel · AP Tracker · column E did not match Notepad · INV-#.txt · Text editor for that item (the fingerprints differ): a likely wrong-item or duplicate entry. 'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected.",
+              "steps": [],
+              "minutes_per_item": 0.0
+            },
+            {
+              "id": "skills",
+              "name": "Unused talent",
+              "steps": [],
+              "minutes_per_item": 0,
+              "evidence": "96% of this person's time on this task is moving and re-typing data"
+            }
+          ],
+          "bottleneck": {
+            "stage": "Write",
+            "system": "Excel",
+            "minutes": 0.62
+          },
+          "ecrs": [
+            {
+              "step": "Eliminate",
+              "idea": "Stop re-typing values that already exist: column E in Excel."
+            },
+            {
+              "step": "Rearrange",
+              "idea": "The routine ran 3 times one item at a time. Validate every item first, then submit in one batch; exceptions go to a person."
+            },
+            {
+              "step": "Simplify",
+              "idea": "Turn free typing into rules, lookups or drop-downs: column D (Excel)."
+            },
+            {
+              "step": "Automate",
+              "idea": "Then automate what is left, as in the tool plan below."
+            }
+          ],
+          "sipoc": {
+            "suppliers": [
+              "Notepad"
+            ],
+            "inputs": [
+              "Notepad · INV-#.txt · Text editor",
+              "Notepad · PopupHost · PopupHost"
+            ],
+            "process": [
+              "Trigger: Start on a schedule or by hand: the recording shows no clear trigger.",
+              "Extract: Notepad",
+              "Write: Excel"
+            ],
+            "outputs": [
+              "Excel · AP Tracker"
+            ],
+            "customers": [
+              "Who uses these outputs? (not visible in the recording: ask)"
+            ]
+          },
+          "ctqs": [
+            "Each item done within the agreed time (now about 0.7 min of hands-on work)"
+          ],
+          "error_exposure": {
+            "manual_entries_per_item": 6,
+            "manual_entries_after": 1,
+            "items_per_month": 60,
+            "by_rate": [
+              {
+                "per_field": 0.00143,
+                "context": "Nahm et al. 2008: source to database, clinical trials",
+                "source": "https://doi.org/10.1371/journal.pone.0003049",
+                "errors_per_month_now": 0.5,
+                "errors_per_month_after": 0.1,
+                "dpmo": 1430,
+                "sigma": 4.0
+              },
+              {
+                "per_field": 0.0029,
+                "context": "Garza et al. 2025: meta-analysis of 93 studies, single data entry",
+                "source": "https://doi.org/10.1016/j.ijmedinf.2024.105749",
+                "errors_per_month_now": 1.0,
+                "errors_per_month_after": 0.2,
+                "dpmo": 2900,
+                "sigma": 4.0
+              },
+              {
+                "per_field": 0.037,
+                "context": "Mays & Mathias 2019: manual transcription of numeric results",
+                "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6351970/",
+                "errors_per_month_now": 13.3,
+                "errors_per_month_after": 2.2,
+                "dpmo": 37000,
+                "sigma": 3.0
+              }
+            ]
+          },
+          "kpis": [
+            "Items processed per day",
+            "Hands-on minutes per item (target: 0.1 or less)",
+            "Exceptions sent to a person (%)",
+            "First-pass yield: items done with no correction (%)",
+            "Errors caught by checks, by type",
+            "Duplicates blocked"
+          ]
+        }
+      },
+      "steps_one_run": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "runs_step_indexes": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        [
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24
+        ],
+        [
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34
+        ]
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Transfer invoice data to tracker",
+      "summary": "Updates the invoice tracker with vendor and invoice details from supplier files. The user copies vendor names and invoice numbers from invoice files in the text editor and pastes them into the corresponding fields in the Excel tracker.",
+      "misc": false,
+      "runs": 1,
+      "minutes": 0.8,
+      "apps": [
+        "Excel",
+        "Notepad"
+      ],
+      "inputs": [
+        "Supplier invoice files in text format",
+        "Excel invoice tracker spreadsheet"
+      ],
+      "outputs": [
+        "Updated invoice tracker with vendor names and invoice numbers"
+      ],
+      "decision_points": [
+        "Selecting the correct tracker row for each invoice file",
+        "Verifying that copied vendor and invoice data is complete and accurate"
+      ],
+      "score": 40,
+      "level": "Medium",
+      "reasons": [
+        "2 values copied by hand from one application to another",
+        "5 switches between applications"
+      ],
+      "features": {
+        "steps": 8,
+        "steps_per_run": 8,
+        "runs": 1,
+        "minutes": 0.8,
+        "minutes_per_run": 0.8,
+        "pastes": 3,
+        "cross_app_transfers": 2,
+        "chars_typed": 0,
+        "app_switches": 5,
+        "apps": 2
+      },
+      "estimate": {
+        "automatable_fraction": 0.88,
+        "minutes_saved_per_run": 0.7,
+        "hours_saved_per_month": 0.2,
+        "cost_saved_per_month": 7
+      },
+      "recommendation": {
+        "assumptions": [
+          "Supplier invoice files are plain .txt files in a known folder with consistent labels for vendor name and invoice number",
+          "AP Tracker Excel file path and sheet name and target columns A and B are stable and file is not password locked",
+          "No usable Notepad API exists, file read is via filesystem, confirm with IT if suppliers can send CSV or structured export instead",
+          "Copying Excel column B to column C is staging with no separate business need unless retention requires it"
+        ],
+        "automatable_fraction": 0.88,
+        "automation_potential": "high",
+        "automation_sketch": {
+          "code": "import glob\nimport re\nfrom pathlib import Path\nimport openpyxl\n\n# Folder containing supplier files like INV-001.txt, INV-002.txt\nINVOICE_GLOB = r\"C:\\Invoices\\INV-*.txt\"\nTRACKER_PATH = r\"C:\\Invoices\\AP Tracker.xlsx\"\nSHEET_NAME = \"AP Tracker\"\n\nvendor_pat = re.compile(r\"(?im)^\\s*vendor\\s*[:\\-]\\s*(.+?)\\s*$\")\ninv_pat = re.compile(r\"(?im)^\\s*(invoice\\s*(no|number|#)|inv\\s*[#:]?)\\s*[:\\-#]?\\s*([A-Z0-9\\-]+)\\s*$\")\n\ndef parse_invoice_txt(path):\n    text = Path(path).read_text(encoding=\"utf-8\", errors=\"ignore\")\n    vendor = vendor_pat.search(text)\n    inv = inv_pat.search(text)\n    vendor_val = vendor.group(1).strip() if vendor else \"\"\n    inv_val = inv.group(3).strip() if inv else \"\"\n    # fallback: first non-empty line as vendor if label missing\n    if not vendor_val:\n        lines = [l.strip() for l in text.splitlines() if l.strip()]\n        if lines:\n            vendor_val = lines[0]\n    return vendor_val, inv_val\n\nrows = []\nfor f in glob.glob(INVOICE_GLOB):\n    v, inv = parse_invoice_txt(f)\n    if v or inv:\n        rows.append((v, inv, Path(f).name))\n\nwb = openpyxl.load_workbook(TRACKER_PATH)\nws = wb[SHEET_NAME]\n# Assume row 1 header, columns A=Vendor, B=Invoice Number. Append after last used row.\nfor vendor_val, inv_val, _src in rows:\n    # skip if invoice already in column B to make reruns idempotent\n    exists = False\n    for r in ws.iter_rows(min_row=2, max_col=2, values_only=True):\n        if r[1] and str(r[1]).strip() == inv_val and inv_val != \"\":\n            exists = True\n            break\n    if not exists:\n        ws.append([vendor_val, inv_val])\nwb.save(TRACKER_PATH)\nprint(f\"Appended {len(rows)} rows to {TRACKER_PATH}\")",
+          "description": "Python script implementing top recommendation: read all INV-*.txt files, extract vendor and invoice number by regex, de-duplicate on invoice number, and append directly to AP Tracker columns A and B with no intermediate copy.",
+          "language": "python",
+          "file": "automations/task2.py"
+        },
+        "bottlenecks": [
+          "Extract in Notepad 0.41 min per item, over half of 0.8 min cycle",
+          "5 application switches per item plus 2 navigation steps causing motion waste",
+          "Rework: B2 written 4 times, A4 B4 C4 B5 written 2 times each indicating corrections"
+        ],
+        "quick_wins": [
+          "Stop cut-paste of Excel column B to C staging, write vendor and invoice number once directly",
+          "Put AP Tracker on OneDrive or SharePoint and convert range to Excel Table with Data Validation on vendor and invoice number to prevent typos",
+          "Keep Notepad invoice folder and Excel side-by-side and process in batches to cut window switches until automated"
+        ],
+        "recommendations": [
+          {
+            "approach": "rpa",
+            "effort": "days",
+            "how": "In Power Automate Desktop create a flow that loops Files in folder INV-*.txt. Use Read text from file then Parse text with the vendor and invoice-number patterns. Use Excel Launch and Write to Excel worksheet AP Tracker columns A and B in one write, no intermediate cut-paste. Run attended on the same PC that does the task today.",
+            "steps_covered": "3-7",
+            "time_saved_pct": 80,
+            "title": "Auto-read supplier INV-*.txt files and write directly to AP Tracker",
+            "tools": [
+              "Power Automate Desktop",
+              "Excel"
+            ],
+            "why": "Theory of Constraints fix the bottleneck first plus ECRS automate. Bottleneck is Extract in Notepad 0.41 min and 3 values carried by hand Notepad to Excel. Direct file read eliminates copy-paste and 5 switches."
+          },
+          {
+            "approach": "process_change",
+            "effort": "hours",
+            "how": "Remove steps 1-2 as standard work. Agree that column B is the system entry, column C only if needed for audit. If audit needs it, let automation copy B to C, never by hand. Update one-page SOP to enter vendor once then invoice number once.",
+            "steps_covered": "1-2",
+            "time_saved_pct": 15,
+            "title": "Eliminate Excel B to C staging copy",
+            "tools": [
+              "Excel"
+            ],
+            "why": "ECRS eliminate before automating. Recording shows over-processing of 1 value copied into Excel only to be copied out again from column B to C."
+          },
+          {
+            "approach": "built_in_feature",
+            "effort": "hours",
+            "how": "Convert tracker range to Excel Table with headers Vendor and Invoice Number. Add Data Validation: invoice number TextLength >3 and duplicate check with COUNTIF, and lock other columns. Add Conditional Formatting to highlight duplicates for poka-yoke.",
+            "steps_covered": "4, 7",
+            "time_saved_pct": 20,
+            "title": "Harden tracker with Table and validation to stop rework",
+            "tools": [
+              "Excel",
+              "Office Scripts"
+            ],
+            "why": "Poka-yoke to prevent defects. Evidence is B2 written 4 times and A4 B4 C4 B5 written 2 times, plus 0% process cycle efficiency with 100% time moving data."
+          },
+          {
+            "approach": "api_integration",
+            "effort": "days",
+            "how": "Move AP Tracker to SharePoint or OneDrive. Replace Desktop Excel writes with cloud flow using Excel Online Business connector Add a row into a table. Keep Desktop flow only for reading local .txt files, or switch to scheduled cloud flow if files move to SharePoint. Enables logging and Power BI reporting.",
+            "steps_covered": "4, 7",
+            "time_saved_pct": 50,
+            "title": "Move tracker to SharePoint and write via connector or Graph",
+            "tools": [
+              "Power Automate",
+              "Excel Online (Business)",
+              "SharePoint"
+            ],
+            "why": "Prefer built-in API over RPA for Write Excel step. Uses documented Microsoft Graph Excel API and Excel Online connector instead of UI paste, enabling control plan measurement."
+          }
+        ],
+        "risks": [
+          "TXT label variation across suppliers causes parse misses, need fallback review queue and duplicate check on invoice number",
+          "Excel file locked or open by another user causes write failure, need OneDrive co-authoring and retry logic",
+          "Automating bad staging logic preserves waste, must confirm column C is not required downstream before removing it"
+        ],
+        "source": "ai",
+        "web_results": [
+          {
+            "title": "File actions reference - Power Automate",
+            "url": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file",
+            "snippet": ""
+          },
+          {
+            "title": "Excel actions reference - Power Automate",
+            "url": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/excel",
+            "snippet": ""
+          },
+          {
+            "title": "Excel Online (Business)",
+            "url": "https://learn.microsoft.com/en-us/connectors/excelonlinebusiness/",
+            "snippet": ""
+          },
+          {
+            "title": "Working with Excel in Microsoft Graph",
+            "url": "https://learn.microsoft.com/en-us/graph/api/resources/excel?view=graph-rest-1.0",
+            "snippet": ""
+          }
+        ],
+        "catalog": [
+          {
+            "name": "Microsoft Power Automate",
+            "url": "https://www.microsoft.com/power-platform/products/power-automate",
+            "fit": "Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors"
+          },
+          {
+            "name": "Excel Power Query and Office Scripts",
+            "url": "https://learn.microsoft.com/office/dev/scripts/overview/excel",
+            "fit": "Repeatable imports, clean-up and transformations inside Excel"
+          },
+          {
+            "name": "Python with pandas / openpyxl",
+            "url": "https://pandas.pydata.org",
+            "fit": "Scripts that read, merge and write spreadsheets and CSV files"
+          }
+        ]
+      },
+      "integration": {
+        "data_flows": [
+          {
+            "from": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column B"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column C"
+            },
+            "how": "copy-paste",
+            "steps": [
+              2
+            ],
+            "chars": 0,
+            "runs": "1 of 1",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "likely_source": null
+          },
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column B"
+            },
+            "how": "copy-paste",
+            "steps": [
+              4
+            ],
+            "chars": 0,
+            "runs": "1 of 1",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column A"
+            },
+            "how": "copy-paste",
+            "steps": [
+              7
+            ],
+            "chars": 0,
+            "runs": "1 of 1",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          }
+        ],
+        "open_questions": [],
+        "systems": [
+          {
+            "system": "Excel",
+            "kind": "spreadsheet",
+            "role": "source and target",
+            "documents": [
+              "AP Tracker"
+            ],
+            "options": [
+              {
+                "method": "API",
+                "name": "Microsoft Graph Excel API",
+                "status": "documented",
+                "url": "https://learn.microsoft.com/graph/api/resources/excel",
+                "note": "Only for workbooks stored in OneDrive or SharePoint, with the data formatted as an Excel table."
+              },
+              {
+                "method": "n8n",
+                "name": "n8n Microsoft Excel 365 node",
+                "status": "documented",
+                "url": "https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftexcel/"
+              },
+              {
+                "method": "SQL",
+                "name": "Keep the tracker in a database table instead",
+                "status": "option",
+                "url": "https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/",
+                "note": "Safer than a shared workbook for automation. `flowsme build` writes a starter SQL script."
+              },
+              {
+                "method": "File",
+                "name": "Read and write the file directly (n8n Read/Write Files)",
+                "status": "documented",
+                "url": "https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.readwritefile/",
+                "note": "If the workbook stays on a PC or file share."
+              }
+            ],
+            "search_results": []
+          },
+          {
+            "system": "Notepad",
+            "kind": "desktop",
+            "role": "source",
+            "documents": [
+              "INV-#.txt"
+            ],
+            "options": [
+              {
+                "method": "API",
+                "name": "Notepad API",
+                "status": "unknown, ask the vendor or IT",
+                "url": "",
+                "note": "Search results describe Notepad as a text editor application that is included with Microsoft Windows used to create or edit plain text files, and Notepad++ as a free source code editor and Notepad replacement built with pure Win32 API, not a web portal with a public records API. No official API documentation URLs were found. No cited public API documentation: ask the vendor or IT."
+              },
+              {
+                "method": "RPA",
+                "name": "Power Automate Desktop or UiPath",
+                "status": "works without an API",
+                "url": "https://learn.microsoft.com/power-automate/desktop-flows/introduction",
+                "note": "Screen automation for desktop applications without an API."
+              }
+            ],
+            "search_results": [
+              {
+                "title": "callmelins/qdrust - feat(mcp): expose the notepad slots and the remaining task fields",
+                "url": "https://github.com/callmelins/qdrust/commit/4b7459f9dbc3999b2a46b5f448a40fe2ace08d94",
+                "snippet": ""
+              },
+              {
+                "title": "GitHub - spinchange/notepad: A single-file browser notepad with real file system access · GitHub",
+                "url": "https://github.com/spinchange/notepad",
+                "snippet": ""
+              },
+              {
+                "title": "callmelins/qdrust - feat: implement the notepad and give it a page",
+                "url": "https://github.com/callmelins/qdrust/commit/e0ca855d9dc990541179c99ad845aeec5b9a5f0c",
+                "snippet": ""
+              },
+              {
+                "title": "Using dynamic find() when recording in a Notepad or Windows application",
+                "url": "https://help.hcl-software.com/devops/test/ui/11.0.1/docs/topics/r_troubleshoot_using_find.html",
+                "snippet": ""
+              }
+            ]
+          }
+        ],
+        "ui_actions": [
+          {
+            "step": 1,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B2",
+            "role": "DataItemControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 2,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "C2",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 3,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 4,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B2",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 5,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "INV-1002.txt. Unmodified.",
+            "role": "TabItemControl",
+            "action": "click",
+            "copies": false
+          },
+          {
+            "step": 6,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 7,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "A3",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 8,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": false
+          }
+        ],
+        "sequence": [
+          {
+            "n": 1,
+            "stage": "Trigger",
+            "system": "",
+            "what": "Start on a schedule or by hand: the recording shows no clear trigger.",
+            "fields": [],
+            "method": "n8n Schedule Trigger",
+            "status": "option"
+          },
+          {
+            "n": 2,
+            "stage": "Extract",
+            "system": "Notepad",
+            "what": "Read Text editor from INV-#.txt.",
+            "fields": [],
+            "method": "Screen automation (Power Automate Desktop / UiPath) unless the vendor offers an API",
+            "status": "unknown, ask the vendor or IT"
+          },
+          {
+            "n": 3,
+            "stage": "Write",
+            "system": "Excel",
+            "what": "Write into AP Tracker.",
+            "fields": [
+              "column C ← Text editor (Notepad)",
+              "column B ← Text editor (Notepad)",
+              "column A ← Text editor (Notepad)"
+            ],
+            "method": "Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table",
+            "status": "documented"
+          },
+          {
+            "n": 4,
+            "stage": "Finish",
+            "system": "Notepad",
+            "what": "Then in Notepad: Text editor.",
+            "fields": [],
+            "method": "Screen automation (Power Automate Desktop / UiPath) unless the vendor offers an API",
+            "status": "unknown, ask the vendor or IT"
+          },
+          {
+            "n": 5,
+            "stage": "Human check",
+            "system": "",
+            "what": "Selecting the correct tracker row for each invoice file",
+            "fields": [],
+            "method": "Keep a person here, or define the rule",
+            "status": "open"
+          },
+          {
+            "n": 6,
+            "stage": "Human check",
+            "system": "",
+            "what": "Verifying that copied vendor and invoice data is complete and accurate",
+            "fields": [],
+            "method": "Keep a person here, or define the rule",
+            "status": "open"
+          }
+        ]
+      },
+      "improvement": {
+        "tools": {
+          "customer_tools": [
+            {
+              "given": "Microsoft 365",
+              "tool": "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+              "caps": [
+                "email",
+                "spreadsheet"
+              ],
+              "note": "often already licensed; API access needs an Entra ID app and admin consent"
+            },
+            {
+              "given": "Power Automate",
+              "tool": "Power Automate (cloud flows)",
+              "caps": [
+                "orchestration",
+                "email",
+                "spreadsheet"
+              ],
+              "note": "standard connectors come with many Microsoft 365 plans; premium connectors cost extra"
+            },
+            {
+              "given": "Power BI",
+              "tool": "Power BI",
+              "caps": [
+                "reporting"
+              ],
+              "note": "Pro licence per user to share reports"
+            }
+          ],
+          "stages": [
+            {
+              "n": 2,
+              "stage": "Extract",
+              "system": "Notepad",
+              "minutes": 0.40543333333333376,
+              "manual": 0.0,
+              "options": [
+                {
+                  "method": "Desktop automation",
+                  "caps": [
+                    "desktop_automation"
+                  ],
+                  "rate": 0.8
+                }
+              ],
+              "vendor_api": {
+                "method": "API",
+                "name": "Notepad API",
+                "status": "unknown, ask the vendor or IT",
+                "url": "",
+                "note": "Search results describe Notepad as a text editor application that is included with Microsoft Windows used to create or edit plain text files, and Notepad++ as a free source code editor and Notepad replacement built with pure Win32 API, not a web portal with a public records API. No official API documentation URLs were found. No cited public API documentation: ask the vendor or IT."
+              },
+              "with_your_tools": {
+                "n": 2,
+                "method": "stays manual",
+                "tools": [],
+                "minutes_after": 0.40543333333333376
+              },
+              "with_suggestions": {
+                "n": 2,
+                "method": "Desktop automation",
+                "tools": [
+                  "Power Automate Desktop"
+                ],
+                "minutes_after": 0.08108666666666674
+              }
+            },
+            {
+              "n": 3,
+              "stage": "Write",
+              "system": "Excel",
+              "minutes": 0.3680166666666665,
+              "manual": 0.0,
+              "options": [
+                {
+                  "method": "Spreadsheet API",
+                  "caps": [
+                    "spreadsheet"
+                  ],
+                  "rate": 0.95
+                },
+                {
+                  "method": "Database table instead of the workbook",
+                  "caps": [
+                    "database"
+                  ],
+                  "rate": 0.95
+                },
+                {
+                  "method": "Desktop automation",
+                  "caps": [
+                    "desktop_automation"
+                  ],
+                  "rate": 0.8
+                }
+              ],
+              "vendor_api": null,
+              "with_your_tools": {
+                "n": 3,
+                "method": "Spreadsheet API",
+                "tools": [
+                  "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+                  "Power Automate (cloud flows)"
+                ],
+                "minutes_after": 0.018400833333333342
+              },
+              "with_suggestions": {
+                "n": 3,
+                "method": "Spreadsheet API",
+                "tools": [
+                  "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+                  "Power Automate (cloud flows)"
+                ],
+                "minutes_after": 0.018400833333333342
+              }
+            },
+            {
+              "n": 4,
+              "stage": "Finish",
+              "system": "Notepad",
+              "minutes": 0.0,
+              "manual": 0.0,
+              "options": [
+                {
+                  "method": "Desktop automation",
+                  "caps": [
+                    "desktop_automation"
+                  ],
+                  "rate": 0.8
+                }
+              ],
+              "vendor_api": {
+                "method": "API",
+                "name": "Notepad API",
+                "status": "unknown, ask the vendor or IT",
+                "url": "",
+                "note": "Search results describe Notepad as a text editor application that is included with Microsoft Windows used to create or edit plain text files, and Notepad++ as a free source code editor and Notepad replacement built with pure Win32 API, not a web portal with a public records API. No official API documentation URLs were found. No cited public API documentation: ask the vendor or IT."
+              },
+              "with_your_tools": {
+                "n": 4,
+                "method": "stays manual",
+                "tools": [],
+                "minutes_after": 0.0
+              },
+              "with_suggestions": {
+                "n": 4,
+                "method": "Desktop automation",
+                "tools": [
+                  "Power Automate Desktop"
+                ],
+                "minutes_after": 0.0
+              }
+            }
+          ],
+          "runner_yours": "Power Automate (cloud flows)",
+          "runner_suggested": "Power Automate (cloud flows)",
+          "other_minutes": 0,
+          "minutes_per_run": 0.8,
+          "with_your_tools": 0.4,
+          "with_suggestions": 0.1,
+          "suggested_additions": [
+            {
+              "tool": "Power Automate Desktop",
+              "adds": [
+                "desktop_automation",
+                "browser_automation",
+                "pdf_text"
+              ],
+              "cost": "free on Windows for attended runs; unattended runs need a licence",
+              "minutes_saved_per_run": 0.3,
+              "minutes_left_per_run": 0.1
+            }
+          ],
+          "report_tool": "Power BI",
+          "rates": {
+            "api": 0.95,
+            "database": 0.95,
+            "ai_extraction": 0.85,
+            "pdf_rules": 0.7,
+            "api_wrapper": 0.9,
+            "browser": 0.85,
+            "rpa": 0.8
+          }
+        },
+        "validation": {
+          "checks": [
+            {
+              "where": "Excel · AP Tracker · column C",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step 2"
+            },
+            {
+              "where": "Excel · AP Tracker · column B",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step 4"
+            },
+            {
+              "where": "Excel · AP Tracker · column A",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step 7"
+            },
+            {
+              "where": "corrections",
+              "type": "detect",
+              "method": "defects",
+              "check": "Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys).",
+              "evidence": "'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "where": "every run",
+              "type": "control",
+              "method": "control_plan",
+              "check": "Reconcile counts: items received = rows written = records submitted. Investigate any gap.",
+              "evidence": "standard control for multi-system hand-offs"
+            },
+            {
+              "where": "every run",
+              "type": "control",
+              "method": "control_plan",
+              "check": "Log each item with its result (done / exception / failed) and review exceptions daily.",
+              "evidence": "needed to measure error rate after go-live"
+            }
+          ],
+          "rework": [
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B2' in Excel was written 4 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'A4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'C4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B5' in Excel was written 2 times: a value had to be corrected."
+            }
+          ],
+          "manual_entries_per_item": 3,
+          "manual_entries_after": 0
+        },
+        "lean": {
+          "steps": [
+            {
+              "step": 1,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 2.075000000000003,
+              "description": "Cuts the vendor cell content in the tracker and moves to next field"
+            },
+            {
+              "step": 2,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.5450000000000017,
+              "description": "Paste in \"C2\", then press Esc in Excel"
+            },
+            {
+              "step": 3,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.6800000000000068,
+              "description": "Copies the vendor name from the first supplier invoice file."
+            },
+            {
+              "step": 4,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 15.358999999999995,
+              "description": "Pastes the vendor name into the tracker spreadsheet."
+            },
+            {
+              "step": 5,
+              "class": "NVA",
+              "waste": "motion",
+              "why": "navigating: opening, finding, switching, scrolling",
+              "seconds": 2.2409999999999997,
+              "description": "Opens the second supplier invoice file in the editor."
+            },
+            {
+              "step": 6,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.6440000000000055,
+              "description": "Copies the invoice number from the second supplier invoice file."
+            },
+            {
+              "step": 7,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 3.1019999999999897,
+              "description": "Pastes the invoice number from the invoice file into the tracker."
+            },
+            {
+              "step": 8,
+              "class": "NVA",
+              "waste": "motion",
+              "why": "navigating: opening, finding, switching, scrolling",
+              "seconds": 18.76100000000001,
+              "description": "Selects the vendor name in the invoice file for copying."
+            }
+          ],
+          "time_by_class": {
+            "NVA": 0.77
+          },
+          "process_cycle_efficiency": 0.0,
+          "wastes": [
+            {
+              "id": "transportation",
+              "name": "Transportation waste",
+              "evidence": "3 values per item carried between applications by copy-paste",
+              "steps": [
+                1,
+                2,
+                3,
+                4,
+                6,
+                7
+              ],
+              "minutes_per_item": 0.42
+            },
+            {
+              "id": "motion",
+              "name": "Motion waste",
+              "evidence": "5 window switches and 2 navigation steps per item",
+              "steps": [
+                5,
+                8
+              ],
+              "minutes_per_item": 0.35
+            },
+            {
+              "id": "over_processing",
+              "name": "Over-processing waste",
+              "evidence": "1 value(s) copied into one file only to be copied out again (column B in Excel)",
+              "steps": [],
+              "minutes_per_item": 0.0
+            },
+            {
+              "id": "defects",
+              "name": "Defects and rework",
+              "evidence": "'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected.",
+              "steps": [],
+              "minutes_per_item": 0.0
+            },
+            {
+              "id": "skills",
+              "name": "Unused talent",
+              "steps": [],
+              "minutes_per_item": 0,
+              "evidence": "100% of this person's time on this task is moving and re-typing data"
+            }
+          ],
+          "bottleneck": {
+            "stage": "Extract",
+            "system": "Notepad",
+            "minutes": 0.41
+          },
+          "ecrs": [
+            {
+              "step": "Eliminate",
+              "idea": "Stop copying values into an in-between file that is then copied out again (Excel). Keep it only if someone needs it as a record, and then let the automation write it."
+            },
+            {
+              "step": "Automate",
+              "idea": "Then automate what is left, as in the tool plan below."
+            }
+          ],
+          "sipoc": {
+            "suppliers": [
+              "Notepad"
+            ],
+            "inputs": [
+              "Notepad · INV-#.txt · Text editor"
+            ],
+            "process": [
+              "Trigger: Start on a schedule or by hand: the recording shows no clear trigger.",
+              "Extract: Notepad",
+              "Write: Excel",
+              "Finish: Notepad"
+            ],
+            "outputs": [
+              "Excel · AP Tracker"
+            ],
+            "customers": [
+              "Who uses these outputs? (not visible in the recording: ask)"
+            ]
+          },
+          "ctqs": [
+            "Each item done within the agreed time (now about 0.8 min of hands-on work)"
+          ],
+          "error_exposure": {
+            "manual_entries_per_item": 3,
+            "manual_entries_after": 0,
+            "items_per_month": 20,
+            "by_rate": [
+              {
+                "per_field": 0.00143,
+                "context": "Nahm et al. 2008: source to database, clinical trials",
+                "source": "https://doi.org/10.1371/journal.pone.0003049",
+                "errors_per_month_now": 0.1,
+                "errors_per_month_after": 0.0,
+                "dpmo": 1430,
+                "sigma": 4.0
+              },
+              {
+                "per_field": 0.0029,
+                "context": "Garza et al. 2025: meta-analysis of 93 studies, single data entry",
+                "source": "https://doi.org/10.1016/j.ijmedinf.2024.105749",
+                "errors_per_month_now": 0.2,
+                "errors_per_month_after": 0.0,
+                "dpmo": 2900,
+                "sigma": 4.0
+              },
+              {
+                "per_field": 0.037,
+                "context": "Mays & Mathias 2019: manual transcription of numeric results",
+                "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6351970/",
+                "errors_per_month_now": 2.2,
+                "errors_per_month_after": 0.0,
+                "dpmo": 37000,
+                "sigma": 3.0
+              }
+            ]
+          },
+          "kpis": [
+            "Items processed per day",
+            "Hands-on minutes per item (target: 0.1 or less)",
+            "Exceptions sent to a person (%)",
+            "First-pass yield: items done with no correction (%)",
+            "Errors caught by checks, by type",
+            "Duplicates blocked"
+          ]
+        }
+      },
+      "steps_one_run": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "runs_step_indexes": []
+    },
+    {
+      "id": 3,
+      "name": "Transfer supplier invoices to tracker",
+      "summary": "The task consolidates supplier invoice information into the central invoice tracker for monitoring. The user copies the invoice number and vendor name from each invoice file and pastes them into successive tracker rows, completing additional columns as needed.",
+      "misc": false,
+      "runs": 1,
+      "minutes": 1.2,
+      "apps": [
+        "Notepad",
+        "Excel"
+      ],
+      "inputs": [
+        "Supplier invoice files",
+        "Invoice tracker spreadsheet"
+      ],
+      "outputs": [
+        "Updated invoice tracker with new entries"
+      ],
+      "decision_points": [
+        "Verifying the correct invoice file and tracker row before pasting"
+      ],
+      "score": 41,
+      "level": "Medium",
+      "reasons": [
+        "7 values copied by hand from one application to another",
+        "13 switches between applications"
+      ],
+      "features": {
+        "steps": 19,
+        "steps_per_run": 19,
+        "runs": 1,
+        "minutes": 1.2,
+        "minutes_per_run": 1.2,
+        "pastes": 7,
+        "cross_app_transfers": 7,
+        "chars_typed": 18,
+        "app_switches": 13,
+        "apps": 2
+      },
+      "estimate": {
+        "automatable_fraction": 0.92,
+        "minutes_saved_per_run": 1.1,
+        "hours_saved_per_month": 0.4,
+        "cost_saved_per_month": 11
+      },
+      "recommendation": {
+        "assumptions": [
+          "Supplier invoice files are plain .txt files named INV-*.txt in a single folder with consistent labels for invoice number and vendor name",
+          "AP Tracker is a standard .xlsx file accessible to Power Automate Desktop and can be converted to an Excel Table",
+          "Column E value proven equal to Notepad text can be mapped directly without retyping",
+          "Where column D 10-character typed value comes from is unknown - no lookup rule or judgement documented in recording",
+          "Notepad has no usable API status unknown - automation assumes file-level reading not Notepad API, confirm with IT if needed"
+        ],
+        "automatable_fraction": 0.75,
+        "automation_potential": "high",
+        "automation_sketch": {
+          "code": "DESKTOP FLOW: AP_Tracker_Append\n1. SET FolderPath = \"C:\\AP\\Invoices\" AND TrackerPath = \"C:\\AP\\AP Tracker.xlsx\"\n2. ACTION File.GetFilesInFolder Folder: FolderPath FileFilter: \"INV-*.txt\" -> FileList\n3. ACTION Excel.LaunchExcelAndOpenDocument DocumentPath: TrackerPath Visible: FALSE -> ExcelInstance\n4. LOOP ForEach CurrentFile IN FileList\n5.   ACTION File.ReadTextFromFile File: CurrentFile -> FileText\n6.   ACTION Text.ParseText Text: FileText Regex: \"Invoice\\s*(No|Number|#)\\s*[:#]\\s*(\\S+)\" -> InvoiceNo (FirstMatch Group2)\n7.   ACTION Text.ParseText Text: FileText Regex: \"Vendor\\s*[:]\\s*(.+)\" -> VendorName (Trim FirstMatch Group1)\n8.   ACTION Excel.GetFirstFreeRowOnColumn Instance: ExcelInstance Column: \"A\" -> NextRow\n9.   ACTION Excel.WriteToExcel Worksheet: \"Tracker\" Row: NextRow Column: 1 Value: %InvoiceNo%\n10.  ACTION Excel.WriteToExcel Row: NextRow Column: 2 Value: %VendorName%\n11.  ACTION Excel.WriteToExcel Row: NextRow Column: 3 Value: %VendorName%\n12.  ACTION Excel.WriteToExcel Row: NextRow Column: 5 Value: %VendorName% // ECRS eliminate retype, map not type\n13.  // LEAVE Column D blank for human fill until rule documented\n14. END LOOP\n15. ACTION Excel.SaveExcel Instance: ExcelInstance\n16. ACTION Excel.CloseExcel Instance: ExcelInstance",
+          "description": "Power Automate Desktop flow that loops INV-*.txt files, parses invoice number and vendor, and appends columns A-C+E to AP Tracker leaving unknown column D for human.",
+          "language": "power_automate",
+          "file": "automations/task3.txt"
+        },
+        "bottlenecks": [
+          "Write in Excel 0.94 min per item - bottleneck vs 1.2 min total",
+          "Transportation waste: 3 values per item carried Notepad to Excel by copy-paste x7 copies",
+          "Motion waste: 13 application switches + 3 navigation steps per item",
+          "Defects and rework: B2 written 4 times, A4/B4/C4/B5 written 2 times each requiring correction"
+        ],
+        "quick_wins": [
+          "Stop re-typing column E - copy/map from invoice file, it already exists there",
+          "Convert AP Tracker range to Excel Table with headers so next empty row is automatic",
+          "Add Excel Data Validation dropdowns/XLOOKUP for columns D and E to prevent B2/A4/B4 corrections",
+          "Process invoices in batch folder order without reopening/switching Notepad per field"
+        ],
+        "recommendations": [
+          {
+            "approach": "rpa",
+            "effort": "days",
+            "how": "In Power Automate Desktop loop the invoice folder for INV-*.txt with Get files in folder. For each file use Read text from file plus Parse text with regex to extract invoice number and vendor name. Use Launch Excel once then Write to Excel worksheet to append one row per file to the AP Tracker Table columns A-C and map column E from same vendor variable, leaving D blank.",
+            "steps_covered": "1-15, 18-19",
+            "time_saved_pct": 75,
+            "title": "Auto-read INV-*.txt files and append rows to AP Tracker with Power Automate Desktop",
+            "tools": [
+              "Power Automate Desktop",
+              "Excel"
+            ],
+            "why": "Theory of Constraints fixes the 0.94 min/item Write in Excel bottleneck and ECRS automates transportation/motion waste evidenced by 7 hand copies and 13 switches"
+          },
+          {
+            "approach": "built_in_feature",
+            "effort": "hours",
+            "how": "Convert tracker to a formal Excel Table with headers InvoiceNo, Vendor, Vendor2, D, E. Set column E to formula =[@Vendor] or mapping instead of typing. Add Data Validation list plus XLOOKUP for column D once its source is documented and lock columns A-C/E.",
+            "steps_covered": "7, 15-17, 19",
+            "time_saved_pct": 10,
+            "title": "Eliminate retyping with Excel Table plus validation for columns D/E",
+            "tools": [
+              "Excel"
+            ],
+            "why": "ECRS eliminate retyping proven duplicate column E and ECRS simplify free typing in D plus poka-yoke to make B2 4x and A4/B4/C4/B5 corrections impossible"
+          },
+          {
+            "approach": "process_change",
+            "effort": "hours",
+            "how": "Keep column D manual for now. Ask AP owner to document whether the 10-character typed value is a fixed rule, lookup, or judgement and log 20 examples. PAD flow highlights D blank for human fill until rule is proven, then convert to lookup.",
+            "steps_covered": "16-17",
+            "time_saved_pct": 5,
+            "title": "Keep column D manual until its source rule is confirmed",
+            "tools": [
+              "Excel"
+            ],
+            "why": "Honest automation - never invent source of typed value; avoids defect risk from automating judgement per control plan"
+          }
+        ],
+        "risks": [
+          "TXT label variation breaks regex parsing - need exception folder and log for unmatched files",
+          "Concurrent Excel edits overwrite rows if tracker not on OneDrive/SharePoint with Table locking",
+          "Automating column D before its rule is known would create wrong postings",
+          "Duplicate runs could double-append same INV file without processed-file check"
+        ],
+        "source": "ai",
+        "web_results": [
+          {
+            "title": "File actions reference - Power Automate",
+            "url": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file",
+            "snippet": ""
+          },
+          {
+            "title": "Excel actions reference - Power Automate",
+            "url": "https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/excel",
+            "snippet": ""
+          },
+          {
+            "title": "Excel Online (Business)",
+            "url": "https://learn.microsoft.com/ms-my/connectors/excelonlinebusiness/",
+            "snippet": ""
+          }
+        ],
+        "catalog": [
+          {
+            "name": "Microsoft Power Automate",
+            "url": "https://www.microsoft.com/power-platform/products/power-automate",
+            "fit": "Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors"
+          },
+          {
+            "name": "Excel Power Query and Office Scripts",
+            "url": "https://learn.microsoft.com/office/dev/scripts/overview/excel",
+            "fit": "Repeatable imports, clean-up and transformations inside Excel"
+          },
+          {
+            "name": "Python with pandas / openpyxl",
+            "url": "https://pandas.pydata.org",
+            "fit": "Scripts that read, merge and write spreadsheets and CSV files"
+          }
+        ]
+      },
+      "integration": {
+        "data_flows": [
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column A"
+            },
+            "how": "copy-paste",
+            "steps": [
+              2,
+              10
+            ],
+            "chars": 0,
+            "runs": "1 of 1",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column B"
+            },
+            "how": "copy-paste",
+            "steps": [
+              4,
+              12,
+              19
+            ],
+            "chars": 0,
+            "runs": "1 of 1",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column C"
+            },
+            "how": "copy-paste",
+            "steps": [
+              7,
+              15
+            ],
+            "chars": 0,
+            "runs": "1 of 1",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": null,
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column D"
+            },
+            "how": "typed",
+            "steps": [
+              16
+            ],
+            "chars": 10,
+            "runs": "1 of 1",
+            "confirmed_source": null,
+            "value_match": null,
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          },
+          {
+            "from": null,
+            "to": {
+              "system": "Excel",
+              "document": "AP Tracker",
+              "field": "column E"
+            },
+            "how": "typed",
+            "steps": [
+              17
+            ],
+            "chars": 8,
+            "runs": "1 of 1",
+            "confirmed_source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "value_match": "1 of 1 runs",
+            "mismatched_runs": [],
+            "origin": null,
+            "likely_source": null
+          }
+        ],
+        "open_questions": [
+          "Where does **Excel · AP Tracker · column D** come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?"
+        ],
+        "systems": [
+          {
+            "system": "Notepad",
+            "kind": "desktop",
+            "role": "source",
+            "documents": [
+              "INV-#.txt"
+            ],
+            "options": [
+              {
+                "method": "API",
+                "name": "Notepad API",
+                "status": "unknown, ask the vendor or IT",
+                "url": "",
+                "note": "Official pages found are user/feature support and release tracking, not API reference: Microsoft Learn Notepad page 'https://learn.microsoft.com/windows/apps/notepad/', Support article 'https://support.microsoft.com/en-us/help/260563/how-to-use-notepad-to-create-a-log-file', and Notepad++ 'Plugin documentation (https://npp-user-manual.org/docs/plugins/) for API reference'. Release notes state 'This page tracks Notepad app updates announced for Windows Insider flights' with no records API. A web tool 'http://notepad.cc' is mentioned only as 'complementary' online tool with no official API docs found. No cited public API documentation: ask the vendor or IT."
+              },
+              {
+                "method": "RPA",
+                "name": "Power Automate Desktop or UiPath",
+                "status": "works without an API",
+                "url": "https://learn.microsoft.com/power-automate/desktop-flows/introduction",
+                "note": "Screen automation for desktop applications without an API."
+              }
+            ],
+            "search_results": [
+              {
+                "title": "GitHub - spinchange/notepad: A single-file browser notepad with real file system access · GitHub",
+                "url": "https://github.com/spinchange/notepad",
+                "snippet": ""
+              },
+              {
+                "title": "craxcurl/sahayak-software - README.md",
+                "url": "https://github.com/craxcurl/sahayak-software/blob/HEAD/README.md",
+                "snippet": ""
+              },
+              {
+                "title": "GitHub - Daskott/NotePad: A simple NotePad Application built with react-js · GitHub",
+                "url": "https://github.com/Daskott/NotePad",
+                "snippet": ""
+              },
+              {
+                "title": "How to open a web page in notepad++-notepad-php.cn",
+                "url": "https://m.php.cn/faq/738747.html",
+                "snippet": ""
+              }
+            ]
+          },
+          {
+            "system": "Excel",
+            "kind": "spreadsheet",
+            "role": "target",
+            "documents": [
+              "AP Tracker"
+            ],
+            "options": [
+              {
+                "method": "API",
+                "name": "Microsoft Graph Excel API",
+                "status": "documented",
+                "url": "https://learn.microsoft.com/graph/api/resources/excel",
+                "note": "Only for workbooks stored in OneDrive or SharePoint, with the data formatted as an Excel table."
+              },
+              {
+                "method": "n8n",
+                "name": "n8n Microsoft Excel 365 node",
+                "status": "documented",
+                "url": "https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftexcel/"
+              },
+              {
+                "method": "SQL",
+                "name": "Keep the tracker in a database table instead",
+                "status": "option",
+                "url": "https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/",
+                "note": "Safer than a shared workbook for automation. `flowsme build` writes a starter SQL script."
+              },
+              {
+                "method": "File",
+                "name": "Read and write the file directly (n8n Read/Write Files)",
+                "status": "documented",
+                "url": "https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.readwritefile/",
+                "note": "If the workbook stays on a PC or file share."
+              }
+            ],
+            "search_results": []
+          }
+        ],
+        "ui_actions": [
+          {
+            "step": 1,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 2,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "A4",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 3,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 4,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B4",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 5,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 6,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B4",
+            "role": "DataItemControl",
+            "action": "click",
+            "copies": false
+          },
+          {
+            "step": 7,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "C4",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 8,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "INV-1004.txt",
+            "role": "TextControl",
+            "action": "click",
+            "copies": false
+          },
+          {
+            "step": 9,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 10,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "A5",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 11,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 12,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B5",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 13,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 14,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B5",
+            "role": "DataItemControl",
+            "action": "click",
+            "copies": false
+          },
+          {
+            "step": 15,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "C5",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          },
+          {
+            "step": 16,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "D5",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": null,
+            "confirmed": false,
+            "typed_chars": 10
+          },
+          {
+            "step": 17,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "E5",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 8
+          },
+          {
+            "step": 18,
+            "system": "Notepad",
+            "page": "INV-#.txt",
+            "element": "Text editor",
+            "role": "DocumentControl",
+            "action": "click",
+            "copies": true
+          },
+          {
+            "step": 19,
+            "system": "Excel",
+            "page": "AP Tracker",
+            "element": "B5",
+            "role": "DataItemControl",
+            "action": "fill",
+            "source": {
+              "system": "Notepad",
+              "document": "INV-#.txt",
+              "field": "Text editor"
+            },
+            "confirmed": true,
+            "typed_chars": 0
+          }
+        ],
+        "sequence": [
+          {
+            "n": 1,
+            "stage": "Trigger",
+            "system": "",
+            "what": "Start on a schedule or by hand: the recording shows no clear trigger.",
+            "fields": [],
+            "method": "n8n Schedule Trigger",
+            "status": "option"
+          },
+          {
+            "n": 2,
+            "stage": "Extract",
+            "system": "Notepad",
+            "what": "Read Text editor from INV-#.txt.",
+            "fields": [],
+            "method": "Screen automation (Power Automate Desktop / UiPath) unless the vendor offers an API",
+            "status": "unknown, ask the vendor or IT"
+          },
+          {
+            "n": 3,
+            "stage": "Write",
+            "system": "Excel",
+            "what": "Write into AP Tracker.",
+            "fields": [
+              "column A ← Text editor (Notepad)",
+              "column B ← Text editor (Notepad)",
+              "column C ← Text editor (Notepad)",
+              "column D ← typed by hand (10 characters): open question",
+              "column E ← Text editor (Notepad): typed by hand, but the fingerprints prove it is the same value (1 of 1 runs)"
+            ],
+            "method": "Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table",
+            "status": "documented"
+          },
+          {
+            "n": 4,
+            "stage": "Decide",
+            "system": "",
+            "what": "Where does Excel · AP Tracker · column D come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?",
+            "fields": [],
+            "method": "Business decision before building",
+            "status": "open"
+          },
+          {
+            "n": 5,
+            "stage": "Human check",
+            "system": "",
+            "what": "Verifying the correct invoice file and tracker row before pasting",
+            "fields": [],
+            "method": "Keep a person here, or define the rule",
+            "status": "open"
+          }
+        ]
+      },
+      "improvement": {
+        "tools": {
+          "customer_tools": [
+            {
+              "given": "Microsoft 365",
+              "tool": "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+              "caps": [
+                "email",
+                "spreadsheet"
+              ],
+              "note": "often already licensed; API access needs an Entra ID app and admin consent"
+            },
+            {
+              "given": "Power Automate",
+              "tool": "Power Automate (cloud flows)",
+              "caps": [
+                "orchestration",
+                "email",
+                "spreadsheet"
+              ],
+              "note": "standard connectors come with many Microsoft 365 plans; premium connectors cost extra"
+            },
+            {
+              "given": "Power BI",
+              "tool": "Power BI",
+              "caps": [
+                "reporting"
+              ],
+              "note": "Pro licence per user to share reports"
+            }
+          ],
+          "stages": [
+            {
+              "n": 2,
+              "stage": "Extract",
+              "system": "Notepad",
+              "minutes": 0.24823333333333156,
+              "manual": 0.0,
+              "options": [
+                {
+                  "method": "Desktop automation",
+                  "caps": [
+                    "desktop_automation"
+                  ],
+                  "rate": 0.8
+                }
+              ],
+              "vendor_api": {
+                "method": "API",
+                "name": "Notepad API",
+                "status": "unknown, ask the vendor or IT",
+                "url": "",
+                "note": "Official pages found are user/feature support and release tracking, not API reference: Microsoft Learn Notepad page 'https://learn.microsoft.com/windows/apps/notepad/', Support article 'https://support.microsoft.com/en-us/help/260563/how-to-use-notepad-to-create-a-log-file', and Notepad++ 'Plugin documentation (https://npp-user-manual.org/docs/plugins/) for API reference'. Release notes state 'This page tracks Notepad app updates announced for Windows Insider flights' with no records API. A web tool 'http://notepad.cc' is mentioned only as 'complementary' online tool with no official API docs found. No cited public API documentation: ask the vendor or IT."
+              },
+              "with_your_tools": {
+                "n": 2,
+                "method": "stays manual",
+                "tools": [],
+                "minutes_after": 0.24823333333333156
+              },
+              "with_suggestions": {
+                "n": 2,
+                "method": "Desktop automation",
+                "tools": [
+                  "Power Automate Desktop"
+                ],
+                "minutes_after": 0.0496466666666663
+              }
+            },
+            {
+              "n": 3,
+              "stage": "Write",
+              "system": "Excel",
+              "minutes": 0.9374833333333349,
+              "manual": 0.04601666666666707,
+              "options": [
+                {
+                  "method": "Spreadsheet API",
+                  "caps": [
+                    "spreadsheet"
+                  ],
+                  "rate": 0.95
+                },
+                {
+                  "method": "Database table instead of the workbook",
+                  "caps": [
+                    "database"
+                  ],
+                  "rate": 0.95
+                },
+                {
+                  "method": "Desktop automation",
+                  "caps": [
+                    "desktop_automation"
+                  ],
+                  "rate": 0.8
+                }
+              ],
+              "vendor_api": null,
+              "with_your_tools": {
+                "n": 3,
+                "method": "Spreadsheet API",
+                "tools": [
+                  "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+                  "Power Automate (cloud flows)"
+                ],
+                "minutes_after": 0.0905900000000005
+              },
+              "with_suggestions": {
+                "n": 3,
+                "method": "Spreadsheet API",
+                "tools": [
+                  "Microsoft 365 (Outlook and Excel through Microsoft Graph)",
+                  "Power Automate (cloud flows)"
+                ],
+                "minutes_after": 0.0905900000000005
+              }
+            }
+          ],
+          "runner_yours": "Power Automate (cloud flows)",
+          "runner_suggested": "Power Automate (cloud flows)",
+          "other_minutes": 0,
+          "minutes_per_run": 1.2,
+          "with_your_tools": 0.3,
+          "with_suggestions": 0.1,
+          "suggested_additions": [
+            {
+              "tool": "Power Automate Desktop",
+              "adds": [
+                "desktop_automation",
+                "browser_automation",
+                "pdf_text"
+              ],
+              "cost": "free on Windows for attended runs; unattended runs need a licence",
+              "minutes_saved_per_run": 0.2,
+              "minutes_left_per_run": 0.1
+            }
+          ],
+          "report_tool": "Power BI",
+          "rates": {
+            "api": 0.95,
+            "database": 0.95,
+            "ai_extraction": 0.85,
+            "pdf_rules": 0.7,
+            "api_wrapper": 0.9,
+            "browser": 0.85,
+            "rpa": 0.8
+          }
+        },
+        "validation": {
+          "checks": [
+            {
+              "where": "Excel · AP Tracker · column A",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step 2, 10"
+            },
+            {
+              "where": "Excel · AP Tracker · column B",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step 4, 12, 19"
+            },
+            {
+              "where": "Excel · AP Tracker · column C",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically.",
+              "evidence": "copied by hand at step 7, 15"
+            },
+            {
+              "where": "Excel · AP Tracker · column D",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Replace free typing with a rule, a lookup or a drop-down.",
+              "evidence": "typed by hand (10 characters) at step 16"
+            },
+            {
+              "where": "Excel · AP Tracker · column E",
+              "type": "prevent",
+              "method": "poka_yoke",
+              "check": "Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-typing it; after writing, compare the two automatically.",
+              "evidence": "typed by hand at step 17; the fingerprints show it is the same value as Notepad · INV-#.txt · Text editor (1 of 1 runs)"
+            },
+            {
+              "where": "corrections",
+              "type": "detect",
+              "method": "defects",
+              "check": "Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys).",
+              "evidence": "'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "where": "every run",
+              "type": "control",
+              "method": "control_plan",
+              "check": "Reconcile counts: items received = rows written = records submitted. Investigate any gap.",
+              "evidence": "standard control for multi-system hand-offs"
+            },
+            {
+              "where": "every run",
+              "type": "control",
+              "method": "control_plan",
+              "check": "Log each item with its result (done / exception / failed) and review exceptions daily.",
+              "evidence": "needed to measure error rate after go-live"
+            }
+          ],
+          "rework": [
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B2' in Excel was written 4 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'A4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'C4' in Excel was written 2 times: a value had to be corrected."
+            },
+            {
+              "run": null,
+              "kind": "overwrite",
+              "text": "'B5' in Excel was written 2 times: a value had to be corrected."
+            }
+          ],
+          "manual_entries_per_item": 5,
+          "manual_entries_after": 1
+        },
+        "lean": {
+          "steps": [
+            {
+              "step": 1,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.6579999999999586,
+              "description": "Copies the invoice number from the supplier invoice file."
+            },
+            {
+              "step": 2,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 3.1760000000000446,
+              "description": "Pastes the invoice number into the invoice tracker."
+            },
+            {
+              "step": 3,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.7449999999999477,
+              "description": "Copies the vendor name from the supplier invoice file."
+            },
+            {
+              "step": 4,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 3.1060000000000514,
+              "description": "Pastes the vendor name into the invoice tracker."
+            },
+            {
+              "step": 5,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.6649999999999636,
+              "description": "Copies the vendor name from the supplier invoice file."
+            },
+            {
+              "step": 6,
+              "class": "NVA",
+              "waste": "motion",
+              "why": "navigating: opening, finding, switching, scrolling",
+              "seconds": 2.173000000000002,
+              "description": "Pastes the vendor name into the tracker and moves to the next cell."
+            },
+            {
+              "step": 7,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 16.384000000000015,
+              "description": "Paste in \"C4\", then press Esc in Excel"
+            },
+            {
+              "step": 8,
+              "class": "NVA",
+              "waste": "motion",
+              "why": "navigating: opening, finding, switching, scrolling",
+              "seconds": 3.1299999999999955,
+              "description": "Opens the next supplier invoice file in the text editor."
+            },
+            {
+              "step": 9,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.670000000000016,
+              "description": "Copies the invoice number from the supplier invoice."
+            },
+            {
+              "step": 10,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 3.1159999999999854,
+              "description": "Pastes the invoice number into the next row of the tracker."
+            },
+            {
+              "step": 11,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.6750000000000114,
+              "description": "Copies the vendor name from the supplier invoice."
+            },
+            {
+              "step": 12,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 3.1129999999999995,
+              "description": "Pastes the invoice number from the invoice file into the tracker"
+            },
+            {
+              "step": 13,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.6730000000000018,
+              "description": "Copies the vendor name from the invoice file for entry"
+            },
+            {
+              "step": 14,
+              "class": "NVA",
+              "waste": "motion",
+              "why": "navigating: opening, finding, switching, scrolling",
+              "seconds": 2.159999999999968,
+              "description": "Enters the vendor name into the vendor column of tracker"
+            },
+            {
+              "step": 15,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.521000000000015,
+              "description": "Paste in \"C5\", then press Esc in Excel"
+            },
+            {
+              "step": 16,
+              "class": "VA?",
+              "waste": "",
+              "why": "enters information whose source the recording doesn't show: may be judgement",
+              "seconds": 2.761000000000024,
+              "description": "Enters a value in column D of the tracker"
+            },
+            {
+              "step": 17,
+              "class": "NVA",
+              "waste": "over_processing",
+              "why": "re-types a value that already exists elsewhere",
+              "seconds": 12.984999999999957,
+              "description": "Enters a value in column E of the tracker"
+            },
+            {
+              "step": 18,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 1.6779999999999973,
+              "description": "Copies the vendor name from the invoice file"
+            },
+            {
+              "step": 19,
+              "class": "NVA",
+              "waste": "transportation",
+              "why": "moves data between applications by hand",
+              "seconds": 5.754000000000019,
+              "description": "Pastes the vendor name into the tracker"
+            }
+          ],
+          "time_by_class": {
+            "NVA": 1.14,
+            "VA?": 0.05
+          },
+          "process_cycle_efficiency": 0.04,
+          "wastes": [
+            {
+              "id": "transportation",
+              "name": "Transportation waste",
+              "evidence": "3 values per item carried between applications by copy-paste",
+              "steps": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                7,
+                9,
+                10,
+                11,
+                12,
+                13,
+                15,
+                18,
+                19
+              ],
+              "minutes_per_item": 0.8
+            },
+            {
+              "id": "motion",
+              "name": "Motion waste",
+              "evidence": "13 window switches and 3 navigation steps per item",
+              "steps": [
+                6,
+                8,
+                14
+              ],
+              "minutes_per_item": 0.12
+            },
+            {
+              "id": "over_processing",
+              "name": "Over-processing waste",
+              "evidence": "1 value(s) typed by hand that the fingerprints prove already exist elsewhere (column E = Notepad · INV-#.txt · Text editor)",
+              "steps": [
+                17
+              ],
+              "minutes_per_item": 0.22
+            },
+            {
+              "id": "defects",
+              "name": "Defects and rework",
+              "evidence": "'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected.",
+              "steps": [],
+              "minutes_per_item": 0.0
+            },
+            {
+              "id": "skills",
+              "name": "Unused talent",
+              "steps": [],
+              "minutes_per_item": 0,
+              "evidence": "96% of this person's time on this task is moving and re-typing data"
+            }
+          ],
+          "bottleneck": {
+            "stage": "Write",
+            "system": "Excel",
+            "minutes": 0.94
+          },
+          "ecrs": [
+            {
+              "step": "Eliminate",
+              "idea": "Stop re-typing values that already exist: column E in Excel."
+            },
+            {
+              "step": "Simplify",
+              "idea": "Turn free typing into rules, lookups or drop-downs: column D (Excel)."
+            },
+            {
+              "step": "Automate",
+              "idea": "Then automate what is left, as in the tool plan below."
+            }
+          ],
+          "sipoc": {
+            "suppliers": [
+              "Notepad"
+            ],
+            "inputs": [
+              "Notepad · INV-#.txt · Text editor"
+            ],
+            "process": [
+              "Trigger: Start on a schedule or by hand: the recording shows no clear trigger.",
+              "Extract: Notepad",
+              "Write: Excel"
+            ],
+            "outputs": [
+              "Excel · AP Tracker"
+            ],
+            "customers": [
+              "Who uses these outputs? (not visible in the recording: ask)"
+            ]
+          },
+          "ctqs": [
+            "Each item done within the agreed time (now about 1.2 min of hands-on work)"
+          ],
+          "error_exposure": {
+            "manual_entries_per_item": 5,
+            "manual_entries_after": 1,
+            "items_per_month": 20,
+            "by_rate": [
+              {
+                "per_field": 0.00143,
+                "context": "Nahm et al. 2008: source to database, clinical trials",
+                "source": "https://doi.org/10.1371/journal.pone.0003049",
+                "errors_per_month_now": 0.1,
+                "errors_per_month_after": 0.0,
+                "dpmo": 1430,
+                "sigma": 4.0
+              },
+              {
+                "per_field": 0.0029,
+                "context": "Garza et al. 2025: meta-analysis of 93 studies, single data entry",
+                "source": "https://doi.org/10.1016/j.ijmedinf.2024.105749",
+                "errors_per_month_now": 0.3,
+                "errors_per_month_after": 0.1,
+                "dpmo": 2900,
+                "sigma": 4.0
+              },
+              {
+                "per_field": 0.037,
+                "context": "Mays & Mathias 2019: manual transcription of numeric results",
+                "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6351970/",
+                "errors_per_month_now": 3.7,
+                "errors_per_month_after": 0.7,
+                "dpmo": 37000,
+                "sigma": 3.0
+              }
+            ]
+          },
+          "kpis": [
+            "Items processed per day",
+            "Hands-on minutes per item (target: 0.1 or less)",
+            "Exceptions sent to a person (%)",
+            "First-pass yield: items done with no correction (%)",
+            "Errors caught by checks, by type",
+            "Duplicates blocked"
+          ]
+        }
+      },
+      "steps_one_run": [
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53
+      ],
+      "runs_step_indexes": []
+    }
+  ],
+  "steps": [
+    {
+      "index": 0,
+      "start": 14.521,
+      "duration": 2.3,
+      "app": "Notepad",
+      "action": "click",
+      "target": "INV-1001.txt. Unmodified.",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Selects the supplier invoice file in the text editor",
+      "screenshot": "shots/000002.jpg"
+    },
+    {
+      "index": 1,
+      "start": 16.799,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+c"
+      ],
+      "description": "Copies the invoice number from the supplier invoice",
+      "screenshot": "shots/000002.jpg"
+    },
+    {
+      "index": 2,
+      "start": 18.493,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "A2",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the invoice number into the invoice tracker",
+      "screenshot": "shots/000002.jpg"
+    },
+    {
+      "index": 3,
+      "start": 21.609,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the supplier invoice",
+      "screenshot": "shots/000003.jpg"
+    },
+    {
+      "index": 4,
+      "start": 23.299,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "B2",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the vendor name from the invoice file into the tracker",
+      "screenshot": "shots/000004.jpg"
+    },
+    {
+      "index": 5,
+      "start": 26.417,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the invoice total from the invoice file for entry",
+      "screenshot": "shots/000005.jpg"
+    },
+    {
+      "index": 6,
+      "start": 28.086,
+      "duration": 1.6,
+      "app": "Excel",
+      "action": "click",
+      "target": "C2",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Selects the amount column in the tracker for the invoice total",
+      "screenshot": "shots/000005.jpg"
+    },
+    {
+      "index": 7,
+      "start": 29.717,
+      "duration": 1.5,
+      "app": "Excel",
+      "action": "shortcut",
+      "target": "B2",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Paste in \"B2\", then press Esc in Excel",
+      "screenshot": null
+    },
+    {
+      "index": 8,
+      "start": 31.227,
+      "duration": 2.8,
+      "app": "Excel",
+      "action": "click",
+      "target": "D2",
+      "chars_typed": 10,
+      "shortcuts": [],
+      "description": "Enters the due date from the invoice into column D of the tracker",
+      "screenshot": "shots/000006.jpg"
+    },
+    {
+      "index": 9,
+      "start": 33.995,
+      "duration": 49.7,
+      "app": "Excel",
+      "action": "click",
+      "target": "E2",
+      "chars_typed": 8,
+      "shortcuts": [],
+      "description": "Enters a value in column E of the tracker",
+      "screenshot": "shots/000007.jpg"
+    },
+    {
+      "index": 10,
+      "start": 83.731,
+      "duration": 2.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "B2",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+x"
+      ],
+      "description": "Cuts the vendor cell content in the tracker and moves to next field",
+      "screenshot": "shots/000008.jpg"
+    },
+    {
+      "index": 11,
+      "start": 85.806,
+      "duration": 1.5,
+      "app": "Excel",
+      "action": "shortcut",
+      "target": "C2",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Paste in \"C2\", then press Esc in Excel",
+      "screenshot": null
+    },
+    {
+      "index": 12,
+      "start": 87.351,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the first supplier invoice file.",
+      "screenshot": "shots/000009.jpg"
+    },
+    {
+      "index": 13,
+      "start": 89.031,
+      "duration": 15.4,
+      "app": "Excel",
+      "action": "click",
+      "target": "B2",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the vendor name into the tracker spreadsheet.",
+      "screenshot": "shots/000010.jpg"
+    },
+    {
+      "index": 14,
+      "start": 104.39,
+      "duration": 2.2,
+      "app": "Notepad",
+      "action": "click",
+      "target": "INV-1002.txt. Unmodified.",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Opens the second supplier invoice file in the editor.",
+      "screenshot": "shots/000012.jpg"
+    },
+    {
+      "index": 15,
+      "start": 106.631,
+      "duration": 1.6,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+c"
+      ],
+      "description": "Copies the invoice number from the second supplier invoice file.",
+      "screenshot": "shots/000013.jpg"
+    },
+    {
+      "index": 16,
+      "start": 108.275,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "A3",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the invoice number from the invoice file into the tracker.",
+      "screenshot": "shots/000014.jpg"
+    },
+    {
+      "index": 17,
+      "start": 111.377,
+      "duration": 18.8,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Selects the vendor name in the invoice file for copying.",
+      "screenshot": "shots/000015.jpg"
+    },
+    {
+      "index": 18,
+      "start": 130.138,
+      "duration": 1.4,
+      "app": "Notepad",
+      "action": "click",
+      "target": "PopupHost",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard"
+      ],
+      "description": "Copies the vendor name from the invoice file.",
+      "screenshot": "shots/000017.jpg"
+    },
+    {
+      "index": 19,
+      "start": 131.586,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "B3",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the vendor name from the invoice file into the tracker.",
+      "screenshot": "shots/000018.jpg"
+    },
+    {
+      "index": 20,
+      "start": 134.714,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the supplier invoice file.",
+      "screenshot": "shots/000019.jpg"
+    },
+    {
+      "index": 21,
+      "start": 136.392,
+      "duration": 2.2,
+      "app": "Excel",
+      "action": "click",
+      "target": "B3",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Pastes the vendor name into the invoice tracker.",
+      "screenshot": "shots/000020.jpg"
+    },
+    {
+      "index": 22,
+      "start": 138.561,
+      "duration": 1.5,
+      "app": "Excel",
+      "action": "shortcut",
+      "target": "C3",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Paste in \"C3\", then press Esc in Excel",
+      "screenshot": null
+    },
+    {
+      "index": 23,
+      "start": 140.078,
+      "duration": 2.8,
+      "app": "Excel",
+      "action": "click",
+      "target": "D3",
+      "chars_typed": 10,
+      "shortcuts": [],
+      "description": "Enters the due date from the supplier invoice into the tracker",
+      "screenshot": "shots/000022.jpg"
+    },
+    {
+      "index": 24,
+      "start": 142.859,
+      "duration": 18.3,
+      "app": "Excel",
+      "action": "click",
+      "target": "E3",
+      "chars_typed": 8,
+      "shortcuts": [],
+      "description": "Enters a value in column E of the tracker for the invoice",
+      "screenshot": "shots/000023.jpg"
+    },
+    {
+      "index": 25,
+      "start": 161.169,
+      "duration": 2.3,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Close Tab",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Selects the supplier invoice file in the text editor",
+      "screenshot": "shots/000024.jpg"
+    },
+    {
+      "index": 26,
+      "start": 163.423,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+c"
+      ],
+      "description": "Copies the invoice number from the supplier invoice",
+      "screenshot": "shots/000025.jpg"
+    },
+    {
+      "index": 27,
+      "start": 165.119,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "A4",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the invoice number into the invoice tracker",
+      "screenshot": "shots/000026.jpg"
+    },
+    {
+      "index": 28,
+      "start": 168.217,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the supplier invoice",
+      "screenshot": "shots/000027.jpg"
+    },
+    {
+      "index": 29,
+      "start": 169.891,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "B4",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the vendor name from the invoice file into the tracker",
+      "screenshot": "shots/000028.jpg"
+    },
+    {
+      "index": 30,
+      "start": 173.029,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the invoice total from the invoice file for entry",
+      "screenshot": "shots/000030.jpg"
+    },
+    {
+      "index": 31,
+      "start": 174.719,
+      "duration": 2.2,
+      "app": "Excel",
+      "action": "click",
+      "target": "B4",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Selects the amount column in the tracker for the invoice total",
+      "screenshot": "shots/000031.jpg"
+    },
+    {
+      "index": 32,
+      "start": 176.883,
+      "duration": 1.5,
+      "app": "Excel",
+      "action": "shortcut",
+      "target": "C4",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Paste in \"C4\", then press Esc in Excel",
+      "screenshot": null
+    },
+    {
+      "index": 33,
+      "start": 178.406,
+      "duration": 2.8,
+      "app": "Excel",
+      "action": "click",
+      "target": "D4",
+      "chars_typed": 10,
+      "shortcuts": [],
+      "description": "Enters the due date from the invoice into column D of the tracker",
+      "screenshot": "shots/000033.jpg"
+    },
+    {
+      "index": 34,
+      "start": 181.16,
+      "duration": 4.3,
+      "app": "Excel",
+      "action": "click",
+      "target": "E4",
+      "chars_typed": 8,
+      "shortcuts": [],
+      "description": "Enters a value in column E of the tracker",
+      "screenshot": "shots/000034.jpg"
+    },
+    {
+      "index": 35,
+      "start": 262.91,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the invoice number from the supplier invoice file.",
+      "screenshot": "shots/000037.jpg"
+    },
+    {
+      "index": 36,
+      "start": 264.568,
+      "duration": 3.2,
+      "app": "Excel",
+      "action": "click",
+      "target": "A4",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the invoice number into the invoice tracker.",
+      "screenshot": "shots/000038.jpg"
+    },
+    {
+      "index": 37,
+      "start": 267.744,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the supplier invoice file.",
+      "screenshot": "shots/000039.jpg"
+    },
+    {
+      "index": 38,
+      "start": 269.489,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "B4",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the vendor name into the invoice tracker.",
+      "screenshot": "shots/000039.jpg"
+    },
+    {
+      "index": 39,
+      "start": 272.595,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the supplier invoice file.",
+      "screenshot": "shots/000040.jpg"
+    },
+    {
+      "index": 40,
+      "start": 274.26,
+      "duration": 2.2,
+      "app": "Excel",
+      "action": "click",
+      "target": "B4",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Pastes the vendor name into the tracker and moves to the next cell.",
+      "screenshot": "shots/000041.jpg"
+    },
+    {
+      "index": 41,
+      "start": 276.433,
+      "duration": 16.4,
+      "app": "Excel",
+      "action": "shortcut",
+      "target": "C4",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Paste in \"C4\", then press Esc in Excel",
+      "screenshot": null
+    },
+    {
+      "index": 42,
+      "start": 292.817,
+      "duration": 3.1,
+      "app": "Notepad",
+      "action": "click",
+      "target": "INV-1004.txt",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Opens the next supplier invoice file in the text editor.",
+      "screenshot": "shots/000043.jpg"
+    },
+    {
+      "index": 43,
+      "start": 295.947,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+c"
+      ],
+      "description": "Copies the invoice number from the supplier invoice.",
+      "screenshot": "shots/000044.jpg"
+    },
+    {
+      "index": 44,
+      "start": 297.617,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "A5",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the invoice number into the next row of the tracker.",
+      "screenshot": "shots/000045.jpg"
+    },
+    {
+      "index": 45,
+      "start": 300.733,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the supplier invoice.",
+      "screenshot": "shots/000046.jpg"
+    },
+    {
+      "index": 46,
+      "start": 302.408,
+      "duration": 3.1,
+      "app": "Excel",
+      "action": "click",
+      "target": "B5",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Pastes the invoice number from the invoice file into the tracker",
+      "screenshot": "shots/000046.jpg"
+    },
+    {
+      "index": 47,
+      "start": 305.521,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the invoice file for entry",
+      "screenshot": "shots/000047.jpg"
+    },
+    {
+      "index": 48,
+      "start": 307.194,
+      "duration": 2.2,
+      "app": "Excel",
+      "action": "click",
+      "target": "B5",
+      "chars_typed": 0,
+      "shortcuts": [],
+      "description": "Enters the vendor name into the vendor column of tracker",
+      "screenshot": "shots/000048.jpg"
+    },
+    {
+      "index": 49,
+      "start": 309.354,
+      "duration": 1.5,
+      "app": "Excel",
+      "action": "shortcut",
+      "target": "C5",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v"
+      ],
+      "description": "Paste in \"C5\", then press Esc in Excel",
+      "screenshot": null
+    },
+    {
+      "index": 50,
+      "start": 310.875,
+      "duration": 2.8,
+      "app": "Excel",
+      "action": "click",
+      "target": "D5",
+      "chars_typed": 10,
+      "shortcuts": [],
+      "description": "Enters a value in column D of the tracker",
+      "screenshot": "shots/000048.jpg"
+    },
+    {
+      "index": 51,
+      "start": 313.636,
+      "duration": 13.0,
+      "app": "Excel",
+      "action": "click",
+      "target": "E5",
+      "chars_typed": 8,
+      "shortcuts": [],
+      "description": "Enters a value in column E of the tracker",
+      "screenshot": "shots/000048.jpg"
+    },
+    {
+      "index": 52,
+      "start": 326.621,
+      "duration": 1.7,
+      "app": "Notepad",
+      "action": "click",
+      "target": "Text editor",
+      "chars_typed": 0,
+      "shortcuts": [
+        "clipboard",
+        "ctrl+c"
+      ],
+      "description": "Copies the vendor name from the invoice file",
+      "screenshot": "shots/000049.jpg"
+    },
+    {
+      "index": 53,
+      "start": 328.299,
+      "duration": 5.8,
+      "app": "Excel",
+      "action": "click",
+      "target": "B5",
+      "chars_typed": 0,
+      "shortcuts": [
+        "ctrl+v",
+        "ctrl+s"
+      ],
+      "description": "Pastes the vendor name into the tracker",
+      "screenshot": "shots/000049.jpg"
+    }
+  ]
+}

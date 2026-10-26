@@ -1,0 +1,8 @@
+DESKTOP FLOW: AP_Workspace_Launcher
+1. Launch Outlook (if not running) -> Wait for 'Inbox' window
+2. UI Automation: Click View > Filter > Unread [fallback: Send Keys Alt+V,F,U] -> Verify filter label = 'Unread'
+3. Open Document: FilePath = %AP_Tracker_Path% (e.g. SharePoint synced path) ReadOnly=false
+4. Excel Action: Activate Worksheet 'October' -> GoTo Cell A1 -> Freeze Panes check
+5. Launch Chrome: URL = %Vendor_Portal_Payments_URL% (saved 22-char address from step 7) -> Wait for selector: text='Payments'
+6. Arrange Windows: Outlook Left, Excel Center, Chrome Right + Focus Excel!October!A1
+7. On Error: Screenshot + Log to %Desktop%\AP_Launcher_Log.txt and stop with message

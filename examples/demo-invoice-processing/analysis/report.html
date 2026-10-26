@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workflow analysis: Demo: invoice processing (synthetic)</title>
+<style>
+  :root { --bg:#fbfaf8; --fg:#1d1d1f; --muted:#5f6368; --line:#e3e1dc; --accent:#2f5bd3; --card:#ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16171a; --fg:#e8e8ea; --muted:#a0a3a8; --line:#2c2e33; --accent:#8fb0ff; --card:#1d1f23; }
+  }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:980px; margin:0 auto; padding:32px 16px 80px; }
+  h1 { font-size:1.9rem; margin-bottom:.3rem; }
+  h2 { margin-top:2.6rem; padding-bottom:.3rem; border-bottom:1px solid var(--line); }
+  h3 { margin-top:2.2rem; }
+  table { border-collapse:collapse; width:100%; font-size:.93rem; display:block; overflow-x:auto; }
+  th, td { text-align:left; padding:.45rem .6rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  code, pre { font-family:ui-monospace,Consolas,monospace; font-size:.86rem; }
+  pre { background:var(--card); border:1px solid var(--line); padding:12px; overflow-x:auto; border-radius:6px; }
+  .mermaid { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px; overflow-x:auto; margin:1rem 0; }
+  img { max-width:100%; border:1px solid var(--line); border-radius:4px; }
+  a { color:var(--accent); }
+  blockquote { color:var(--muted); border-left:3px solid var(--line); margin-left:0; padding-left:1rem; }
+</style>
+</head>
+<body>
+<main id="content">Loading report...</main>
+<script type="text/markdown" id="md"># Workflow analysis: Demo: invoice processing (synthetic)
+
+Recorded 2026-10-21 09:12 · 19 min of activity · 205 steps · 6 applications · 3 tasks · analysed with muse-spark-1.3 for screenshots and muse-spark-1.3 for text
+
+## Summary
+
+- **Recorded work:** 19 min
+- **Time automation could save:** about 14 min per run (76% of the recorded time)
+- **If this process runs 20 times a month:** about 4.8 hours a month, roughly $144 at $30 an hour
+- **Biggest opportunity:** Process vendor invoice for payment (high potential). The same 23-step routine ran 8 times.
+
+> Savings are estimates based on this one recording. Set `runs_per_month` and `hourly_cost` in `config.toml` to match how often the process really runs.
+
+## Opportunities
+
+| # | Task | Time | Runs | Applications | Automation potential | Est. saving per run |
+|---|---|---|---|---|---|---|
+| 2 | Process vendor invoice for payment | 16 min | 8 | Outlook, Acrobat Reader, Excel, Chrome · Vendor Portal | High (71/100) | 13 min |
+| 3 | Send weekly AP summary email | 1.7 min | 1 | Excel, Outlook | Low (24/100) | 30 s |
+| 1 | Prepare accounts payable review workspace | 45 s | 1 | Outlook, File Explorer, Excel, Chrome | Low (16/100) | 36 s |
+
+## Workflow map
+
+Tasks in the order they happened. Double-bordered boxes are routines that repeated. Colour shows automation potential: red high, amber medium, green low.
+
+```mermaid
+flowchart TD
+  S0([Start])
+  T1["1. Prepare accounts payable review workspace<br/>45 s · Outlook, File Explorer, Excel"]
+  S0 --> T1
+  T2[["2. Process vendor invoice for payment<br/>16 min · Outlook, Acrobat Reader, Excel<br/>×8 runs"]]
+  T1 --> T2
+  T2 -->|"repeat ×8"| T2
+  T3["3. Send weekly AP summary email<br/>1.7 min · Excel, Outlook"]
+  T2 --> T3
+  T3 --> E0([End])
+  classDef high fill:#fde2e1,stroke:#c0392b,color:#1a1a1a
+  classDef medium fill:#fff3cd,stroke:#b8860b,color:#1a1a1a
+  classDef low fill:#e6f4ea,stroke:#2e7d32,color:#1a1a1a
+  class T1 low
+  class T2 high
+  class T3 low
+```
+
+## How the applications connect
+
+Solid arrows: switching from one application to another. Dotted arrows: values copied in one application and pasted into another.
+
+```mermaid
+flowchart LR
+  A1["Chrome · Vendor Portal<br/>5.6 min"]
+  A2["Excel<br/>4.7 min"]
+  A3["Outlook<br/>4.2 min"]
+  A4["Acrobat Reader<br/>3.1 min"]
+  A5["Chrome<br/>1.1 min"]
+  A6["File Explorer<br/>6 s"]
+  A4 -->|"24× switch"| A2
+  A2 -->|"16× switch"| A4
+  A5 -->|"9× switch"| A1
+  A1 -->|"9× switch"| A3
+  A3 -->|"8× switch"| A4
+  A2 -->|"8× switch"| A1
+  A1 -->|"8× switch"| A5
+  A4 -.->|"24× copy-paste"| A2
+  A2 -.->|"8× copy-paste"| A1
+  A2 -.->|"1× copy-paste"| A3
+```
+
+| Application | Time | Steps |
+|---|---|---|
+| Chrome · Vendor Portal | 5.6 min | 58 |
+| Excel | 4.7 min | 53 |
+| Outlook | 4.2 min | 42 |
+| Acrobat Reader | 3.1 min | 34 |
+| Chrome | 1.1 min | 17 |
+| File Explorer | 6 s | 1 |
+
+## Task details
+
+### 2. Process vendor invoice for payment
+
+**Automation potential: High (71/100)** · 16 min in total · 8 runs of about 2.1 min · Outlook, Acrobat Reader, Excel, Chrome · Vendor Portal, Chrome
+
+Records a vendor invoice in the AP tracker and submits it for payment in the vendor portal. Invoice details are extracted from the PDF attachment, entered into the tracker and payment request with the invoice attached, and the source email is then filed.
+
+**Inputs:** Vendor invoice email with PDF attachment in Outlook inbox  
+**Outputs:** Updated AP tracker with invoice details; Submitted payment request with supporting invoice in vendor portal; Filed invoice email in Processed folder  
+**Decision points:** Determine the correct due date to record for the invoice; Determine the appropriate GL code to assign to the invoice  
+
+**Why it stands out:**
+
+- The same 23-step routine ran 8 times
+- 32 values copied by hand from one application to another
+- 369 characters typed by hand
+- 80 switches between applications
+- 16 minutes of the recording
+
+**Estimated saving:** about 13 min per run (81% of this task), about 4.4 hours or $133 a month.
+
+<img src="../shots/000015.jpg" alt="Step 1" width="31%"> <img src="../shots/000032.jpg" alt="Step 12" width="31%"> <img src="../shots/000049.jpg" alt="Step 23" width="31%">
+
+**Steps (one run):**
+
+1. [Outlook] Opens the vendor invoice email in the Outlook inbox.
+2. [Outlook] Opens the invoice PDF attachment from the email.
+3. [Acrobat Reader] Copies the invoice number from the PDF for the tracker.
+4. [Excel] Pastes the invoice number into column A of the AP tracker.
+5. [Acrobat Reader] Copies the vendor name from the invoice PDF.
+6. [Excel] Pastes the vendor name into column B of the AP tracker.
+7. [Acrobat Reader] Scrolls the invoice PDF to find the total due.
+8. [Acrobat Reader] Copies the invoice total from the PDF invoice.
+9. [Excel] Pastes the invoice total into the Amount column of the tracker.
+10. [Excel] Enters the due date in column D of the tracker.
+11. [Excel] Enters the GL code in column E of the tracker.
+12. [Excel] Copies the invoice amount from the AP tracker spreadsheet.
+13. [Chrome · Vendor Portal] Opens a new payment request in the vendor portal.
+14. [Chrome · Vendor Portal] Enters the vendor name in the new payment request.
+15. [Chrome · Vendor Portal] Pastes the invoice amount into the new payment request.
+16. [Chrome · Vendor Portal] Enters the invoice number into the payment request form.
+17. [Chrome · Vendor Portal] Enters the due date into the payment request form.
+18. [Chrome · Vendor Portal] Clicks attach file to add supporting documentation.
+19. [Chrome] Selects the invoice file from the file dialog.
+20. [Chrome] Confirms attachment of the invoice file to the payment request.
+21. [Chrome · Vendor Portal] Submits the new payment request in the vendor portal.
+22. [Outlook] Opens the Move menu to relocate the invoice email in Outlook.
+23. [Outlook] Selects the Processed folder to file the invoice email.
+
+#### Data flow: field to field
+
+Taken from the recording: every value that was copied or typed, where from and where to.
+
+| Step | From | To | How | Seen in runs |
+|---|---|---|---|---|
+| 4 | Acrobat Reader · INV-#.pdf · Invoice number | Excel · AP Tracker.xlsx · column A | copy-paste | 8 of 8 |
+| 6 | Acrobat Reader · INV-#.pdf · Vendor | Excel · AP Tracker.xlsx · column B | copy-paste | 8 of 8 |
+| 9 | Acrobat Reader · INV-#.pdf · Total due | Excel · AP Tracker.xlsx · column C | copy-paste | 8 of 8 |
+| 10 | typed by hand | Excel · AP Tracker.xlsx · column D | typed (10 characters) | 8 of 8 |
+| 11 | typed by hand | Excel · AP Tracker.xlsx · column E | typed (4 characters) | 8 of 8 |
+| 14 | typed by hand; **same value as Acrobat Reader · INV-#.pdf · Vendor** (fingerprint match, 8 of 8 runs) | Chrome · Vendor Portal · New Payment Request · Vendor | typed (17 characters) | 8 of 8 |
+| 15 | Excel · AP Tracker.xlsx · column C (originally Acrobat Reader · INV-#.pdf · Total due) | Chrome · Vendor Portal · New Payment Request · Amount | copy-paste | 8 of 8 |
+| 16 | typed by hand; **same value as Acrobat Reader · INV-#.pdf · Invoice number** (fingerprint match, 8 of 8 runs) | Chrome · Vendor Portal · New Payment Request · Invoice number | typed (9 characters) | 8 of 8 |
+| 17 | typed by hand; **same value as Excel · AP Tracker.xlsx · column D** (fingerprint match, 8 of 8 runs) | Chrome · Vendor Portal · New Payment Request · Due date | typed (10 characters) | 8 of 8 |
+
+**Decide before automating:**
+
+- Where does **Excel · AP Tracker.xlsx · column D** come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?
+- Where does **Excel · AP Tracker.xlsx · column E** come from? It was typed by hand (4 characters). A fixed rule, a lookup, or a person's judgement?
+
+#### How the systems can connect
+
+Each option has a status: *documented* (official documentation, access still needed), *found online, confirm* (a web search hit), *unknown* (no evidence: ask the vendor or IT), or a fallback.
+
+| System | Role | Options |
+|---|---|---|
+| Outlook | used, no data moved | API: [Microsoft Graph mail API](https://learn.microsoft.com/graph/api/resources/mail-api-overview) *(documented)*<br>n8n: [n8n Microsoft Outlook node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftoutlook/) *(documented)*<br>Postman: [Try the Graph calls in Postman first](https://learn.microsoft.com/graph/use-postman) *(documented)* |
+| Acrobat Reader | source | n8n: [n8n Extract From File (PDF text)](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.extractfromfile/) *(documented)*<br>API: [Azure Document Intelligence invoice model](https://learn.microsoft.com/azure/ai-services/document-intelligence/prebuilt/invoice) *(documented)* |
+| Excel | source and target | API: [Microsoft Graph Excel API](https://learn.microsoft.com/graph/api/resources/excel) *(documented)*<br>n8n: [n8n Microsoft Excel 365 node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftexcel/) *(documented)*<br>SQL: [Keep the tracker in a database table instead](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/) *(option)*<br>File: [Read and write the file directly (n8n Read/Write Files)](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.readwritefile/) *(documented)* |
+| Chrome · Vendor Portal | target | API: Vendor Portal API *(unknown, ask the vendor or IT)*<br>Postman: [Test the portal's API in Postman once you have its documentation](https://learning.postman.com/docs/introduction/overview/) *(after API access)*<br>SQL: Write to the portal's database directly *(unknown, ask the vendor or IT)*<br>Browser automation: [Playwright script that fills the form](https://playwright.dev/python/docs/locators) *(works without an API)* |
+
+#### Proposed automation sequence
+
+1. **Trigger** · Outlook: When a new email arrives, download its attachment (checked on a schedule, e.g. every 15 minutes).
+   - _How: Microsoft Graph mail API (n8n: Microsoft Outlook node or HTTP Request) (documented)_
+2. **Extract** · Acrobat Reader: Read Invoice number, Vendor, Total due from INV-#.pdf.
+   - _How: n8n Extract From File + field parsing; Azure Document Intelligence for scans (documented)_
+3. **Write** · Excel: Write into AP Tracker.xlsx.
+   - column A ← Invoice number (Acrobat Reader)
+   - column B ← Vendor (Acrobat Reader)
+   - column C ← Total due (Acrobat Reader)
+   - column D ← typed by hand (10 characters): open question
+   - column E ← typed by hand (4 characters): open question
+   - _How: Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table (documented)_
+4. **Write** · Chrome · Vendor Portal: Write into New Payment Request, using: New payment request, Attach file, Submit, and attach the file (INV-#.pdf).
+   - Vendor ← Vendor (Acrobat Reader): typed by hand, but the fingerprints prove it is the same value (8 of 8 runs)
+   - Amount ← Total due (Acrobat Reader)
+   - Invoice number ← Invoice number (Acrobat Reader): typed by hand, but the fingerprints prove it is the same value (8 of 8 runs)
+   - Due date ← column D (Excel): typed by hand, but the fingerprints prove it is the same value (8 of 8 runs)
+   - _How: No public API found: ask the vendor for an API or bulk upload. Until then, browser automation (Playwright) (unknown, ask the vendor or IT)_
+5. **Finish** · Outlook: Then in Outlook: Move → Processed.
+   - _How: Microsoft Graph mail API (n8n: Microsoft Outlook node or HTTP Request) (documented)_
+6. **Decide**: Where does Excel · AP Tracker.xlsx · column D come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?
+   - _How: Business decision before building (open)_
+7. **Decide**: Where does Excel · AP Tracker.xlsx · column E come from? It was typed by hand (4 characters). A fixed rule, a lookup, or a person's judgement?
+   - _How: Business decision before building (open)_
+8. **Human check**: Determine the correct due date to record for the invoice
+   - _How: Keep a person here, or define the rule (open)_
+9. **Human check**: Determine the appropriate GL code to assign to the invoice
+   - _How: Keep a person here, or define the rule (open)_
+
+**To build it**, once the questions above are answered, run `python -m flowsme build demo-invoice-processing --task 2`. It writes an n8n workflow to import, a Postman collection to test each connection, and SQL and Playwright starters.
+
+#### Process improvement (Lean Six Sigma, DMAIC)
+
+**Define.** What must go right (critical to quality):
+
+- Invoice number must be correct and never processed twice
+- Total due must match the source exactly
+- Each item done within the agreed time (now about 2.1 min of hands-on work)
+
+| Suppliers | Inputs | Process | Outputs | Customers |
+|---|---|---|---|---|
+| whoever sends to Outlook<br>Acrobat Reader | Acrobat Reader · INV-#.pdf · Invoice number<br>Acrobat Reader · INV-#.pdf · Total due<br>Acrobat Reader · INV-#.pdf · Vendor | Trigger: Outlook<br>Extract: Acrobat Reader<br>Write: Excel<br>Write: Chrome · Vendor Portal<br>Finish: Outlook | Chrome · Vendor Portal · New Payment Request<br>Excel · AP Tracker.xlsx | Who uses these outputs? (not visible in the recording: ask) |
+
+**Measure.** 2.1 min of hands-on work per item, 8 items in this recording, 9 manual entries per item.
+
+| Time per item | Minutes | Share |
+|---|---|---|
+| waste (non-value-adding) | 1.56 | 76% |
+| business-required | 0.27 | 13% |
+| value-adding? (judgement, confirm) | 0.23 | 11% |
+
+Process cycle efficiency: **11%** (value-adding time ÷ total).
+
+Error exposure: 9 manual entries per item now, 2 after automation, about 160 items a month.
+
+| Human error rate (source) | Errors a month now | After automation | DPMO | Sigma level |
+|---|---|---|---|---|
+| 0.14% per entry: [Nahm et al. 2008: source to database, clinical trials](https://doi.org/10.1371/journal.pone.0003049) | 2.1 | 0.5 | 1,430 | 4.0 |
+| 0.29% per entry: [Garza et al. 2025: meta-analysis of 93 studies, single data entry](https://doi.org/10.1016/j.ijmedinf.2024.105749) | 4.2 | 0.9 | 2,900 | 4.0 |
+| 3.70% per entry: [Mays & Mathias 2019: manual transcription of numeric results](https://pmc.ncbi.nlm.nih.gov/articles/PMC6351970/) | 53.3 | 11.8 | 37,000 | 3.0 |
+
+**Analyze.** Waste found in the recording:
+
+| Waste | Evidence | Min per item |
+|---|---|---|
+| Transportation waste | 4 values per item carried between applications by copy-paste | 0.68 |
+| Motion waste | 10 window switches and 6 navigation steps per item | 0.53 |
+| Over-processing waste | 3 value(s) typed by hand that the fingerprints prove already exist elsewhere (Vendor = Acrobat Reader · INV-#.pdf · Vendor, Invoice number = Acrobat Reader · INV-#.pdf · Invoice number, Due date = Excel · AP Tracker.xlsx · column D); 1 value(s) copied into one file only to be copied out again (column C in Excel) | 0.34 |
+| Defects and rework | Run 4 needed 2 extra step(s): Scrolls through the opened invoice PDF to review contents.; Increases zoom to read the invoice details clearly.. 'Submit' in Chrome · Vendor Portal was clicked twice in a row (run 6). 'Vendor' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Amount' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Invoice number' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Due date' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. | - |
+| Unused talent | 76% of this person's time on this task is moving and re-typing data | - |
+
+Bottleneck (Theory of Constraints): **Write · Chrome · Vendor Portal** at 0.8 min per item. Improve this stage first: speeding up any other stage doesn't shorten the whole.
+
+**Improve.** First remove waste (ECRS), then automate what's left:
+
+- **Eliminate:** Stop copying values into an in-between file that is then copied out again (Excel). Keep it only if someone needs it as a record, and then let the automation write it.
+- **Eliminate:** Stop re-typing values that already exist: Vendor in Chrome · Vendor Portal, Invoice number in Chrome · Vendor Portal, Due date in Chrome · Vendor Portal.
+- **Combine:** Capture each value once and write it to all 2 destinations in one step (Chrome · Vendor Portal, Excel).
+- **Rearrange:** The routine ran 8 times one item at a time. Validate every item first, then submit in one batch; exceptions go to a person.
+- **Simplify:** Turn free typing into rules, lookups or drop-downs: column D (Excel), column E (Excel).
+- **Automate:** Then automate what is left, as in the tool plan below.
+
+Tool plan. Your tools: Microsoft 365, Power Automate, Power BI. Runs the workflow: Power Automate (cloud flows).
+
+| Stage | Now (min/item) | With your tools | With suggested tools |
+|---|---|---|---|
+| 1. Trigger · Outlook | 0.22 | Email API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.01 | Email API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.01 |
+| 2. Extract · Acrobat Reader | 0.38 | stays manual: 0.38 | AI document extraction (people review unsure fields) (Azure Document Intelligence): 0.06 |
+| 3. Write · Excel | 0.55 | Spreadsheet API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.24 | Spreadsheet API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.24 |
+| 4. Write · Chrome · Vendor Portal | 0.80 | stays manual: 0.80 | Build a small API in front of the page (browser automation inside) (Python scripts (with FastAPI and Playwright)): 0.08 |
+| 5. Finish · Outlook | 0.11 | Email API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.01 | Email API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.01 |
+| **Total** | **2.1** | **1.4** | **0.4** |
+
+Per month (160 items): 5.6 h now, 3.7 h with your tools, 1.1 h with the additions.
+
+Adding tools, biggest gain first:
+
+- **Python scripts (with FastAPI and Playwright)** saves another 1.0 min per item (2.7 h a month). Cost: free; needs someone to maintain the code.
+- **Azure Document Intelligence** saves another 0.1 min per item (0.3 h a month). Cost: paid per page.
+
+If the vendor provides an API key for **Vendor Portal API**, use it instead of browser automation: it is more reliable and won't break when the page changes.
+
+<sub>Minutes after automation assume each method removes this share of a stage's time (people still review exceptions): api 95%, database 95%, ai extraction 85%, pdf rules 70%, api wrapper 90%, browser 85%, rpa 80%. These are planning estimates; measure after the pilot.</sub>
+
+**Control.** Validation checklist: error-proofing first, then detection. Why that order: When values flowed electronically instead of being transcribed, transcription errors fell from 6.1% to zero. ([Poon et al. 2010](https://pubmed.ncbi.nlm.nih.gov/20445181/)) Checking entries by eye was not significantly better than no checking; double entry was far better. ([Barchard & Pace 2011](https://doi.org/10.1016/j.chb.2011.04.004)) Built-in validation alarms prevented only a small fraction of errors. ([Goldberg et al. 2008](https://pmc.ncbi.nlm.nih.gov/articles/PMC2656002/)) A second, independent entry of the same data caught 88% of errors. ([Kawado et al. 2003](https://pubmed.ncbi.nlm.nih.gov/14500053/))
+
+| Where | Type | Check | Evidence |
+|---|---|---|---|
+| Excel · AP Tracker.xlsx · column A | prevent | Pass the value from Acrobat Reader · INV-#.pdf · Invoice number directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 4 |
+| Excel · AP Tracker.xlsx · column A | detect | Must be unique: check it is not already recorded before writing it (stops duplicates, e.g. paying twice). | field 'column A' holds 'Invoice number' |
+| Excel · AP Tracker.xlsx · column B | prevent | Pass the value from Acrobat Reader · INV-#.pdf · Vendor directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 6 |
+| Excel · AP Tracker.xlsx · column B | detect | Must exist in the master list (e.g. vendor master): pick from a list instead of typing. | field 'column B' holds 'Vendor' |
+| Excel · AP Tracker.xlsx · column C | prevent | Pass the value from Acrobat Reader · INV-#.pdf · Total due directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 9 |
+| Excel · AP Tracker.xlsx · column C | detect | Must be a number in the expected currency, above zero, and equal to the source document. Flag anything above the approval limit for a person. | field 'column C' holds 'Total due' |
+| Excel · AP Tracker.xlsx · column D | prevent | Replace free typing with a rule, a lookup or a drop-down. | typed by hand (10 characters) at step 10 |
+| Excel · AP Tracker.xlsx · column E | prevent | Replace free typing with a rule, a lookup or a drop-down. | typed by hand (4 characters) at step 11 |
+| Chrome · Vendor Portal · New Payment Request · Vendor | prevent | Pass the value from Acrobat Reader · INV-#.pdf · Vendor directly instead of re-typing it; after writing, compare the two automatically. | typed by hand at step 14; the fingerprints show it is the same value as Acrobat Reader · INV-#.pdf · Vendor (8 of 8 runs) |
+| Chrome · Vendor Portal · New Payment Request · Vendor | detect | Must exist in the master list (e.g. vendor master): pick from a list instead of typing. | field 'Vendor' holds 'Vendor' |
+| Chrome · Vendor Portal · New Payment Request · Amount | prevent | Pass the value from Acrobat Reader · INV-#.pdf · Total due directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 15 |
+| Chrome · Vendor Portal · New Payment Request · Amount | detect | Must be a number in the expected currency, above zero, and equal to the source document. Flag anything above the approval limit for a person. | field 'Amount' holds 'Total due' |
+| Chrome · Vendor Portal · New Payment Request · Invoice number | prevent | Pass the value from Acrobat Reader · INV-#.pdf · Invoice number directly instead of re-typing it; after writing, compare the two automatically. | typed by hand at step 16; the fingerprints show it is the same value as Acrobat Reader · INV-#.pdf · Invoice number (8 of 8 runs) |
+| Chrome · Vendor Portal · New Payment Request · Invoice number | detect | Must be unique: check it is not already recorded before writing it (stops duplicates, e.g. paying twice). | field 'Invoice number' holds 'Invoice number' |
+| Chrome · Vendor Portal · New Payment Request · Due date | prevent | Pass the value from Excel · AP Tracker.xlsx · column D directly instead of re-typing it; after writing, compare the two automatically. | typed by hand at step 17; the fingerprints show it is the same value as Excel · AP Tracker.xlsx · column D (8 of 8 runs) |
+| Chrome · Vendor Portal · New Payment Request · Due date | detect | Must be a valid date in one agreed format and a sensible range (not in the past, not years ahead). | field 'Due date' holds 'column D' |
+| 'Submit' in Chrome · Vendor Portal | prevent | Capture the confirmation or reference number after submitting, and check it before trying again, so a slow page never creates a duplicate. | 'Submit' in Chrome · Vendor Portal was clicked twice in a row (run 6). |
+| exceptions | detect | Route items that need extra handling (unclear scans, missing data) to a person instead of forcing them through the automation. | Run 4 needed 2 extra step(s): Scrolls through the opened invoice PDF to review contents.; Increases zoom to read the invoice details clearly.. |
+| corrections | detect | Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys). | 'Vendor' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Amount' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Invoice number' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Due date' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. |
+| every run | control | Reconcile counts: items received = rows written = records submitted. Investigate any gap. | standard control for multi-system hand-offs |
+| every run | control | Log each item with its result (done / exception / failed) and review exceptions daily. | needed to measure error rate after go-live |
+
+Measure after go-live, in the final report (Power BI, Looker Studio or Excel, fed by the run log from `flowsme build`; suggested: Power BI):
+
+- Items processed per day
+- Hands-on minutes per item (target: 0.4 or less)
+- Exceptions sent to a person (%)
+- First-pass yield: items done with no correction (%)
+- Errors caught by checks, by type
+- Duplicates blocked
+
+**Recommendations** _(AI analysis)_
+
+1. **Auto-extract invoice PDF and populate AP tracker**: _AI document extraction · effort: days · about 40% of this task's time · steps 1-9, 12_
+
+   Build one Power Automate cloud flow triggered by new vendor invoice email in Outlook. Get the PDF bytes via Microsoft Graph mail API, call Azure Document Intelligence prebuilt invoice model to return invoiceNumber, vendorName, and total due with confidence. If confidence is high and invoiceNumber is not already in AP Tracker.xlsx, add a row via Excel Online connector (A=invoiceNumber, B=vendor, C=amount) and save the PDF to SharePoint for the later attach step.
+
+   *Why:* ECRS eliminate + combine: removes 24 hand copies Acrobat Reader->Excel and scroll/zoom rework (Run 4). Applies poka-yoke by capturing once from AI instead of copy-paste, and attacks 76% retyping time and NVA 1.56 min/item.
+
+   Tools: Power Automate, Microsoft Graph mail API, Azure Document Intelligence invoice model, Microsoft Graph Excel API
+
+2. **Fill vendor portal payment request without retyping - API first, RPA fallback**: _Desktop automation (RPA) · effort: days · about 25% of this task's time · steps 13-21_
+
+   Ask vendor/IT in writing if Vendor Portal has a supported API; until confirmed use Power Automate Desktop (or Playwright Python) subflow. Pass vendorName, invoiceNumber, amount, dueDate and SharePoint PDF path as parameters, open New Payment Request, fill all fields from variables, upload file by path instead of file-dialog clicks, submit once and scrape confirmation number back to Excel. Add pre-check that Submit is disabled after first click.
+
+   *Why:* Theory of Constraints: fixes the 0.8 min/item bottleneck. ECRS eliminate retyping of 3 proven-duplicate values (Vendor, Invoice number, Due date) plus Amount from column C, and prevents defects seen as 8 corrections per field and double Submit in run 6.
+
+   Tools: Power Automate Desktop, Playwright
+
+3. **Standardize due date and GL code, keep tracker as auto-written record**: _Process change · effort: hours · about 8% of this task's time · steps 10-11, 14, 16-17_
+
+   Stop treating Excel as an in-between copy buffer. Keep AP Tracker.xlsx only as the audit record written by the flow. Replace free typing of due date and GL code with rules: e.g., dueDate = invoiceDate + payment terms lookup by vendor, GL code = vendor-default dropdown with override. Add Excel data validation and Power BI duplicate/amount dashboard for review.
+
+   *Why:* ECRS simplify and rearrange: turns unknown free typing (10-char due date, 4-char GL) into lookups/dropdowns, enables batch validation before submit, and eliminates copying column C only to copy it out again.
+
+   Tools: Excel, Power BI
+
+4. **Auto-file processed invoice email**: _Built-in feature · effort: hours · about 5% of this task's time · steps 22-23_
+
+   Replace manual Move menu steps with an Outlook inbox rule or final Graph moveMessage action in the same flow: after tracker row + portal confirmation succeed, move the source email to Processed folder and tag category Posted with link to tracker row and portal request ID.
+
+   *Why:* ECRS automate leftover BVA work: removes 2 navigation steps per item and guarantees filing even if portal step is retried, with zero new tooling.
+
+   Tools: Outlook, Microsoft Graph mail API
+
+**Assumptions to confirm:**
+
+- Due date in Excel column D (steps 10, 17) source is unknown - assumed to require human lookup or PO-terms rule until confirmed, not auto-derived
+- GL code in Excel column E (step 11) source is unknown - assumed to require human judgement or chart-of-accounts lookup until confirmed
+- Vendor Portal has no confirmed API (status unknown) - assumed no usable API so RPA/browser automation is needed until vendor or IT confirms
+- AP Tracker.xlsx is stored in SharePoint or OneDrive so Microsoft Graph Excel API / Excel Online connector can write it without file-lock conflicts
+- Invoice PDF attachments are accessible via Graph attachment bytes and are readable by Azure Document Intelligence invoice model with human review for low-confidence fields
+- No additional PO matching, approval, or duplicate-invoice check beyond the 23 recorded steps is required before submit
+
+**Quick wins:**
+
+- Pin Outlook/Excel/Portal side-by-side and use Outlook Quick Steps + Excel Table with GL-code dropdown and due-date = invoice-date+30 formula as interim until flow live
+- Add duplicate check in AP Tracker.xlsx (COUNTIF on column A invoice number) and data validation on Amount to prevent double-pay from double Submit clicks
+- Create Outlook rule to auto-save invoice PDFs to SharePoint /AP Invoices/ and keep email filing to Processed (steps 22-23) as a one-click Quick Step
+
+**Check before automating:**
+
+- AI extraction errors on scanned/low-quality PDFs or new layouts causing wrong vendor/amount -> require confidence threshold + human review and duplicate invoiceNumber check to avoid double payment
+- Portal UI changes breaking Power Automate Desktop/Playwright selectors -> use stable selectors, re-login handling, and monitor failure rate; prefer vendor API if provided
+- Excel file locks or concurrent edits if AP Tracker.xlsx stays on desktop -> must move to SharePoint/OneDrive Table and use Graph/connector writes only
+- Graph/SharePoint permissions and retention: mail read/write, mailbox move, and invoice PII storage need least-privilege consent and audit logging
+
+**Existing tools and guides found online:**
+
+- [How to Extract Specific Data from PDF to Excel Using VBA](https://www.exceldemy.com/extract-specific-data-from-pdf-to-excel-using-vba/): ⧭ Output: Run this code. And it'll copy data from the PDF file called "standardnormaltable" to the worksheet called "Sheet1" in the active workbook. Read More: 
+- [How to Extract Data from PDF to Excel (4 Suitable Ways)](https://www.exceldemy.com/extract-data-from-pdf-to-excel/): The article will show to you 4 different process on how to extract data from pdf to Excel. Download our practice workbook and follow us.
+- [How to Copy Data From a PDF to Excel (2026 Guide) - lido.app](https://www.lido.app/blog/copy-data-from-pdf-to-excel): The most reliable way to copy data from a PDF to Excel is to use an AI-powered tool like Lido. Upload the PDF, and the AI reads the document, preserves the tabl
+- [How to Extract Data from PDF to Excel Using Power Automate](https://www.thebricks.com/resources/guide-how-to-extract-data-from-pdf-to-excel-using-power-automate): Discover how to automate extracting data from PDFs to Excel with Power Automate. Save hours, reduce errors, and streamline your workflow effortlessly.
+- [How to Automate Vendor Payments? - Clyr.io](https://clyr.io/blog/accounts-payable/how-to-automate-vendor-payments): Jan 7, 2026 · How to automate vendor payments with structured approvals, invoice automation, and integrated payment workflows that improve accuracy and control.
+- [Automated Invoice Processing: A step-by-step Guide \| Cflow](https://www.cflowapps.com/automated-invoice-processing/): Apr 17, 2026 · Invoice Processing Workflow at a Glance The accounts payable department is in charge of invoice processing. The vendor raises the invoice contain
+
+**Tools that usually fit these applications:**
+
+- [Microsoft Power Automate](https://www.microsoft.com/power-platform/products/power-automate): Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors
+- [n8n](https://n8n.io): Self-hostable workflow automation that connects web apps through their APIs, with AI steps
+- [Zapier](https://zapier.com): No-code integrations between cloud apps
+- [UiPath](https://www.uipath.com): Enterprise RPA for desktop and legacy apps without APIs (SAP GUI, Citrix, mainframe screens)
+
+**Automation draft** (power_automate, saved to `automations/task2.txt`)
+
+Power Automate cloud flow that implements Recommendation 1: Outlook trigger to Document Intelligence extraction to Excel write, with confidence gate and handoff to portal RPA. Uses only customer-owned M365 + Azure.
+
+```text
+TRIGGER: Power Automate Cloud Flow - When a new email arrives in shared AP inbox (from vendor / subject contains Invoice) including attachments
+ACTION 1: Get attachment content (Microsoft Graph mail API) - save INV-#.pdf to SharePoint /AP Invoices/{invoiceReceivedDate}_{sender}/
+ACTION 2: Call Azure Document Intelligence invoice model (prebuilt-invoice) on PDF bytes -> returns invoiceNumber, vendorName, invoiceTotal, invoiceDate, dueDate_candidate + confidence
+ACTION 3: Condition - if confidence < 0.85 OR duplicate invoiceNumber exists in AP Tracker.xlsx -> route to manual review (Teams Adaptive Card / Outlook flag), stop auto-post
+ACTION 4: Excel Online (Business) - Add a row into AP Tracker.xlsx table: Column A = invoiceNumber, Column B = vendorName, Column C = invoiceTotal, Column D = dueDate (from model OR Net-30 rule pending confirmation), Column E = blank for GL review
+ACTION 5: If Vendor Portal accessible: start Desktop flow / Playwright with parameters (vendorName, invoiceNumber, amount, dueDate, SharePoint file path) to create payment request - no retyping
+ACTION 6: Graph moveMessage - move source email to Processed folder, set categories = Posted, link SharePoint file + tracker row ID in email body
+```
+
+### 3. Send weekly AP summary email
+
+**Automation potential: Low (24/100)** · 1.7 min in total · 1 run · Excel, Outlook
+
+Distributes the weekly accounts payable status to the AP manager for review. The summary sheet in the tracker workbook is refreshed and copied into a new email, which is sent with the tracker spreadsheet attached.
+
+**Inputs:** Accounts payable tracker workbook  
+**Outputs:** Weekly AP summary email with tracker attachment sent  
+**Decision points:** Verify the refreshed summary data is complete and accurate before sharing; Confirm the correct recipient, subject, message content, and attachment before sending  
+
+**Why it stands out:**
+
+- 1 values copied by hand from one application to another
+- 242 characters typed by hand
+
+**Estimated saving:** about 30 s per run (29% of this task), about 0.2 hours or $5 a month.
+
+<img src="../shots/000308.jpg" alt="Step 1" width="31%"> <img src="../shots/000314.jpg" alt="Step 5" width="31%"> <img src="../shots/000319.jpg" alt="Step 10" width="31%">
+
+**Steps:**
+
+1. [Excel] Opens the summary sheet in the accounts payable tracker workbook.
+2. [Excel] Refreshes all data connections to update the payable summary.
+3. [Excel] Selects and copies the summary data from the tracker.
+4. [Outlook] Starts a new email in Outlook to share the summary.
+5. [Outlook] Enters the recipient address in the To field of the email.
+6. [Outlook] Enters the subject text in the Subject field of the email.
+7. [Outlook] Composes the summary message in the body of the email.
+8. [Outlook] Clicks Attach File to attach the AP tracker spreadsheet.
+9. [Outlook] Attaches the AP tracker spreadsheet to the weekly summary email
+10. [Outlook] Sends the weekly AP summary email to the AP manager
+
+#### Data flow: field to field
+
+Taken from the recording: every value that was copied or typed, where from and where to.
+
+| Step | From | To | How | Seen in runs |
+|---|---|---|---|---|
+| 5 | typed by hand | Outlook · Untitled · To | typed (24 characters) | 1 of 1 |
+| 6 | typed by hand | Outlook · Untitled · Subject | typed (38 characters) | 1 of 1 |
+| 7 | Excel · AP Tracker.xlsx · column A | Outlook · Untitled · Message body | copy-paste | 1 of 1 |
+| 7 | typed by hand | Outlook · Untitled · Message body | typed (180 characters) | 1 of 1 |
+
+**Decide before automating:**
+
+- Where does **Outlook · Untitled · To** come from? It was typed by hand (24 characters). A fixed rule, a lookup, or a person's judgement?
+- Where does **Outlook · Untitled · Subject** come from? It was typed by hand (38 characters). A fixed rule, a lookup, or a person's judgement?
+- Where does **Outlook · Untitled · Message body** come from? It was typed by hand (180 characters). A fixed rule, a lookup, or a person's judgement?
+
+#### How the systems can connect
+
+Each option has a status: *documented* (official documentation, access still needed), *found online, confirm* (a web search hit), *unknown* (no evidence: ask the vendor or IT), or a fallback.
+
+| System | Role | Options |
+|---|---|---|
+| Excel | source | API: [Microsoft Graph Excel API](https://learn.microsoft.com/graph/api/resources/excel) *(documented)*<br>n8n: [n8n Microsoft Excel 365 node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftexcel/) *(documented)*<br>SQL: [Keep the tracker in a database table instead](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/) *(option)*<br>File: [Read and write the file directly (n8n Read/Write Files)](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.readwritefile/) *(documented)* |
+| Outlook | target | API: [Microsoft Graph mail API](https://learn.microsoft.com/graph/api/resources/mail-api-overview) *(documented)*<br>n8n: [n8n Microsoft Outlook node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftoutlook/) *(documented)*<br>Postman: [Try the Graph calls in Postman first](https://learn.microsoft.com/graph/use-postman) *(documented)* |
+
+#### Proposed automation sequence
+
+1. **Trigger**: Start on a schedule or by hand: the recording shows no clear trigger.
+   - _How: n8n Schedule Trigger (option)_
+2. **Extract** · Excel: Read column A from AP Tracker.xlsx.
+   - _How: Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table (documented)_
+3. **Write** · Outlook: Write into Untitled, using: New Email, Attach File, AP Tracker.xlsx, Send.
+   - To ← typed by hand (24 characters): open question
+   - Subject ← typed by hand (38 characters): open question
+   - Message body ← column A (Excel)
+   - Message body ← typed by hand (180 characters): open question
+   - _How: Microsoft Graph mail API (n8n: Microsoft Outlook node or HTTP Request) (documented)_
+4. **Decide**: Where does Outlook · Untitled · To come from? It was typed by hand (24 characters). A fixed rule, a lookup, or a person's judgement?
+   - _How: Business decision before building (open)_
+5. **Decide**: Where does Outlook · Untitled · Subject come from? It was typed by hand (38 characters). A fixed rule, a lookup, or a person's judgement?
+   - _How: Business decision before building (open)_
+6. **Decide**: Where does Outlook · Untitled · Message body come from? It was typed by hand (180 characters). A fixed rule, a lookup, or a person's judgement?
+   - _How: Business decision before building (open)_
+7. **Human check**: Verify the refreshed summary data is complete and accurate before sharing
+   - _How: Keep a person here, or define the rule (open)_
+8. **Human check**: Confirm the correct recipient, subject, message content, and attachment before sending
+   - _How: Keep a person here, or define the rule (open)_
+
+**To build it**, once the questions above are answered, run `python -m flowsme build demo-invoice-processing --task 3`. It writes an n8n workflow to import, a Postman collection to test each connection, and SQL and Playwright starters.
+
+#### Process improvement (Lean Six Sigma, DMAIC)
+
+**Define.** What must go right (critical to quality):
+
+- Each item done within the agreed time (now about 1.7 min of hands-on work)
+
+| Suppliers | Inputs | Process | Outputs | Customers |
+|---|---|---|---|---|
+| Excel | Excel · AP Tracker.xlsx · column A | Trigger: Start on a schedule or by hand: the recording shows no clear trigger.<br>Extract: Excel<br>Write: Outlook | Outlook · Untitled | Who uses these outputs? (not visible in the recording: ask) |
+
+**Measure.** 1.7 min of hands-on work per item, 1 items in this recording, 4 manual entries per item.
+
+| Time per item | Minutes | Share |
+|---|---|---|
+| waste (non-value-adding) | 1.20 | 72% |
+| value-adding? (judgement, confirm) | 0.38 | 23% |
+| business-required | 0.08 | 5% |
+
+Process cycle efficiency: **23%** (value-adding time ÷ total).
+
+Error exposure: 4 manual entries per item now, 3 after automation, about 20 items a month.
+
+| Human error rate (source) | Errors a month now | After automation | DPMO | Sigma level |
+|---|---|---|---|---|
+| 0.14% per entry: [Nahm et al. 2008: source to database, clinical trials](https://doi.org/10.1371/journal.pone.0003049) | 0.1 | 0.1 | 1,430 | 4.0 |
+| 0.29% per entry: [Garza et al. 2025: meta-analysis of 93 studies, single data entry](https://doi.org/10.1016/j.ijmedinf.2024.105749) | 0.2 | 0.2 | 2,900 | 4.0 |
+| 3.70% per entry: [Mays & Mathias 2019: manual transcription of numeric results](https://pmc.ncbi.nlm.nih.gov/articles/PMC6351970/) | 3.0 | 2.2 | 37,000 | 3.0 |
+
+**Analyze.** Waste found in the recording:
+
+| Waste | Evidence | Min per item |
+|---|---|---|
+| Transportation waste | 1 values per item carried between applications by copy-paste | 0.86 |
+| Motion waste | 1 window switches and 4 navigation steps per item | 0.34 |
+| Unused talent | 72% of this person's time on this task is moving and re-typing data | - |
+
+Bottleneck (Theory of Constraints): **Write · Outlook** at 1.42 min per item. Improve this stage first: speeding up any other stage doesn't shorten the whole.
+
+**Improve.** First remove waste (ECRS), then automate what's left:
+
+- **Simplify:** Turn free typing into rules, lookups or drop-downs: To (Outlook), Subject (Outlook), Message body (Outlook).
+- **Automate:** Then automate what is left, as in the tool plan below.
+
+Tool plan. Your tools: Microsoft 365, Power Automate, Power BI. Runs the workflow: Power Automate (cloud flows).
+
+| Stage | Now (min/item) | With your tools | With suggested tools |
+|---|---|---|---|
+| 2. Extract · Excel | 0.25 | stays manual: 0.25 | Desktop automation (Power Automate Desktop): 0.05 |
+| 3. Write · Outlook | 1.42 | stays manual: 1.42 | Desktop automation (Power Automate Desktop): 1.17 |
+| **Total** | **1.7** | **1.7** | **1.2** |
+
+Per month (20 items): 0.6 h now, 0.6 h with your tools, 0.4 h with the additions.
+
+Adding tools, biggest gain first:
+
+- **Power Automate Desktop** saves another 0.4 min per item (0.1 h a month). Cost: free on Windows for attended runs; unattended runs need a licence.
+
+<sub>Minutes after automation assume each method removes this share of a stage's time (people still review exceptions): api 95%, database 95%, ai extraction 85%, pdf rules 70%, api wrapper 90%, browser 85%, rpa 80%. These are planning estimates; measure after the pilot.</sub>
+
+**Control.** Validation checklist: error-proofing first, then detection. Why that order: When values flowed electronically instead of being transcribed, transcription errors fell from 6.1% to zero. ([Poon et al. 2010](https://pubmed.ncbi.nlm.nih.gov/20445181/)) Checking entries by eye was not significantly better than no checking; double entry was far better. ([Barchard & Pace 2011](https://doi.org/10.1016/j.chb.2011.04.004)) Built-in validation alarms prevented only a small fraction of errors. ([Goldberg et al. 2008](https://pmc.ncbi.nlm.nih.gov/articles/PMC2656002/)) A second, independent entry of the same data caught 88% of errors. ([Kawado et al. 2003](https://pubmed.ncbi.nlm.nih.gov/14500053/))
+
+| Where | Type | Check | Evidence |
+|---|---|---|---|
+| Outlook · Untitled · To | prevent | Replace free typing with a rule, a lookup or a drop-down. | typed by hand (24 characters) at step 5 |
+| Outlook · Untitled · To | detect | Must be a valid address from the approved recipients. | field 'To' |
+| Outlook · Untitled · Subject | prevent | Replace free typing with a rule, a lookup or a drop-down. | typed by hand (38 characters) at step 6 |
+| Outlook · Untitled · Message body | prevent | Pass the value from Excel · AP Tracker.xlsx · column A directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 7 |
+| Outlook · Untitled · Message body | prevent | Replace free typing with a rule, a lookup or a drop-down. | typed by hand (180 characters) at step 7 |
+| every run | control | Reconcile counts: items received = rows written = records submitted. Investigate any gap. | standard control for multi-system hand-offs |
+| every run | control | Log each item with its result (done / exception / failed) and review exceptions daily. | needed to measure error rate after go-live |
+
+Measure after go-live, in the final report (Power BI, Looker Studio or Excel, fed by the run log from `flowsme build`; suggested: Power BI):
+
+- Items processed per day
+- Hands-on minutes per item (target: 1.2 or less)
+- Exceptions sent to a person (%)
+- First-pass yield: items done with no correction (%)
+- Errors caught by checks, by type
+- Duplicates blocked
+
+**Recommendations** _(AI analysis)_
+
+1. **Replace manual send with scheduled Power Automate cloud flow**: _API integration · effort: days · about 90% of this task's time · steps 1-10_
+
+   Move AP Tracker.xlsx to SharePoint. Build one Power Automate scheduled cloud flow for Friday 08:00. Flow runs Office Script GetSummaryTableAsHTML on Summary sheet, then uses Office 365 Outlook Send an email (V2) with fixed To, calculated Subject with week-ending date, HTML body embedding the summary table, and File Content of AP Tracker.xlsx as attachment.
+
+   *Why:* Theory of Constraints: fixes bottleneck Write in Outlook 1.42 min. ECRS Automate after Simplify. Evidence: 72% time moving/re-typing, PCE 23%, documented Graph Excel + mail APIs and Excel Online connector.
+
+   Tools: Power Automate, Excel Online (Business), Office Scripts, Office 365 Outlook, SharePoint
+
+2. **Standardize To, Subject and Body to template with dates/figures**: _Process change · effort: hours · about 70% of this task's time · steps 5-7_
+
+   Lock the three typed fields to rules: To = fixed AP-manager DL, Subject = 'Weekly AP Summary - w/e ' + date, Body = 4-line template with placeholders for week-ending, total payable, overdue count pasted from Summary sheet. Store template in the flow and as Outlook template backup. Get AP manager sign-off once.
+
+   *Why:* ECRS Simplify + poka-yoke: turns free typing into rules. Evidence: Lean finding to turn To, Subject, Message body into rules/lookups; 242 chars typed by hand is error-prone.
+
+   Tools: Outlook, Power Automate
+
+3. **Automate Refresh All and summary extract with Office Script**: _Script · effort: hours · about 15% of this task's time · steps 1-3_
+
+   Add Office Script 'GetSummaryTableAsHTML' that refreshes Power Query tables, waits for refresh, reads Summary UsedRange/Table, validates non-empty totals, and returns HTML + JSON metrics. Call it from the cloud flow instead of manual Refresh All + Select/Copy. Log refresh errors to SharePoint list.
+
+   *Why:* Poka-yoke + ECRS Combine: makes stale-data send impossible. Evidence: step 2 manual refresh can be skipped or fail silently; copy-paste Excel->Outlook x1.
+
+   Tools: Office Scripts, Excel Power Query, SharePoint
+
+**Assumptions to confirm:**
+
+- AP Tracker.xlsx can be stored in SharePoint / OneDrive for Business so Power Automate Excel Online (Business) and Graph can access it unattended
+- Weekly recipient (To - 24 chars typed) is a fixed AP manager / distribution list and does not require judgement each week - to be confirmed
+- Subject (38 chars typed) follows a fixed rule e.g. Weekly AP Summary + week-ending date - to be confirmed
+- Message body (180 chars typed) is a standard template plus dynamic summary figures from Excel - to be confirmed, no free-form commentary requiring judgement
+- Excel data connections can refresh unattended via Power Query / Office Scripts without manual credentials or on-prem gateway
+
+**Quick wins:**
+
+- Create Outlook template / Quick Parts for To + Subject 'Weekly AP Summary - w/e YYYY-MM-DD' + body skeleton to eliminate 242 chars retyping
+- Add AP manager as contact group / distribution list to prevent 24-char To typo
+- Pin AP Tracker.xlsx to Excel Recent + Outlook Attach File Recent and save email as Draft template with attachment placeholder
+
+**Check before automating:**
+
+- Wrong recipient if To typed from memory - mitigate with fixed DL and flow audit log
+- Sending stale figures if Refresh All fails or file is locked open - mitigate with script validation + alert on failure
+- Attaching wrong version / sending sensitive payables externally - mitigate with SharePoint single source, Graph least-privilege, DLP
+- Excel connections requiring manual login or on-prem gateway will block unattended refresh - confirm auth before go-live
+
+**Existing tools and guides found online:**
+
+- [Run a cloud flow on a schedule](https://learn.microsoft.com/en-us/power-automate/run-scheduled-tasks): 
+- [Excel Online (Business)](https://learn.microsoft.com/en-us/connectors/excelonlinebusiness/): 
+
+**Tools that usually fit these applications:**
+
+- [Microsoft Power Automate](https://www.microsoft.com/power-platform/products/power-automate): Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors
+- [n8n](https://n8n.io): Self-hostable workflow automation that connects web apps through their APIs, with AI steps
+- [Zapier](https://zapier.com): No-code integrations between cloud apps
+- [Excel Power Query and Office Scripts](https://learn.microsoft.com/office/dev/scripts/overview/excel): Repeatable imports, clean-up and transformations inside Excel
+
+**Automation draft** (power_automate, saved to `automations/task3.txt`)
+
+Scheduled Power Automate cloud flow that replaces steps 1-10: refreshes/reads the Summary sheet via Office Script and sends templated Outlook email with tracker attached.
+
+```text
+TRIGGER: Recurrence - Frequency: Week, Interval: 1, On: Friday, At: 08:00 UTC (Run a cloud flow on a schedule)
+ACTION 1: Excel Online (Business) - Get file metadata - Library: Shared Documents, File: /AP/AP Tracker.xlsx
+ACTION 2: Office Scripts - Run script 'GetSummaryTableAsHTML' on AP Tracker.xlsx, Worksheet: 'Summary' (script reads UsedRange/Table, returns htmlTable + totalDue + overdueCount + weekEnding)
+ACTION 3: Outlook - Send an email (V2) - To: [AP-Manager-DL - confirm address], Subject: concat('Weekly AP Summary - w/e ', outputs('Run_script')?['body/weekEnding']), Body: <p>Hi [Name],</p><p>Weekly AP status for w/e @{weekEnding}:</p>@{htmlTable}<p>Total due: @{totalDue}, Overdue: @{overdueCount}</p><p>Full tracker attached.</p>, Attachments: Name: AP Tracker.xlsx, ContentBytes: @{body('Get_file_content')}
+  - Set Importance: Normal, Is HTML: Yes
+ACTION 4 (control): SharePoint - Create item in 'AP Sends Log' with timestamp, recipient, subject, status
+```
+
+### 1. Prepare accounts payable review workspace
+
+**Automation potential: Low (16/100)** · 45 s in total · 1 run · Outlook, File Explorer, Excel, Chrome, Chrome · Vendor Portal
+
+Prepare for accounts payable review by consolidating incoming requests and payment records. The inbox is filtered to unread messages, the October tracker is opened to the start of the sheet, and the vendor portal is opened to the Payments section.
+
+**Inputs:** Incoming unread emails; Accounts payable tracker spreadsheet; Vendor portal access  
+**Outputs:** Filtered unread inbox view; October tracker ready for updating; Vendor portal open on Payments section  
+**Decision points:** Which unread emails require accounts payable action; Which tracker items need follow-up in the portal  
+
+**Estimated saving:** about 36 s per run (86% of this task), about 0.2 hours or $6 a month.
+
+<img src="../shots/000002.jpg" alt="Step 1" width="31%"> <img src="../shots/000007.jpg" alt="Step 4" width="31%"> <img src="../shots/000013.jpg" alt="Step 8" width="31%">
+
+**Steps:**
+
+1. [Outlook] Opens the Outlook inbox to review incoming emails.
+2. [Outlook] Opens the filter options to narrow the inbox view.
+3. [Outlook] Selects the unread option to show only unread messages.
+4. [File Explorer] Opens the accounts payable tracker spreadsheet for updating.
+5. [Excel] Switches to the October tab in the AP tracker workbook
+6. [Excel] Selects cell A1 to return to the start of the tracker sheet
+7. [Chrome] Click in the window, then type 22 characters, press Enter in Chrome
+8. [Chrome · Vendor Portal] Opens the Payments section in the vendor portal dashboard.
+
+#### Data flow: field to field
+
+Taken from the recording: every value that was copied or typed, where from and where to.
+
+No values were copied or typed in this task.
+
+#### How the systems can connect
+
+Each option has a status: *documented* (official documentation, access still needed), *found online, confirm* (a web search hit), *unknown* (no evidence: ask the vendor or IT), or a fallback.
+
+| System | Role | Options |
+|---|---|---|
+| Outlook | used, no data moved | API: [Microsoft Graph mail API](https://learn.microsoft.com/graph/api/resources/mail-api-overview) *(documented)*<br>n8n: [n8n Microsoft Outlook node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftoutlook/) *(documented)*<br>Postman: [Try the Graph calls in Postman first](https://learn.microsoft.com/graph/use-postman) *(documented)* |
+| Excel | used, no data moved | API: [Microsoft Graph Excel API](https://learn.microsoft.com/graph/api/resources/excel) *(documented)*<br>n8n: [n8n Microsoft Excel 365 node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftexcel/) *(documented)*<br>SQL: [Keep the tracker in a database table instead](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/) *(option)*<br>File: [Read and write the file directly (n8n Read/Write Files)](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.readwritefile/) *(documented)* |
+| Chrome · Vendor Portal | used, no data moved | API: Vendor Portal API *(unknown, ask the vendor or IT)*<br>Postman: [Test the portal's API in Postman once you have its documentation](https://learning.postman.com/docs/introduction/overview/) *(after API access)*<br>SQL: Write to the portal's database directly *(unknown, ask the vendor or IT)*<br>Browser automation: [Playwright script that fills the form](https://playwright.dev/python/docs/locators) *(works without an API)* |
+
+#### Proposed automation sequence
+
+1. **Trigger** · Outlook: When a new email arrives (checked on a schedule, e.g. every 15 minutes).
+   - _How: Microsoft Graph mail API (n8n: Microsoft Outlook node or HTTP Request) (documented)_
+2. **Finish** · Outlook: Then in Outlook: Inbox → Filter → Unread.
+   - _How: Microsoft Graph mail API (n8n: Microsoft Outlook node or HTTP Request) (documented)_
+3. **Finish** · Excel: Then in Excel: October → A1.
+   - _How: Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table (documented)_
+4. **Finish** · Chrome · Vendor Portal: Then in Chrome · Vendor Portal: Payments.
+   - _How: No public API found: ask the vendor for an API or bulk upload. Until then, browser automation (Playwright) (unknown, ask the vendor or IT)_
+5. **Human check**: Which unread emails require accounts payable action
+   - _How: Keep a person here, or define the rule (open)_
+6. **Human check**: Which tracker items need follow-up in the portal
+   - _How: Keep a person here, or define the rule (open)_
+
+**To build it**, once the questions above are answered, run `python -m flowsme build demo-invoice-processing --task 1`. It writes an n8n workflow to import, a Postman collection to test each connection, and SQL and Playwright starters.
+
+#### Process improvement (Lean Six Sigma, DMAIC)
+
+**Define.** What must go right (critical to quality):
+
+- Each item done within the agreed time (now about 0.7 min of hands-on work)
+
+| Suppliers | Inputs | Process | Outputs | Customers |
+|---|---|---|---|---|
+| whoever sends to Outlook | - | Trigger: Outlook<br>Finish: Outlook<br>Finish: Excel<br>Finish: Chrome · Vendor Portal | - | Who uses these outputs? (not visible in the recording: ask) |
+
+**Measure.** 0.7 min of hands-on work per item, 1 items in this recording, 0 manual entries per item.
+
+| Time per item | Minutes | Share |
+|---|---|---|
+| waste (non-value-adding) | 0.74 | 100% |
+
+Process cycle efficiency: **0%** (value-adding time ÷ total).
+
+Error exposure: 0 manual entries per item now, 0 after automation, about 20 items a month.
+
+| Human error rate (source) | Errors a month now | After automation | DPMO | Sigma level |
+|---|---|---|---|---|
+| 0.14% per entry: [Nahm et al. 2008: source to database, clinical trials](https://doi.org/10.1371/journal.pone.0003049) | 0.0 | 0.0 | 1,430 | 4.0 |
+| 0.29% per entry: [Garza et al. 2025: meta-analysis of 93 studies, single data entry](https://doi.org/10.1016/j.ijmedinf.2024.105749) | 0.0 | 0.0 | 2,900 | 4.0 |
+| 3.70% per entry: [Mays & Mathias 2019: manual transcription of numeric results](https://pmc.ncbi.nlm.nih.gov/articles/PMC6351970/) | 0.0 | 0.0 | 37,000 | 3.0 |
+
+**Analyze.** Waste found in the recording:
+
+| Waste | Evidence | Min per item |
+|---|---|---|
+| Motion waste | 4 window switches and 8 navigation steps per item | 0.74 |
+| Defects and rework | 'Vendor' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Amount' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Invoice number' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Due date' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. | - |
+| Unused talent | 100% of this person's time on this task is moving and re-typing data | - |
+
+Bottleneck (Theory of Constraints): **Trigger · Outlook** at 0.34 min per item. Improve this stage first: speeding up any other stage doesn't shorten the whole.
+
+**Improve.** First remove waste (ECRS), then automate what's left:
+
+- **Automate:** Then automate what is left, as in the tool plan below.
+
+Tool plan. Your tools: Microsoft 365, Power Automate, Power BI. Runs the workflow: Power Automate (cloud flows).
+
+| Stage | Now (min/item) | With your tools | With suggested tools |
+|---|---|---|---|
+| 1. Trigger · Outlook | 0.34 | Email API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.02 | Email API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.02 |
+| 2. Finish · Outlook | 0.00 | Email API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.00 | Email API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.00 |
+| 3. Finish · Excel | 0.34 | stays manual: 0.34 | Desktop automation (Power Automate Desktop): 0.07 |
+| 4. Finish · Chrome · Vendor Portal | 0.06 | stays manual: 0.06 | Desktop automation (Power Automate Desktop): 0.01 |
+| **Total** | **0.7** | **0.4** | **0.1** |
+
+Per month (20 items): 0.2 h now, 0.1 h with your tools, 0.0 h with the additions.
+
+Adding tools, biggest gain first:
+
+- **Power Automate Desktop** saves another 0.3 min per item (0.1 h a month). Cost: free on Windows for attended runs; unattended runs need a licence.
+
+If the vendor provides an API key for **Vendor Portal API**, use it instead of browser automation: it is more reliable and won't break when the page changes.
+
+<sub>Minutes after automation assume each method removes this share of a stage's time (people still review exceptions): api 95%, database 95%, ai extraction 85%, pdf rules 70%, api wrapper 90%, browser 85%, rpa 80%. These are planning estimates; measure after the pilot.</sub>
+
+**Control.** Validation checklist: error-proofing first, then detection. Why that order: When values flowed electronically instead of being transcribed, transcription errors fell from 6.1% to zero. ([Poon et al. 2010](https://pubmed.ncbi.nlm.nih.gov/20445181/)) Checking entries by eye was not significantly better than no checking; double entry was far better. ([Barchard & Pace 2011](https://doi.org/10.1016/j.chb.2011.04.004)) Built-in validation alarms prevented only a small fraction of errors. ([Goldberg et al. 2008](https://pmc.ncbi.nlm.nih.gov/articles/PMC2656002/)) A second, independent entry of the same data caught 88% of errors. ([Kawado et al. 2003](https://pubmed.ncbi.nlm.nih.gov/14500053/))
+
+| Where | Type | Check | Evidence |
+|---|---|---|---|
+| corrections | detect | Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys). | 'Vendor' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Amount' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Invoice number' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. 'Due date' in Chrome · Vendor Portal was written 8 times: a value had to be corrected. |
+| every run | control | Reconcile counts: items received = rows written = records submitted. Investigate any gap. | standard control for multi-system hand-offs |
+| every run | control | Log each item with its result (done / exception / failed) and review exceptions daily. | needed to measure error rate after go-live |
+
+Measure after go-live, in the final report (Power BI, Looker Studio or Excel, fed by the run log from `flowsme build`; suggested: Power BI):
+
+- Items processed per day
+- Hands-on minutes per item (target: 0.1 or less)
+- Exceptions sent to a person (%)
+- First-pass yield: items done with no correction (%)
+- Errors caught by checks, by type
+- Duplicates blocked
+
+**Recommendations** _(AI analysis)_
+
+1. **One-click AP workspace launcher - Desktop flow**: _Desktop automation (RPA) · effort: hours · about 80% of this task's time · steps 1-8_
+
+   Build one Power Automate Desktop flow AP_Workspace_Launcher. It launches Outlook and applies Unread filter, opens the tracker file and activates October!A1, then launches Chrome to the saved Payments URL and tiles windows. User runs it once each morning instead of steps 1-8.
+
+   *Why:* ECRS combine + Theory of Constraints: collapses bottleneck trigger and 8 navigation steps into one click; evidence 0.7 min/run all NVA, tool plan shows Desktop automation 0.7 to 0.1 min
+
+   Tools: Power Automate Desktop, Outlook, Excel, Chrome
+
+2. **Persistent built-ins instead of navigation**: _Built-in feature · effort: hours · about 40% of this task's time · steps 1-3, 5-8_
+
+   No code fallback: create Outlook Search Folder for Unread Mail and add to Favorites, pin tracker and set Excel Quick Access to October!A1, save Payments page as Chrome bookmark/app shortcut. Use these three clicks to start review if Desktop flow is blocked.
+
+   *Why:* ECRS simplify: uses official built-in features before automating; removes motion waste of 4 switches without maintenance
+
+   Tools: Outlook, Excel, Chrome
+
+3. **Unread AP triage digest via Graph**: _API integration · effort: days · about 30% of this task's time · steps 1-3_
+
+   Add scheduled Power Automate cloud flow at 08:00 weekdays: Microsoft Graph mail API List unread messages with AP keywords, get count + sender/subject/received table, post to Teams/email and link to Outlook unread view. Keep manual scan as backup until trusted.
+
+   *Why:* Bottleneck fix + poka-yoke: replaces manual inbox scan 0.34 min/item and makes backlog visible so launcher does not hide overdue invoices
+
+   Tools: Power Automate, Microsoft Graph mail API, Outlook
+
+**Assumptions to confirm:**
+
+- Tracker file path and 'October' tab naming are stable and file is accessible when flow runs
+- Vendor Portal Payments URL typed in step 7 is stable and login uses SSO without extra MFA blocking automation
+- Outlook desktop profile is already configured and unread filter needs no other criteria
+- Steps 1-8 are prep-only with no copy-paste or decisions; actual review stays manual
+- User is licensed for Power Automate Desktop and allowed UI automation
+- Vendor Portal API status is unknown so no portal API is assumed - UI launch only
+
+**Quick wins:**
+
+- Bookmark Vendor Portal Payments URL in Chrome bookmark bar with SSO stay-signed-in
+- Save Unread as Outlook Favorite/Search Folder to replace steps 2-3 with one click
+- Pin AP tracker to Excel Recent + Taskbar and set shortcut to open October!A1
+
+**Check before automating:**
+
+- Desktop selectors break on Outlook/Excel/portal UI updates - need selector review and error screenshots
+- Vendor Portal session expiry or password/MFA prompt will block auto-open; ask vendor/IT for SSO and API docs before deeper automation
+- Launcher hides backlog size - need digest/control count of unread + tracker rows after go-live
+- Recording notes 8 corrections of Vendor/Amount/Invoice/Due date not visible in steps 1-8 - if next task is data entry, launcher alone will not prevent rework
+
+**Existing tools and guides found online:**
+
+- [Invoice capture solution](https://learn.microsoft.com/en-us/dynamics365/finance/accounts-payable/invoice-capture-overview): 
+- [Integration between finance and operations apps and third-party services](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/data-entities/integration-overview): 
+- [Business events in Microsoft Power Automate](https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/business-events/business-events-flow): 
+
+**Tools that usually fit these applications:**
+
+- [Microsoft Power Automate](https://www.microsoft.com/power-platform/products/power-automate): Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors
+- [n8n](https://n8n.io): Self-hostable workflow automation that connects web apps through their APIs, with AI steps
+- [Zapier](https://zapier.com): No-code integrations between cloud apps
+- [Make](https://www.make.com): Visual multi-step integrations between cloud apps
+
+**Automation draft** (power_automate, saved to `automations/task1.txt`)
+
+Power Automate Desktop one-click launcher that reproduces steps 1-8: filters Outlook to unread, opens tracker to October!A1, opens portal Payments URL.
+
+```text
+DESKTOP FLOW: AP_Workspace_Launcher
+1. Launch Outlook (if not running) -> Wait for 'Inbox' window
+2. UI Automation: Click View > Filter > Unread [fallback: Send Keys Alt+V,F,U] -> Verify filter label = 'Unread'
+3. Open Document: FilePath = %AP_Tracker_Path% (e.g. SharePoint synced path) ReadOnly=false
+4. Excel Action: Activate Worksheet 'October' -> GoTo Cell A1 -> Freeze Panes check
+5. Launch Chrome: URL = %Vendor_Portal_Payments_URL% (saved 22-char address from step 7) -> Wait for selector: text='Payments'
+6. Arrange Windows: Outlook Left, Excel Center, Chrome Right + Focus Excel!October!A1
+7. On Error: Screenshot + Log to %Desktop%\AP_Launcher_Log.txt and stop with message
+```
+
+## Methods used
+
+| Method | What it means | Sources |
+|---|---|---|
+| Transportation waste | Moving material between steps without changing it. In office work the material is data: carrying it between applications, files or people unchanged. | [1](https://www.lean.org/lexicon-terms/seven-wastes/), [2](https://asq.org/quality-resources/lean) |
+| Motion waste | Unnecessary movement by the worker, such as searching for documents. On a desktop: navigating, searching, scrolling and switching windows without changing the work. | [1](https://www.lean.org/lexicon-terms/seven-wastes/), [2](https://asq.org/quality-resources/lean) |
+| Waiting waste | Idle time waiting for machines, information, approvals or the previous step. | [1](https://www.lean.org/lexicon-terms/seven-wastes/), [2](https://asq.org/quality-resources/lean) |
+| Over-processing waste | More work than the customer needs, such as entering the same data twice or checks beyond what the risk warrants. | [1](https://www.lean.org/lexicon-terms/seven-wastes/), [2](https://asq.org/quality-resources/lean) |
+| Defects and rework | Errors that need inspection, correction or rework: the work is paid for twice and may reach the customer. | [1](https://www.lean.org/lexicon-terms/seven-wastes/), [2](https://asq.org/quality-resources/lean) |
+| Inventory waste | More work-in-process than smooth flow needs: in offices, queues of unprocessed emails, requests and documents. More waiting work means longer lead time. | [1](https://www.lean.org/lexicon-terms/seven-wastes/), [2](https://www.isixsigma.com/dictionary/process-cycle-efficiency-pce/) |
+| Overproduction | Producing more, or earlier, than the next step needs, such as reports nobody uses. | [1](https://www.lean.org/lexicon-terms/overproduction/) |
+| Unused talent | Not using people's skills and judgement; added to Ohno's original seven wastes as the eighth. | [1](https://asq.org/quality-resources/lean), [2](https://www.isixsigma.com/dictionary/8-wastes-of-lean/) |
+| Value-added analysis (VA / BVA / NVA) | Value-added steps change the output in a way the customer would pay for. Business-value-added steps are required (law, control, audit) but add nothing for the customer. Non-value-added steps are waste: eliminate them, and minimise BVA. | [1](https://www.isixsigma.com/dictionary/value-added/), [2](https://www.isixsigma.com/dictionary/business-value-added/), [3](https://www.isixsigma.com/dictionary/non-value-added/) |
+| Process cycle efficiency | Value-added time divided by total lead time. A low figure means most time is waiting or non-value-added work. Here it is measured on hands-on time only, so the true figure (with waiting between items) is lower. | [1](https://www.isixsigma.com/dictionary/process-cycle-efficiency-pce/) |
+| Value stream mapping | Mapping every step needed to deliver a service, with process time, waits and value class, to expose waste and design the future state. | [1](https://www.lean.org/lexicon-terms/value-stream-mapping/), [2](https://asq.org/quality-resources/value-stream-mapping) |
+| Takt time vs cycle time | Takt time = available working time / customer demand: the pace work must keep. When the cycle time per item is above takt, a backlog grows. | [1](https://www.lean.org/lexicon-terms/takt-time/), [2](https://www.lean.org/lexicon-terms/cycle-time/) |
+| 5S (digital workplace) | Sort, set in order, shine, standardize, sustain: organising the workplace so nothing has to be searched for. On a desktop: folders, file names, templates, bookmarks. | [1](https://www.lean.org/lexicon-terms/five-s/), [2](https://asq.org/quality-resources/five-s-tutorial) |
+| Gemba (go and see) | Observe the real work where it happens instead of relying on reports or the written procedure. A recording is a digital gemba walk: it shows the actual process. | [1](https://www.lean.org/lexicon-terms/gemba/) |
+| Standardized work | One precise, agreed way to do the work (sequence, timing, materials). It is the baseline improvement is measured against, and the automation script follows it. | [1](https://www.lean.org/lexicon-terms/standardized-work/) |
+| Poka-yoke (error-proofing) | Simple means that stop a mistake from being made, or make it obvious at once. Prevention (it can't be done wrong) is preferred to detection. | [1](https://www.lean.org/lexicon-terms/poka-yoke/), [2](https://asq.org/quality-resources/mistake-proofing) |
+| Jidoka (stop on abnormality) | Detect an abnormal condition and stop, instead of passing errors downstream. For automation: hand exceptions to a person rather than forcing them through. | [1](https://www.lean.org/lexicon-terms/jidoka/) |
+| Kaizen | Small, frequent improvements by the people who do the work, usually run as plan-do-check-act cycles. | [1](https://www.lean.org/lexicon-terms/kaizen/), [2](https://asq.org/quality-resources/continuous-improvement) |
+| Lean Six Sigma | Lean removes waste and improves flow; Six Sigma reduces variation and defects. Used together, usually through DMAIC. | [1](https://asq.org/quality-resources/six-sigma) |
+| DMAIC | Define, Measure, Analyze, Improve, Control: the structured cycle for improving an existing process with data. | [1](https://asq.org/quality-resources/dmaic), [2](https://www.isixsigma.com/dictionary/dmaic/) |
+| SIPOC | A one-page scope of a process: Suppliers, Inputs, Process (5-7 steps), Outputs, Customers. | [1](https://www.isixsigma.com/sipoc-copis/sipoc-diagram/), [2](https://asq.org/quality-resources/sipoc) |
+| Critical to quality (CTQ) | Measurable requirements from the voice of the customer (e.g. 100% field accuracy). They define what counts as a defect. | [1](https://www.isixsigma.com/dictionary/critical-to-quality-ctq/) |
+| DPMO and sigma level | DPMO = defects / (units x opportunities) x 1,000,000; each field entered is an opportunity. Six sigma is 3.4 DPMO (long term, with the conventional 1.5 sigma shift). | [1](https://www.isixsigma.com/dictionary/defects-per-million-opportunities-dpmo/), [2](https://www.isixsigma.com/dictionary/sigma-level/) |
+| First-pass yield | Share of items that pass a step correctly the first time. A high final yield with a low first-pass yield reveals hidden rework. | [1](https://www.isixsigma.com/dictionary/first-time-yield-fty/), [2](https://www.isixsigma.com/dictionary/rolled-throughput-yield-rty/) |
+| FMEA | Lists how each step can fail and rates severity, occurrence and detection (1-10); their product (RPN) ranks which risks to control first. | [1](https://asq.org/quality-resources/fmea) |
+| Control plan | How the improved process is held: what is measured, how often, by whom, and what happens when a check fails. | [1](https://www.isixsigma.com/dictionary/control-plan/), [2](https://asq.org/quality-resources/dmaic) |
+| Pareto analysis | Rank causes by frequency or impact; a vital few usually explain most of the effect. | [1](https://asq.org/quality-resources/pareto) |
+| 5 Whys | Ask 'why' repeatedly to get from a symptom to its root cause. | [1](https://www.lean.org/lexicon-terms/5-whys/), [2](https://asq.org/quality-resources/five-whys) |
+| Fishbone (Ishikawa) diagram | Groups possible causes of a problem by category (methods, systems, input data, people, environment), so automation isn't assumed to be the only fix. | [1](https://asq.org/quality-resources/fishbone) |
+| Cost of poor quality | Quality costs split into prevention, appraisal (checking), internal failure (rework) and external failure. Turning rework and checking time into money justifies error-proofing on more than speed. | [1](https://asq.org/quality-resources/cost-of-quality) |
+| Keystroke-Level Model | Predicts expert task time by adding operator times: keystroke about 0.2 s, pointing 1.1 s, moving a hand between keyboard and mouse 0.4 s, a mental step 1.35 s (Card, Moran and Newell 1980). Used to sanity-check claimed time savings. | [1](https://facsrv.cdm.depaul.edu/~cmiller/hci460/materials/goms.html), [2](https://doi.org/10.1145/358886.358895) |
+| Theory of Constraints | Throughput is limited by the constraint. Identify it, exploit it, subordinate the rest to it, elevate it, repeat. Speeding up a non-constraint step doesn't shorten the whole. | [1](https://www.tocinstitute.org/five-focusing-steps.html) |
+| ECRS | Improve in order: Eliminate unneeded steps, Combine, Rearrange, then Simplify. Only then automate, so you don't automate waste. | [1](https://www.lean.org/the-lean-post/articles/the-art-of-lean-use-these-tools-to-help-you-improve-a-process-part-2/) |
+| PDCA | Plan, Do, Check, Act: try a change small, measure it, then standardise or adjust. | [1](https://asq.org/quality-resources/pdca-cycle), [2](https://deming.org/explore/pdsa/) |
+| Automation suitability | Good candidates are standardised, stable, rule-based, frequent and long enough to matter, with structured digital inputs, few exceptions and error-prone manual work (Wellmann et al., BPM 2020: 13 criteria in 5 groups). | [1](https://arxiv.org/abs/2007.10900), [2](https://doi.org/10.1007/s12599-018-0542-4) |
+| Robotic process mining | Finding automatable routines in user-interaction logs (clicks, keys, copy-paste) and generating automation from them: the research field closest to what FlowSME does. | [1](https://doi.org/10.1007/s12599-020-00641-4) |
+
+## How to read this
+
+- **One recording shows one path.** Exceptions and variations only appear across several recordings of the same process, so record it a few times before building anything.
+- **Timing** comes from clicks, keystrokes and window changes. Reading and thinking time before the next action counts toward the step before it.
+- **Automation potential** is a 0-100 signal score built from repetition, copy-paste between applications, typing, window switching and time spent.
+- **Savings** use the AI model's estimate of the automatable share when one was available, otherwise 60%, 35% or 10% for high, medium or low potential.
+- **Automation drafts** are starting points. Review and test them on sample data before using them on real work.
+- **Privacy:** Typed text was not stored, only counted. Excluded apps and windows were not captured.
+</script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  const main = document.getElementById("content");
+  main.innerHTML = marked.parse(document.getElementById("md").textContent);
+  main.querySelectorAll("code.language-mermaid").forEach((code) => {
+    const div = document.createElement("div");
+    div.className = "mermaid";
+    div.textContent = code.textContent;
+    code.parentElement.replaceWith(div);
+  });
+  mermaid.initialize({ startOnLoad: false, theme: "default", flowchart: { htmlLabels: true } });
+  mermaid.run();
+</script>
+</body>
+</html>

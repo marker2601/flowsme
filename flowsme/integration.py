@@ -13,12 +13,14 @@ import re
 from collections import Counter
 
 from .models import BROWSER_LABELS, Step, Task, base_app
+from .schemas import API_CHECK
 from .search import search_web
 
 DOCUMENTED = "documented"
 FOUND = "found online, confirm"
 UNKNOWN = "unknown, ask the vendor or IT"
 FALLBACK = "works without an API"
+VALUE_WINDOW = 180.0  # seconds to look back for where a typed value was copied or typed before
 OPTION = "option"
 
 _CELL = re.compile(r"^([A-Z]{1,3})(\d+)$")
@@ -126,24 +128,41 @@ def system_kind(system: str, documents: set[str]) -> str:
 
 # ---- data flow ------------------------------------------------------------------------------------
 
-def data_flows(task: Task) -> list[dict]:
-    """One row per field-to-field move, counted over every run of the task."""
+def data_flows(task: Task, context: list[Step] | None = None) -> list[dict]:
+    """One row per field-to-field move, counted over every run of the task. `context` is the whole
+    session, so a value copied just before a run's boundary still counts as that value's source."""
     numbers = {s.index: n for n, s in enumerate(task.representative, 1)}
     rows: dict[tuple, dict] = {}
+    history = sorted(context or task.steps, key=lambda s: s.index)
+    position = {s.index: i for i, s in enumerate(history)}
 
-    def add(src, dst, how, step, run_no, chars=0, match=None):
+    def earlier_value(step: Step, here: dict) -> dict | None:
+        """The most recent earlier place (within VALUE_WINDOW seconds) where a typed value was copied or typed."""
+        for prev in reversed(history[:position.get(step.index, 0)]):
+            if step.start - prev.start > VALUE_WINDOW:
+                break
+            if prev.excluded:
+                continue
+            hashes = set(prev.typed_hashes) | ({prev.copy_hash} if prev.copy_hash else set())
+            if hashes & set(step.typed_hashes) and _key(endpoint(prev)) != _key(here):
+                return endpoint(prev)
+        return None
+
+    def add(src, dst, how, step, run_no, chars=0, match=None, fingerprinted=False):
         row = rows.setdefault((how, _key(src), _key(dst)), {
-            "from": src, "to": dst, "how": how, "steps": [], "chars": 0, "_runs": set(), "_matches": {}})
+            "from": src, "to": dst, "how": how, "steps": [], "chars": 0, "_runs": set(), "_matches": {},
+            "_fingerprinted": set()})
         row["_runs"].add(run_no)
         row["chars"] = max(row["chars"], chars)
         if match:
             row["_matches"][run_no] = match
+        if fingerprinted:
+            row["_fingerprinted"].add(run_no)
         if step.index in numbers:
             row["steps"].append(numbers[step.index])
 
     for run_no, run in enumerate(task.iterations or [task.steps]):
         clipboard = None
-        seen: dict[str, dict] = {}  # value fingerprint -> where that value was first copied or typed in this run
         for step in run:
             if step.excluded:
                 continue
@@ -152,14 +171,10 @@ def data_flows(task: Task) -> list[dict]:
                 src = clipboard or {"system": "?", "document": "", "field": "copied outside the recording"}
                 add(src, here, "copy-paste", step, run_no)
             if step.chars_typed:
-                match = next((seen[h] for h in step.typed_hashes if h in seen and _key(seen[h]) != _key(here)), None)
-                add(None, here, "typed", step, run_no, step.chars_typed, match)
-                for h in step.typed_hashes:
-                    seen.setdefault(h, here)
+                add(None, here, "typed", step, run_no, step.chars_typed,
+                    earlier_value(step, here) if step.typed_hashes else None, bool(step.typed_hashes))
             if step.copies:
                 clipboard = here
-                if step.copy_hash:
-                    seen.setdefault(step.copy_hash, here)
 
     flows = sorted(rows.values(), key=lambda r: min(r["steps"]) if r["steps"] else 10**6)
     runs_total = len(task.iterations) or 1
@@ -178,13 +193,19 @@ def data_flows(task: Task) -> list[dict]:
         row["runs"] = f"{runs} of {runs_total}"
         # A typed value whose fingerprint equals a value copied or typed earlier in the same run is proven
         # to be that value (in at least half the runs where it appears).
-        matches = list(row.pop("_matches").values())
+        by_run = row.pop("_matches")
+        fingerprinted = row.pop("_fingerprinted")
+        matches = list(by_run.values())
         row["confirmed_source"] = row["value_match"] = None
+        row["mismatched_runs"] = []
         if matches:
             best, count = Counter(_key(m) for m in matches).most_common(1)[0]
             if count * 2 >= runs:
                 row["confirmed_source"] = next(m for m in matches if _key(m) == best)
                 row["value_match"] = f"{count} of {runs} runs"
+                # Runs where the value was fingerprinted but did NOT match: a likely wrong-item entry.
+                row["mismatched_runs"] = sorted(r + 1 for r in fingerprinted
+                                                if r not in by_run or _key(by_run[r]) != best)
         start = row["from"] if row["how"] == "copy-paste" else row["confirmed_source"]
         origin = trace(start)
         row["origin"] = origin if origin is not start else None
@@ -233,7 +254,27 @@ def open_questions(flows: list[dict]) -> list[str]:
 
 # ---- systems and how to connect them --------------------------------------------------------------
 
-def systems(task: Task, flows: list[dict], web_search: bool) -> list[dict]:
+def _grounded_api_check(name: str, llm) -> tuple[dict | None, list[dict]]:
+    """Ask the model, with its own web search, whether `name` has a public API. A documentation URL only
+    counts if it appears in the search citations or results: the model can't invent evidence."""
+    found = llm.grounded(f'Does the software or web portal called "{name}" offer a public API (REST, SOAP, '
+                         "GraphQL, bulk import or webhooks) that another tool could use to create or read records? "
+                         "Answer only from search results, and list official documentation URLs.", API_CHECK) if llm else None
+    if not found or not isinstance(found["data"], dict):
+        return None, []
+    seen = {c["url"] for c in found["citations"]} | {r["url"] for r in found["results"]}
+    urls = [u for u in found["data"].get("documentation_urls") or [] if u in seen]
+    evidence = found["results"][:4] or [{**c, "snippet": ""} for c in found["citations"][:4]]
+    if found["data"].get("has_public_api") == "yes" and urls:
+        return {"method": "API", "name": f"{name} API", "status": FOUND, "url": urls[0],
+                "note": f"{found['data'].get('how_to_connect') or ''} Found by a cited web search: confirm it is the "
+                        "same product and that you can get access.".strip()}, evidence
+    return {"method": "API", "name": f"{name} API", "status": UNKNOWN, "url": "",
+            "note": (found["data"].get("notes") or "") + " No cited public API documentation: ask the vendor or IT."
+            }, evidence
+
+
+def systems(task: Task, flows: list[dict], web_search: bool, llm=None) -> list[dict]:
     sources = {r["from"]["system"] for r in flows if r["from"] and r["how"] == "copy-paste"}
     targets = {r["to"]["system"] for r in flows}
     found = []
@@ -248,15 +289,18 @@ def systems(task: Task, flows: list[dict], web_search: bool) -> list[dict]:
         evidence: list[dict] = []
         if kind in ("web", "desktop"):
             name = system.split(" · ")[-1]
-            evidence = search_web(f'"{name}" API documentation', max_results=4) if web_search else []
-            words = [w for w in re.findall(r"[a-z0-9]+", name.lower()) if len(w) > 2]
-            hit = next((r for r in evidence if words and all(w in (r["title"] + r["url"]).lower() for w in words)), None)
-            api = {"method": "API", "name": f"{name} API",
-                   "status": FOUND if hit else UNKNOWN, "url": hit["url"] if hit else "",
-                   "note": ("A search result mentions this system's API. Confirm it is the same product and that "
-                            "you can get access." if hit else
-                            "No public API documentation found in a web search. Internal or vendor portals often "
-                            "have one anyway: ask the vendor or IT.")}
+            api, evidence = _grounded_api_check(name, llm) if web_search else (None, [])
+            if api is None:  # no grounded search available: plain web search and a name match
+                evidence = search_web(f'"{name}" API documentation', max_results=4) if web_search else []
+                words = [w for w in re.findall(r"[a-z0-9]+", name.lower()) if len(w) > 2]
+                hit = next((r for r in evidence if words and all(w in (r["title"] + r["url"]).lower() for w in words)),
+                           None)
+                api = {"method": "API", "name": f"{name} API",
+                       "status": FOUND if hit else UNKNOWN, "url": hit["url"] if hit else "",
+                       "note": ("A search result mentions this system's API. Confirm it is the same product and that "
+                                "you can get access." if hit else
+                                "No public API documentation found in a web search. Internal or vendor portals often "
+                                "have one anyway: ask the vendor or IT.")}
             options.insert(0, api)
         found.append({"system": system, "kind": kind, "role": role, "documents": sorted(docs),
                       "options": options, "search_results": evidence})
@@ -382,9 +426,9 @@ def automation_sequence(task: Task, flows: list[dict], found: list[dict], action
     return seq
 
 
-def plan(task: Task, web_search: bool) -> dict:
-    flows = data_flows(task)
-    found = systems(task, flows, web_search)
+def plan(task: Task, web_search: bool, context: list[Step] | None = None, llm=None) -> dict:
+    flows = data_flows(task, context)
+    found = systems(task, flows, web_search, llm)
     actions = ui_actions(task, flows)
     return {"data_flows": flows, "open_questions": open_questions(flows), "systems": found,
             "ui_actions": actions, "sequence": automation_sequence(task, flows, found, actions)}
