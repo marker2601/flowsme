@@ -26,6 +26,7 @@ import secrets
 import sys
 import threading
 import time
+import wave
 from ctypes import wintypes
 from datetime import datetime
 from pathlib import Path
@@ -164,6 +165,41 @@ def _key_name(key) -> tuple[str, str | None]:
     return (f"vk{vk}" if vk is not None else "unknown"), None
 
 
+class _Microphone:
+    """Narration: the microphone to a mono 16-bit WAV file. While paused it writes silence, so nothing private
+    is captured and the audio stays in step with the event timeline."""
+
+    def __init__(self, path: Path, rate: int):
+        import sounddevice as sd
+
+        self.wav = wave.open(str(path), "wb")
+        self.wav.setnchannels(1)
+        self.wav.setsampwidth(2)
+        self.wav.setframerate(rate)
+        self.paused = False
+        self.q: queue.Queue = queue.Queue()
+        self.stream = sd.RawInputStream(samplerate=rate, channels=1, dtype="int16", callback=self._callback)
+        self.writer = threading.Thread(target=self._write, name="flowsme-mic", daemon=True)
+
+    def _callback(self, data, frames, time_info, status):  # audio thread: just hand the buffer over
+        self.q.put(bytes(len(data)) if self.paused else bytes(data))
+
+    def _write(self) -> None:
+        while (chunk := self.q.get()) is not None:
+            self.wav.writeframesraw(chunk)
+        self.wav.close()
+
+    def start(self) -> None:
+        self.writer.start()
+        self.stream.start()
+
+    def stop(self) -> None:
+        self.stream.stop()
+        self.stream.close()
+        self.q.put(None)
+        self.writer.join(timeout=5)
+
+
 class Recorder:
     def __init__(self, cfg: Config, session_dir: Path):
         self.cfg = cfg.recorder
@@ -192,6 +228,8 @@ class Recorder:
         self.salt = secrets.token_bytes(32)  # in memory only: never written to disk
         self.clip_seq: int | None = None
         self.last_t = 0.0
+        self.mic: _Microphone | None = None
+        self.audio: dict | None = None
 
     # ---- main thread -------------------------------------------------------------------------
 
@@ -219,6 +257,17 @@ class Recorder:
         print(f"  {self.pause_combo} = pause/resume   {self.stop_combo} (or Ctrl+C here) = stop", flush=True)
         if not self.cfg.capture_typed_text:
             print("  Typed text is counted, not stored.", flush=True)
+        if self.cfg.narrate:
+            try:
+                self.mic = _Microphone(self.dir / "narration.wav", self.cfg.audio_rate)
+                self.mic.start()
+                self.audio = {"file": "narration.wav", "start": round(time.time() - self.t0, 3),
+                              "rate": self.cfg.audio_rate}
+                print("  Narration on: say what you are doing and why (pausing also mutes the microphone).",
+                      flush=True)
+            except Exception as exc:  # no microphone, or no permission
+                self.mic = None
+                print(f"  Narration off: the microphone could not be opened ({exc}).", flush=True)
 
         deadline = time.monotonic() + duration if duration else None
         try:
@@ -230,6 +279,8 @@ class Recorder:
         finally:
             for listener in listeners:
                 listener.stop()
+            if self.mic:
+                self.mic.stop()
             self.q.put(None)
             worker.join(timeout=15)
             self.fp.close()
@@ -476,9 +527,13 @@ class Recorder:
         if not self.paused:
             self._emit(t, "pause")
             self.paused = True
+            if self.mic:
+                self.mic.paused = True
             print("  Paused. Press the pause hotkey again to resume.", flush=True)
         else:
             self.paused = False
+            if self.mic:
+                self.mic.paused = False
             self._emit(t, "resume")
             self.window = None
             self._poll_focus(t)
@@ -599,6 +654,7 @@ class Recorder:
             "duration_seconds": round(time.time() - self.t0, 1) if ended else None,
             "events": self.n_events,
             "screenshots": self.n_shots,
+            "audio": self.audio,
             "privacy": {
                 "capture_typed_text": self.cfg.capture_typed_text,
                 "excluded_apps": self.cfg.excluded_apps,

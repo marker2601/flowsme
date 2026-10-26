@@ -26,6 +26,10 @@ class RecorderConfig:
     ])
     pause_hotkey: str = "ctrl+alt+p"
     stop_hotkey: str = "ctrl+alt+q"
+    # Narration: record the microphone too, so you can explain what you do and why while you work.
+    # Mono 16-bit at 16 kHz, the format Muse Voice Transcribe expects. Pausing records silence.
+    narrate: bool = False
+    audio_rate: int = 16000
 
 
 @dataclass
@@ -62,6 +66,12 @@ class LLMConfig:
     grounded_search: bool = False
     # Meta "contributor" models may use what you send for training: refused unless you opt in here.
     allow_contributor: bool = False
+    # How much search context the model pulls in per web search (low / medium / high): low costs least.
+    search_context_size: str = "low"
+    search_reasoning_effort: str = ""  # empty = same as reasoning_effort
+    # Stop paying AI calls once a single run's estimated cost reaches this many dollars (0 = no cap).
+    max_cost_usd: float = 0.0
+    transcribe_model: str = "muse-voice-transcribe-1.0"
 
 
 @dataclass

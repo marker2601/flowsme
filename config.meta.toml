@@ -26,7 +26,12 @@ min_output_tokens = 4096
 # Meta recommends the model's tuned default temperature.
 temperature = 1.0
 # Tool and API discovery through Muse Spark's own web search, with citations ($2.50 per 1,000 searches).
+# "low" search context pulls in fewer results, which is most of a search's token cost.
 grounded_search = true
+search_context_size = "low"
+search_reasoning_effort = "low"
+# Stop paying for AI calls once one run's estimated cost reaches this (built-in rules take over).
+max_cost_usd = 2.0
 send_screenshots = true
 concurrency = 8
 screenshots_per_call = 4

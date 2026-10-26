@@ -93,6 +93,11 @@ def checklist(task: Task, plan: dict, context: list | None = None) -> dict:
                            "check": f"Pass the value from {label(src)} directly instead of "
                                     f"{'re-keying' if how == 'copied' else 're-typing'} it; after writing, compare "
                                     "the two automatically.", "evidence": evidence})
+        elif how == "narrated":
+            said = row["narrated"]
+            checks.append({"where": target, "type": "prevent", "method": "poka_yoke",
+                           "check": f"Apply the rule automatically instead of typing it: {said['rule'] or said['answer']}",
+                           "evidence": f"typed by hand at step {at}; explained in your narration: \"{said['quote']}\""})
         else:
             checks.append({"where": target, "type": "prevent", "method": "poka_yoke",
                            "check": "Replace free typing with a rule, a lookup or a drop-down"

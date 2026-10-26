@@ -224,13 +224,15 @@ def data_flows(task: Task, context: list[Step] | None = None) -> list[dict]:
 
 
 def source_of(row: dict) -> tuple[dict | None, str]:
-    """Where a value comes from, and how sure we are: copied / same value / probably / unknown."""
+    """Where a value comes from, and how sure we are: copied / same value / narrated / probably / unknown."""
     if row["how"] == "copy-paste":
         if row["from"]["system"] == "?":
             return None, "unknown"
         return row["origin"] or row["from"], "copied"
     if row.get("confirmed_source"):
         return row["origin"] or row["confirmed_source"], "same value"
+    if row.get("narrated"):
+        return None, "narrated"  # explained in the person's own words (a rule, not a field elsewhere)
     if row.get("likely_source"):
         return row["likely_source"], "probably"
     return None, "unknown"
@@ -239,8 +241,8 @@ def source_of(row: dict) -> tuple[dict | None, str]:
 def open_questions(flows: list[dict]) -> list[str]:
     questions = []
     for row in flows:
-        if row["how"] == "typed" and row.get("confirmed_source"):
-            continue  # proven by fingerprint: re-keying, not a question
+        if row["how"] == "typed" and (row.get("confirmed_source") or row.get("narrated")):
+            continue  # proven by fingerprint, or explained in the narration: not a question
         if row["how"] == "typed" and row["likely_source"]:
             questions.append(f"Confirm that **{label(row['to'])}** is the same value as "
                              f"**{label(row['likely_source'])}**. They share a field name, but it was typed by hand.")
@@ -390,6 +392,10 @@ def automation_sequence(task: Task, flows: list[dict], found: list[dict], action
             if how == "same value":
                 mapping.append(f"{row['to']['field']} ← {src['field']} ({src['system']}): typed by hand, but the "
                                f"fingerprints prove it is the same value ({row['value_match']})")
+            elif how == "narrated":
+                said = row["narrated"]
+                mapping.append(f"{row['to']['field']} ← {said['rule'] or said['answer']} (from your narration: "
+                               f"\"{said['quote']}\")")
             elif how == "probably":
                 mapping.append(f"{row['to']['field']} ← probably {src['field']} ({src['system']}), same field "
                                "name but typed by hand: confirm")
@@ -426,9 +432,15 @@ def automation_sequence(task: Task, flows: list[dict], found: list[dict], action
     return seq
 
 
-def plan(task: Task, web_search: bool, context: list[Step] | None = None, llm=None) -> dict:
+def plan(task: Task, web_search: bool, context: list[Step] | None = None, llm=None,
+         turns: list[dict] | None = None, explained: dict | None = None) -> dict:
     flows = data_flows(task, context)
+    if turns:
+        from .narration import answer_open_questions  # narration builds on this module
+
+        answer_open_questions(task, flows, turns, llm, explained)
     found = systems(task, flows, web_search, llm)
     actions = ui_actions(task, flows)
     return {"data_flows": flows, "open_questions": open_questions(flows), "systems": found,
-            "ui_actions": actions, "sequence": automation_sequence(task, flows, found, actions)}
+            "ui_actions": actions, "sequence": automation_sequence(task, flows, found, actions),
+            "answered_by_narration": [{"field": label(r["to"]), **r["narrated"]} for r in flows if r.get("narrated")]}

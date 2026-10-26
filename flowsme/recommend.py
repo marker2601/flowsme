@@ -181,7 +181,9 @@ def _ai_recommendation(task: Task, web: list[dict], catalog: list[dict], llm: LL
         f"- {label(r['from']) if r['how'] == 'copy-paste' else 'typed by hand'} -> {label(r['to'])}"
         + (f" (typed, but proven the same value as {label(r['confirmed_source'])})" if r.get("confirmed_source")
            else "")
-        + (f" (originally {label(r['origin'])})" if r.get("origin") else "") for r in plan.get("data_flows", []))
+        + (f" (originally {label(r['origin'])})" if r.get("origin") else "")
+        + (f" (the person said: \"{r['narrated']['quote']}\"; rule: {r['narrated']['rule'] or r['narrated']['answer']})"
+           if r.get("narrated") else "") for r in plan.get("data_flows", []))
     connections = "\n".join(
         f"- {s['system']}: " + "; ".join(f"{o['method']} {o['name']} [{o['status']}]" for o in s["options"])
         for s in plan.get("systems", []))

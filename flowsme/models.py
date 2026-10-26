@@ -70,6 +70,7 @@ class Step:
     right_click: bool = False
     copy_hash: str | None = None  # salted fingerprint of what was copied (never the value)
     typed_hashes: list[str] = field(default_factory=list)  # fingerprints of what was typed
+    narration: str = ""  # what the person said while doing this step
 
     @property
     def copies(self) -> bool:

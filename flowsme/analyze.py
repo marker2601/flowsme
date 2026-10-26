@@ -8,6 +8,7 @@ from .describe import describe_steps
 from .llm import LLM
 from .integration import plan
 from .methods import analyse
+from .narration import attach, transcribe_session
 from .toolplan import tool_plan
 from .validation import checklist
 from .recommend import candidates, recommend
@@ -31,14 +32,21 @@ def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
     out = session_dir / "analysis"
     out.mkdir(exist_ok=True)
     llm = LLM(cfg.llm)
+    llm.use_cache(out / "ai_cache.json")  # re-runs don't pay twice for the same request
+    turns = transcribe_session(session_dir, meta, llm, log)
+    if turns:
+        attach(steps, turns)
+        meta = {**meta, "narration": turns}
     concurrency = cfg.llm.concurrency
     from_screenshots = describe_steps(steps, tasks, llm, cfg.llm, session_dir, out / "descriptions.json", log)
     summarize_tasks(tasks, llm, concurrency, log)
     for task in tasks:
         task.features = task_features(task)
         task.score, task.level, task.reasons = (0, "", []) if task.misc else score_task(task.features)
-    for task in candidates(tasks, cfg.analysis):
-        task.integration = plan(task, cfg.analysis.web_search, steps, llm)
+    explained: dict = {}  # field -> rule from the narration, shared by all tasks
+    # In recording order: people explain a rule the first time they apply it, and later tasks reuse it.
+    for task in sorted(candidates(tasks, cfg.analysis), key=lambda t: t.start):
+        task.integration = plan(task, cfg.analysis.web_search, steps, llm, turns, explained)
         tools = tool_plan(task, task.integration, cfg.customer.tools)
         checks = checklist(task, task.integration, steps)
         lean = analyse(task, task.integration, tools, checks, task.runs * cfg.analysis.runs_per_month)
@@ -61,7 +69,11 @@ def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
         engine = " and ".join(parts)
         if not from_screenshots:
             engine += " (steps described from window and UI-element names, not screenshots)"
-        if llm.failed_roles:
-            engine += "; heuristics filled in where a model failed"
+        if llm.failed_roles or llm.over_budget:
+            engine += "; heuristics filled in where a model failed or the spending cap was reached"
+    if cfg.llm.provider != "offline":
+        log(f"AI usage: {llm.cost_summary()}")
+        engine += f". AI usage: {llm.cost_summary()}"
+        meta = {**meta, "ai_usage": llm.usage}
     paths = write_report(session_dir, meta, steps, tasks, app_map(steps), cfg, engine)
     return {"steps": steps, "tasks": tasks, "paths": paths}

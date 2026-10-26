@@ -84,6 +84,9 @@ def _spec(task: dict) -> dict:
             return src, "recorded"
         if how == "same value":
             return src, "recorded (typed by hand; fingerprints prove it is the same value)"
+        if how == "narrated":
+            said = row["narrated"]
+            return None, f"rule from your narration: {said['rule'] or said['answer']}"
         if how == "probably":
             return src, "probably (same field name): confirm"
         if row["how"] == "copy-paste":

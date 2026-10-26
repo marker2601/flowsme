@@ -34,7 +34,12 @@ def handoffs(steps: list[Step]) -> Counter:
 
 
 def step_lines(steps: list[Step], limit: int = 60) -> str:
-    lines = [f"{i}. [{s.app}] {s.description}" for i, s in enumerate(steps[:limit], 1)]
+    lines, last = [], ""
+    for i, s in enumerate(steps[:limit], 1):
+        lines.append(f"{i}. [{s.app}] {s.description}")
+        if s.narration and s.narration != last:  # what the person said: the "why" behind the clicks
+            lines.append(f'   (said: "{s.narration[:300]}")')
+        last = s.narration
     if len(steps) > limit:
         lines.append(f"... and {len(steps) - limit} more steps")
     return "\n".join(lines)
@@ -46,6 +51,7 @@ def summarize_tasks(tasks: list[Task], llm: LLM, concurrency: int = 4, log=print
             return None
         note = f" (this routine ran {task.runs} times; one run is shown)" if task.repeated else ""
         return llm.chat_json(TASK_PROMPT.format(runs_note=note, steps=step_lines(task.representative)), schema=TASK,
+                             effort="low",
                              role="text", system=SYSTEM, max_tokens=600)
 
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:

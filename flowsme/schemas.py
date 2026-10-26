@@ -12,6 +12,14 @@ _STRS = {"type": "array", "items": _STR}
 
 STEP_GROUP = _obj(steps=_STRS)
 
+# "Does the narration say where this typed value comes from?" The quote is checked against the transcript.
+NARRATION_ANSWER = _obj(
+    answered={"type": "boolean"},
+    answer=_STR,
+    rule=_STR,
+    quote=_STR,
+)
+
 # "Does this system have an API?" answered from a web search; URLs are checked against the citations.
 API_CHECK = _obj(
     has_public_api={"type": "string", "enum": ["yes", "no", "unclear"]},

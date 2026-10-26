@@ -30,6 +30,11 @@ Record your own work:
 
 - **Ctrl+Alt+P** pauses and resumes (use it for anything private).
 - **Ctrl+Alt+Q** stops. Ctrl+C in the terminal also stops.
+- Add `--narrate` to also record the microphone, and explain what you do and why as you work ("the due date
+  is the invoice date plus 30 days"). The analysis transcribes it with Muse Voice Transcribe (about $0.18 an
+  hour of audio) and uses it to answer the questions the clicks alone can't: where a typed value comes from,
+  and the rule behind it. Every answer must quote your words exactly, or it is rejected. A rule you say once
+  applies to the same field in every task of the recording.
 
 Analyse the most recent recording:
 
@@ -229,6 +234,9 @@ report    ->  HTML / Markdown / JSON
 - **Excluded windows.** When a password manager, a Windows security or UAC prompt, or a window whose title
   contains words like "password", "sign in" or "incognito" is in front, nothing about it is captured: no
   screenshot, no title, no text. Edit the list in `config.toml`.
+- **The microphone is off unless you pass `--narrate`.** Pausing (Ctrl+Alt+P) also mutes it: the paused
+  stretch is saved as silence. The audio (`narration.wav`) stays in the session folder; only the analysis
+  sends it to the transcription endpoint.
 - **Everything stays on your computer** unless you configure a hosted AI model. Web searches send only
   generic queries such as "automate copying data from Acrobat Reader to Excel".
 - Screenshots capture the whole monitor, so close anything private before recording. `sessions/` is

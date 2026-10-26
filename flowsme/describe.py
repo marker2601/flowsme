@@ -180,6 +180,8 @@ def _facts(step: Step) -> str:
     facts = f'{step.app}, window "{step.title}". Recorded action: {heuristic_description(step)}'
     if step.target:
         facts += f' (UI element "{step.target}", {step.role or "unknown type"})'
+    if step.narration:
+        facts += f'. Meanwhile the person said: "{step.narration[:300]}"'
     return facts
 
 

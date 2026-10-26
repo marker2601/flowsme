@@ -20,6 +20,8 @@ def main(argv: list[str] | None = None) -> None:
     rec = sub.add_parser("record", help="record your screen activity (Windows)")
     rec.add_argument("--name", help="short label for the session, e.g. 'invoice processing'")
     rec.add_argument("--duration", type=float, help="stop automatically after this many seconds")
+    rec.add_argument("--narrate", action="store_true",
+                     help="also record the microphone: explain what you do and why while you work")
 
     ana = sub.add_parser("analyze", help="analyse a recorded session and write the report")
     ana.add_argument("session", nargs="?", default="latest", help="session id or folder (default: latest)")
@@ -54,6 +56,8 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "record":
         from .recorder import Recorder
 
+        if args.narrate:
+            cfg.recorder.narrate = True
         path = Recorder(cfg, new_session_dir(cfg.sessions_dir, args.name)).run(duration=args.duration)
         print(f"Analyse it with:  python -m flowsme analyze {path.name}")
     elif args.command == "sessions":

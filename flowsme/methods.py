@@ -23,7 +23,9 @@ BVA_WORDS = re.compile(r"submit|send|save|approve|confirm|post|sign|file|move|pr
 def classify_steps(task: Task, plan: dict) -> list[dict]:
     """VA / BVA / NVA for each step of one run, with the waste it represents and why."""
     typed_known = {(r["to"]["system"], r["to"]["field"]) for r in plan["data_flows"]
-                   if r["how"] == "typed" and source_of(r)[1] != "unknown"}
+                   if r["how"] == "typed" and source_of(r)[1] not in ("unknown", "narrated")}
+    typed_rule = {(r["to"]["system"], r["to"]["field"]) for r in plan["data_flows"]
+                  if r["how"] == "typed" and source_of(r)[1] == "narrated"}
     typed_unknown = {(r["to"]["system"], r["to"]["field"]) for r in plan["data_flows"]
                      if r["how"] == "typed" and source_of(r)[1] == "unknown"}
     out = []
@@ -34,6 +36,8 @@ def classify_steps(task: Task, plan: dict) -> list[dict]:
             cls, waste, why = "NVA", "transportation", "moves data between applications by hand"
         elif step.chars_typed and key in typed_known:
             cls, waste, why = "NVA", "over_processing", "re-types a value that already exists elsewhere"
+        elif step.chars_typed and key in typed_rule:
+            cls, waste, why = "NVA", "over_processing", "works out a value by hand with a rule described in the narration"
         elif step.chars_typed and key in typed_unknown:
             cls, waste, why = "VA?", "", "enters information whose source the recording doesn't show: may be judgement"
         elif step.action == "click" and BVA_WORDS.search(step.target or ""):
@@ -72,7 +76,8 @@ def analyse(task: Task, plan: dict, tools: dict, checks: dict, items_per_month: 
     waste("motion", f"{switches:.0f} window switches and "
           f"{sum(1 for s in steps if s['waste'] == 'motion')} navigation steps per item" if switches else "",
           [s["step"] for s in steps if s["waste"] == "motion"])
-    twice = [r for r in flows if r["how"] == "typed" and source_of(r)[1] != "unknown"]
+    twice = [r for r in flows if r["how"] == "typed" and source_of(r)[1] not in ("unknown", "narrated")]
+    by_rule = [r for r in flows if r["how"] == "typed" and source_of(r)[1] == "narrated"]
     hops = [r for r in flows if r["how"] == "copy-paste" and r.get("origin")]
     over = []
     proven = [r for r in twice if r.get("confirmed_source")]
@@ -82,6 +87,10 @@ def analyse(task: Task, plan: dict, tools: dict, checks: dict, items_per_month: 
     if len(twice) > len(proven):
         over.append(f"{len(twice) - len(proven)} typed value(s) that probably exist elsewhere (same field name: "
                     + ", ".join(r["to"]["field"] for r in twice if not r.get("confirmed_source")) + ")")
+    if by_rule:
+        over.append(f"{len(by_rule)} value(s) worked out by hand with a rule described in the narration ("
+                    + ", ".join(f"{r['to']['field']}: {r['narrated']['rule'] or r['narrated']['answer']}"
+                                for r in by_rule) + ")")
     if hops:
         over.append(f"{len(hops)} value(s) copied into one file only to be copied out again ("
                     + ", ".join(f"{r['from']['field']} in {r['from']['system']}" for r in hops) + ")")

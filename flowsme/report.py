@@ -140,7 +140,7 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
 
     w("## Task details\n")
     for t in ranked:
-        _task_section(w, t, cfg, session)
+        _task_section(w, t, cfg, session, meta.get("narration") or [])
 
     misc = [t for t in tasks if t.misc]
     if misc:
@@ -173,7 +173,7 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
     return "\n".join(out)
 
 
-def _task_section(w, t: Task, cfg: Config, session: str) -> None:
+def _task_section(w, t: Task, cfg: Config, session: str, turns: list[dict]) -> None:
     rep = t.representative
     w(f"### {t.id}. {t.name}\n")
     runs = f"{t.runs} runs of about {fmt_minutes(t.minutes / t.runs)}" if t.repeated else "1 run"
@@ -205,6 +205,13 @@ def _task_section(w, t: Task, cfg: Config, session: str) -> None:
     if len(rep) > 60:
         w(f"\n_...and {len(rep) - 60} more steps._")
     w("")
+    said = [x for x in turns if x["end"] >= t.start - 2 and x["start"] <= t.end + 2]
+    if said:
+        w("**What you said while working** (from the narration):\n")
+        w("\n".join(f"- _{int(x['start'] // 60)}:{int(x['start'] % 60):02d}_ “{x['text']}”" for x in said[:15]))
+        if len(said) > 15:
+            w(f"\n_...and {len(said) - 15} more._")
+        w("")
     _integration_section(w, t, session)
     _improvement_section(w, t, cfg)
 
@@ -268,7 +275,9 @@ def _integration_section(w, t: Task, session: str) -> None:
                 src += f"; **same value as {label(r['confirmed_source'])}** (fingerprint match, {r['value_match']})"
             if r.get("origin"):
                 src += f" (originally {label(r['origin'])})"
-            if r.get("likely_source"):
+            if r.get("narrated"):
+                src += f"; **explained in your narration:** “{r['narrated']['quote']}”"
+            elif r.get("likely_source"):
                 src += f"; probably {label(r['likely_source'])}, same field name: confirm"
             how = "copy-paste" if r["how"] == "copy-paste" else f"typed ({r['chars']} characters)"
             steps = ", ".join(str(n) for n in sorted(set(r["steps"]))) or "-"
@@ -276,6 +285,10 @@ def _integration_section(w, t: Task, session: str) -> None:
         w("")
     else:
         w("No values were copied or typed in this task.\n")
+    if plan.get("answered_by_narration"):
+        w("**Answered by your narration** (quoted word for word from the transcript):\n")
+        w("\n".join(f"- {a['field']}: {a['answer']}" + (f" Rule: {a['rule']}." if a["rule"] else "")
+                    + f" (“{a['quote']}”)" for a in plan["answered_by_narration"]) + "\n")
     if plan["open_questions"]:
         w("**Decide before automating:**\n")
         w("\n".join(f"- {q}" for q in plan["open_questions"]) + "\n")
