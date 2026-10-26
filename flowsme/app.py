@@ -24,6 +24,7 @@ from . import __version__
 from .config import Config, load_config
 from .models import fmt_minutes
 from .session import list_sessions, load_meta, new_session_dir
+from .toolplan import CATALOG
 
 # First-run settings for the app: Muse Spark on the Meta Model API, with a spending cap per report.
 DEFAULT_CONFIG = """# FlowSME app settings. Recordings are kept next to this file, in "sessions".
@@ -153,6 +154,41 @@ def engine_text(cfg: Config) -> str:
     return "No Meta API key yet: reports use built-in rules. Add one in Settings."
 
 
+# The tool catalog's names, short enough for check boxes ("Microsoft 365", "Power BI"...).
+TOOL_NAMES = [t.name.split(" (")[0] for t in CATALOG]
+
+
+def apply_options(cfg: Config, options: dict) -> Config:
+    """The report options chosen in the app, on top of the settings file."""
+    if options["mode"] != "ai":
+        cfg.llm.provider = "offline"
+    cfg.llm.max_cost_usd = options["max_cost_usd"]
+    cfg.llm.send_screenshots = options["screenshots"]
+    cfg.analysis.web_search = options["web_search"]
+    cfg.analysis.runs_per_month = options["runs_per_month"]
+    cfg.analysis.hourly_cost = options["hourly_cost"]
+    cfg.analysis.currency = options["currency"]
+    cfg.customer.tools = options["tools"] + [t.strip() for t in options["other_tools"].split(";") if t.strip()]
+    return cfg
+
+
+def _title(path: Path) -> str:
+    return _STAMP.sub("", path.name).replace("-", " ") or path.name
+
+
+def _status(path: Path) -> str:
+    if not (path / "analysis" / "report.html").exists():
+        return ""
+    built = path / "analysis" / "automations"
+    return "ready, built" if built.exists() and any(built.glob("task*")) else "ready"
+
+
+def _read_json(path: Path) -> dict | None:
+    with contextlib.suppress(OSError, ValueError):
+        return json.loads(path.read_text(encoding="utf-8"))
+    return None
+
+
 def _desktop() -> Path:
     buf = ctypes.create_unicode_buffer(260)
     with contextlib.suppress(Exception):
@@ -237,7 +273,7 @@ class App:
         box = ttk.LabelFrame(r, text="Recordings", padding=12)
         box.pack(fill="both", expand=True, padx=16, pady=(0, 8))
         scale = r.winfo_fpixels("1i") / 96  # column widths are in pixels
-        cols = (("name", "Process", 230), ("when", "Recorded", 140), ("length", "Length", 70), ("report", "Report", 70))
+        cols = (("name", "Process", 230), ("when", "Recorded", 140), ("length", "Length", 70), ("report", "Report", 110))
         self.tree = ttk.Treeview(box, columns=[c for c, _, _ in cols], show="headings", height=6,
                                  selectmode="browse")
         for col, label, width in cols:
@@ -249,11 +285,12 @@ class App:
         self.tree.bind("<Double-1>", lambda _: self.open_report())
         row = ttk.Frame(box)
         row.pack(fill="x", pady=(10, 0))
-        self.report_btn = ttk.Button(row, text="Make report", command=self.make_report)
+        self.report_btn = ttk.Button(row, text="Make report...", command=self.make_report)
         self.open_btn = ttk.Button(row, text="Open report", command=self.open_report)
+        self.build_btn = ttk.Button(row, text="Build automation...", command=self.build)
         self.folder_btn = ttk.Button(row, text="Open folder", command=self.open_folder)
-        self.send_btn = ttk.Button(row, text="Save for the FlowSME team", command=self.export)
-        for button in (self.report_btn, self.open_btn, self.folder_btn, self.send_btn):
+        self.send_btn = ttk.Button(row, text="Send to FlowSME team", command=self.export)
+        for button in (self.report_btn, self.open_btn, self.build_btn, self.folder_btn, self.send_btn):
             button.pack(side="left", padx=(0, 6))
         self.progress = ttk.Progressbar(row, mode="indeterminate", length=90)
 
@@ -278,10 +315,10 @@ class App:
             meta = load_meta(path)
             secs = meta.get("duration_seconds")
             self.tree.insert("", "end", iid=str(path), values=(
-                _STAMP.sub("", path.name).replace("-", " ") or path.name,
+                _title(path),
                 (meta.get("started") or "")[:16].replace("T", " "),
                 fmt_minutes(secs / 60) if secs else "?",
-                "ready" if (path / "analysis" / "report.html").exists() else ""))
+                _status(path)))
         items = self.tree.get_children()
         pick = str(select) if select and self.tree.exists(str(select)) else (items[0] if items else None)
         if pick:
@@ -298,7 +335,8 @@ class App:
         path = self._selected()
         idle = not self.busy and self.recorder is None
         has_report = bool(path and (path / "analysis" / "report.html").exists())
-        for button, ok in ((self.report_btn, path), (self.open_btn, has_report), (self.folder_btn, path),
+        for button, ok in ((self.report_btn, path), (self.open_btn, has_report), (self.build_btn, has_report),
+                           (self.folder_btn, path),
                            (self.send_btn, path), (self.record_btn, True)):
             button.state(["!disabled"] if ok and idle else ["disabled"])
         if has_report and idle:
@@ -386,48 +424,260 @@ class App:
         self.root.lift()
         self.refresh(select=path)
         if (path / "events.jsonl").exists():
-            print(f"Saved '{_STAMP.sub('', path.name) or path.name}'. Select it and click Make report.")
+            print(f"Saved '{_title(path)}'. Select it and click Make report.")
 
     # ---- reports ----------------------------------------------------------------------------------
 
     def make_report(self) -> None:
+        """Ask how to make the report (AI or rules, the business numbers, the customer's tools), then make it."""
         path = self._selected()
         if not path or self.busy or self.recorder is not None:
             return
         cfg, _ = app_config(self.config_path)
-        if needs_key(cfg) and not saved_key(cfg.llm.api_key_env):
-            if not messagebox.askyesno("FlowSME", "No Meta API key is set, so this report will use FlowSME's "
-                                       "built-in rules: no AI step descriptions, narration or recommendations.\n\n"
-                                       "Add a key in Settings for the full analysis.\n\nMake the basic report "
-                                       "now?", parent=self.root):
+        saved = _read_json(path / "analysis" / "options.json") or self.state.get("report_options") or {}
+        ai_ready = cfg.llm.provider != "offline" and (not needs_key(cfg) or bool(saved_key(cfg.llm.api_key_env)))
+        win, f = self._dialog("Report options")
+        ttk.Label(f, text=f"Report for '{_title(path)}'", style="Heading.TLabel").grid(row=0, column=0, sticky="w")
+
+        box = ttk.LabelFrame(f, text="Analysis", padding=10)
+        box.grid(row=1, column=0, sticky="we", pady=(10, 0))
+        mode = tk.StringVar(value=saved.get("mode", "ai") if ai_ready else "rules")
+        who = f"Meta {cfg.llm.text_model}" if needs_key(cfg) else f"{cfg.llm.text_model} on this computer"
+        ai_radio = ttk.Radiobutton(box, text=f"AI analysis with {who}", value="ai", variable=mode)
+        ai_radio.grid(row=0, column=0, columnspan=3, sticky="w")
+        if not ai_ready:
+            ai_radio.state(["disabled"])
+            ttk.Label(box, style="Muted.TLabel", text="Add a Meta API key in Settings to use AI." if
+                      cfg.llm.provider != "offline" else "AI is switched off in the settings file.").grid(
+                row=1, column=0, columnspan=3, sticky="w", padx=(22, 0))
+        ttk.Radiobutton(box, text="Built-in rules only: free, nothing is sent to an AI", value="rules",
+                        variable=mode).grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
+        cap = tk.StringVar(value=str(saved.get("max_cost_usd", cfg.llm.max_cost_usd or 2.0)))
+        cap_row = ttk.Frame(box)
+        cap_row.grid(row=3, column=0, columnspan=3, sticky="w", padx=(22, 0), pady=(8, 0))
+        cap_label = ttk.Label(cap_row, text="Stop AI spending at  $")
+        cap_label.pack(side="left")
+        cap_box = ttk.Spinbox(cap_row, from_=0.5, to=50, increment=0.5, width=6, textvariable=cap)
+        cap_box.pack(side="left", padx=4)
+        ttk.Label(cap_row, text="per report").pack(side="left")
+        shots = tk.BooleanVar(value=saved.get("screenshots", cfg.llm.send_screenshots))
+        shots_box = ttk.Checkbutton(box, variable=shots, text="Send screenshots to the AI (off: steps are "
+                                                              "described from button and field names only)")
+        shots_box.grid(row=4, column=0, columnspan=3, sticky="w", padx=(22, 0), pady=(6, 0))
+        web = tk.BooleanVar(value=saved.get("web_search", cfg.analysis.web_search))
+        ttk.Checkbutton(box, variable=web, text="Search the web for tools and APIs that fit").grid(
+            row=5, column=0, columnspan=3, sticky="w", pady=(6, 0))
+
+        def follow_mode(*_) -> None:
+            for widget in (cap_label, cap_box, shots_box):
+                widget.state(["!disabled"] if mode.get() == "ai" else ["disabled"])
+        mode.trace_add("write", follow_mode)
+        follow_mode()
+
+        biz = ttk.LabelFrame(f, text="Your business (for hours and money saved)", padding=10)
+        biz.grid(row=2, column=0, sticky="we", pady=(10, 0))
+        runs = tk.StringVar(value=str(saved.get("runs_per_month", cfg.analysis.runs_per_month)))
+        hourly = tk.StringVar(value=str(saved.get("hourly_cost", cfg.analysis.hourly_cost)))
+        currency = tk.StringVar(value=saved.get("currency", cfg.analysis.currency))
+        ttk.Label(biz, text="This process runs").grid(row=0, column=0, sticky="w")
+        ttk.Spinbox(biz, from_=1, to=100000, width=7, textvariable=runs).grid(row=0, column=1, padx=6)
+        ttk.Label(biz, text="times a month").grid(row=0, column=2, sticky="w")
+        ttk.Label(biz, text="An hour of this person's time costs").grid(row=1, column=0, sticky="w", pady=(6, 0))
+        ttk.Spinbox(biz, from_=0, to=10000, width=7, textvariable=hourly).grid(row=1, column=1, padx=6, pady=(6, 0))
+        ttk.Entry(biz, width=4, textvariable=currency).grid(row=1, column=2, sticky="w", pady=(6, 0))
+
+        kit = ttk.LabelFrame(f, text="Tools the business already has (the plan shows what they can do with them)",
+                             padding=10)
+        kit.grid(row=3, column=0, sticky="we", pady=(10, 0))
+        given = cfg.customer.tools
+        chosen = set(saved["tools"]) if "tools" in saved else {t for t in given if t in TOOL_NAMES}
+        picks = {}
+        for n, name in enumerate(TOOL_NAMES):
+            picks[name] = tk.BooleanVar(value=name in chosen)
+            ttk.Checkbutton(kit, text=name, variable=picks[name]).grid(row=n // 3, column=n % 3, sticky="w",
+                                                                      padx=(0, 14), pady=1)
+        other = tk.StringVar(value=saved["other_tools"] if "other_tools" in saved else
+                             "; ".join(t for t in given if t not in TOOL_NAMES))
+        rows = (len(TOOL_NAMES) + 2) // 3
+        ttk.Label(kit, text="Other tools, with what they can do:").grid(row=rows, column=0, columnspan=3,
+                                                                        sticky="w", pady=(8, 0))
+        ttk.Entry(kit, textvariable=other).grid(row=rows + 1, column=0, columnspan=3, sticky="we", pady=(2, 0))
+        ttk.Label(kit, style="Muted.TLabel", text="e.g.  MyERP: database, reporting; Odoo: api  (separate with ;)"
+                  ).grid(row=rows + 2, column=0, columnspan=3, sticky="w")
+
+        def go() -> None:
+            try:
+                options = {"mode": mode.get(), "max_cost_usd": float(cap.get()), "screenshots": shots.get(),
+                           "web_search": web.get(), "runs_per_month": int(float(runs.get())),
+                           "hourly_cost": float(hourly.get()), "currency": currency.get().strip() or "$",
+                           "tools": [name for name, var in picks.items() if var.get()],
+                           "other_tools": other.get().strip()}
+                if options["runs_per_month"] < 1 or options["hourly_cost"] < 0 or options["max_cost_usd"] <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("FlowSME", "Use positive numbers for the runs, the hourly cost and the "
+                                                "spending limit.", parent=win)
                 return
-            cfg.llm.provider = "offline"
-        self.busy = True
-        self.progress.pack(side="left", padx=(6, 0))
-        self.progress.start(12)
-        self._update_buttons()
-        print(f"Making the report for '{_STAMP.sub('', path.name) or path.name}'. This takes a few minutes.")
-        threading.Thread(target=self._analyze, args=(path, cfg), name="flowsme-report", daemon=True).start()
+            win.destroy()
+            self._save_state(report_options=options)
+            (path / "analysis").mkdir(exist_ok=True)
+            (path / "analysis" / "options.json").write_text(json.dumps(options, indent=1), encoding="utf-8")
+            self._start_report(path, apply_options(cfg, options))
 
-    def _analyze(self, path: Path, cfg: Config) -> None:
-        ok = False
+        self._buttons(win, f, 4, "Make report", go)
+
+    def _start_report(self, path: Path, cfg: Config) -> None:
+        self._busy(True)
+        how = "AI" if cfg.llm.provider != "offline" else "built-in rules"
+        tools = f", tools: {', '.join(cfg.customer.tools)}" if cfg.customer.tools else ""
+        print(f"Making the report for '{_title(path)}' with {how}{tools}. This takes a few minutes.")
+        threading.Thread(target=self._work, args=("reported", path, self._analyze, cfg), daemon=True).start()
+
+    @staticmethod
+    def _analyze(path: Path, cfg: Config) -> None:
+        from .analyze import analyze_session
+
+        analyze_session(path, cfg, log=print)
+
+    def _work(self, kind: str, path: Path, job, *args) -> None:
+        """Run a slow job off the window's thread, then tell the window how it went."""
+        error = None
         try:
-            from .analyze import analyze_session
-
-            analyze_session(path, cfg, log=print)
-            ok = True
+            job(path, *args)
         except BaseException as exc:  # noqa: BLE001 - SystemExit included: show it, keep the app alive
-            print(f"The report could not be made: {exc}")
-        self.events.put(("reported", path, ok))
+            error = str(exc) or exc.__class__.__name__
+            print(f"Stopped: {error}")
+        self.events.put((kind, path, error))
 
-    def _reported(self, path: Path, ok: bool) -> None:
-        self.busy = False
-        self.progress.stop()
-        self.progress.pack_forget()
+    def _busy(self, on: bool) -> None:
+        self.busy = on
+        if on:
+            self.progress.pack(side="left", padx=(6, 0))
+            self.progress.start(12)
+        else:
+            self.progress.stop()
+            self.progress.pack_forget()
+        self._update_buttons()
+
+    def _finished(self, kind: str, path: Path, error: str | None) -> None:
+        self._busy(False)
         self.refresh(select=path)
-        if ok:
+        if error:
+            messagebox.showerror("FlowSME", error, parent=self.root)
+        elif kind == "reported":
             print("Report ready.")
             self.open_report()
+        else:
+            print("Automation files ready: start with BUILD.md.")
+            os.startfile(self._built_dir(path))
+
+    # ---- build ------------------------------------------------------------------------------------
+
+    def build(self) -> None:
+        """Turn one task of the report into an n8n workflow, Postman collection, SQL and Playwright files."""
+        path = self._selected()
+        if not path or self.busy or self.recorder is not None:
+            return
+        report = _read_json(path / "analysis" / "analysis.json") or {}
+        tasks = sorted((t for t in report.get("tasks", []) if t.get("integration")), key=lambda t: -t["score"])
+        if not tasks:
+            messagebox.showinfo("FlowSME", "No task in this report has an automation design: none showed enough "
+                                           "automation potential.", parent=self.root)
+            return
+        win, f = self._dialog("Build automation")
+        ttk.Label(f, text="Which task should be automated?", style="Heading.TLabel").grid(row=0, column=0,
+                                                                                         sticky="w")
+        scale = self.root.winfo_fpixels("1i") / 96
+        tree = ttk.Treeview(f, columns=("task", "potential", "saved"), show="headings", height=min(len(tasks), 5),
+                            selectmode="browse")
+        for col, label, width in (("task", "Task", 420), ("potential", "Potential", 110),
+                                  ("saved", "Saves per run", 110)):
+            tree.heading(col, text=label, anchor="w")
+            tree.column(col, width=int(width * scale), anchor="w")
+        for t in tasks:
+            minutes = (t.get("estimate") or {}).get("minutes_saved_per_run") or 0
+            tree.insert("", "end", iid=str(t["id"]), values=(f"{t['id']}. {t['name']}",
+                                                            f"{t['level']} ({t['score']:.0f})", fmt_minutes(minutes)))
+        tree.selection_set(str(tasks[0]["id"]))
+        tree.grid(row=1, column=0, sticky="we", pady=(8, 0))
+        ttk.Label(f, style="Muted.TLabel", wraplength=int(520 * scale), justify="left", text=(
+            "Writes an n8n workflow to import, a Postman collection to test each connection, and SQL and "
+            "Playwright starters, with BUILD.md listing what a person must fill in. Nothing runs until you "
+            "review it.")).grid(row=2, column=0, sticky="w", pady=(8, 0))
+
+        n8n = ttk.LabelFrame(f, text="n8n", padding=10)
+        n8n.grid(row=3, column=0, sticky="we", pady=(10, 0))
+        deploy = tk.BooleanVar(value=self.state.get("deploy_n8n", False))
+        url = tk.StringVar(value=saved_key("N8N_URL") or "http://localhost:5678")
+        key = tk.StringVar()
+        ttk.Checkbutton(n8n, text="Also create the workflow in my n8n (switched off until I activate it)",
+                        variable=deploy).grid(row=0, column=0, columnspan=2, sticky="w")
+        fields = [ttk.Label(n8n, text="n8n address"), ttk.Entry(n8n, textvariable=url, width=36),
+                  ttk.Label(n8n, text="n8n API key"), ttk.Entry(n8n, textvariable=key, show="•", width=36)]
+        for n, widget in enumerate(fields):
+            widget.grid(row=1 + n // 2, column=n % 2, sticky="w", pady=(6, 0), padx=(0, 8))
+        ttk.Label(n8n, style="Muted.TLabel", text="A key is saved; leave the box empty to keep it." if
+                  saved_key("N8N_API_KEY") else "In n8n: Settings > n8n API > Create an API key.").grid(
+            row=3, column=0, columnspan=2, sticky="w", pady=(4, 0))
+
+        def follow(*_) -> None:
+            for widget in fields:
+                widget.state(["!disabled"] if deploy.get() else ["disabled"])
+        deploy.trace_add("write", follow)
+        follow()
+
+        def go() -> None:
+            if deploy.get():
+                if key.get().strip():
+                    store_key("N8N_API_KEY", key.get().strip())
+                if not url.get().strip() or not saved_key("N8N_API_KEY"):
+                    messagebox.showerror("FlowSME", "Enter the n8n address and an API key, or untick the n8n box.",
+                                         parent=win)
+                    return
+                store_key("N8N_URL", url.get().strip())
+            task_id = int(tree.selection()[0])
+            win.destroy()
+            self._save_state(deploy_n8n=deploy.get())
+            self._busy(True)
+            print(f"Building task {task_id}" + (" and creating it in n8n" if deploy.get() else "") + "...")
+            threading.Thread(target=self._work, args=("built", path, self._build_job, task_id, deploy.get()),
+                             daemon=True).start()
+
+        self._buttons(win, f, 4, "Build", go)
+
+    @staticmethod
+    def _build_job(path: Path, task_id: int, deploy: bool) -> None:
+        from .build import build_task
+
+        build_task(path, task_id, deploy=deploy, log=print)
+
+    @staticmethod
+    def _built_dir(path: Path) -> Path:
+        folder = path / "analysis" / "automations"
+        builds = sorted(folder.glob("task*"), key=lambda p: p.stat().st_mtime) if folder.exists() else []
+        return builds[-1] if builds else path
+
+    def _dialog(self, title: str) -> tuple[tk.Toplevel, ttk.Frame]:
+        win = tk.Toplevel(self.root)
+        win.title(title)
+        win.resizable(False, False)
+        win.transient(self.root)
+        win.grab_set()
+        frame = ttk.Frame(win, padding=16)
+        frame.pack(fill="both", expand=True)
+        frame.columnconfigure(0, weight=1)
+        return win, frame
+
+    def _buttons(self, win: tk.Toplevel, frame: ttk.Frame, row: int, label: str, action) -> None:
+        bar = ttk.Frame(frame)
+        bar.grid(row=row, column=0, sticky="e", pady=(14, 0))
+        ttk.Button(bar, text=label, style="Accent.TButton", command=action).pack(side="left")
+        ttk.Button(bar, text="Cancel", command=win.destroy).pack(side="left", padx=(8, 0))
+        win.bind("<Escape>", lambda _: win.destroy())
+        win.update_idletasks()  # centre on the main window
+        x = self.root.winfo_rootx() + (self.root.winfo_width() - win.winfo_reqwidth()) // 2
+        y = self.root.winfo_rooty() + max(0, (self.root.winfo_height() - win.winfo_reqheight()) // 2)
+        win.geometry(f"+{max(x, 0)}+{max(y, 0)}")
 
     def open_report(self) -> None:
         path = self._selected()
@@ -541,8 +791,8 @@ class App:
                     lines.append(event[1])
                 elif event[0] == "recorded":
                     self._recorded(event[1])
-                elif event[0] == "reported":
-                    self._reported(event[1], event[2])
+                elif event[0] in ("reported", "built"):
+                    self._finished(*event)
         if lines:
             self.log_box.config(state="normal")
             self.log_box.insert("end", "\n".join(lines) + "\n")

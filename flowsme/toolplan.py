@@ -88,7 +88,9 @@ def parse_tools(names: list[str]) -> list[dict]:
             continue
         name, _, caps_text = text.partition(":")
         lowered = name.strip().lower()
-        tool = next((t for t in CATALOG for a in t.aliases if re.search(rf"(^|\b){re.escape(a)}(\b|$)", lowered)), None)
+        # The longest matching alias wins: "power automate desktop" is not the cloud "power automate".
+        hits = [(len(a), t) for t in CATALOG for a in t.aliases if re.search(rf"(^|\b){re.escape(a)}(\b|$)", lowered)]
+        tool = max(hits, key=lambda hit: hit[0])[1] if hits else None
         caps = [SYNONYMS.get(c, c) for c in re.findall(r"[a-z_]+", caps_text.lower())]
         caps = [c for c in caps if c in CAPABILITIES]
         if tool and not caps:

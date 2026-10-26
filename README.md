@@ -17,10 +17,19 @@ For people who don't use a terminal. Run `FlowSME-Setup-0.3.0.exe`, click **Inst
 - **Record:** type the process name, tick **Narrate** to explain as you work, click **Record**. The window
   steps aside and a small bar with the timer, **Pause** and **Stop** stays on top. Ctrl+Alt+P and Ctrl+Alt+Q
   still work. Clicks and typing in FlowSME's own windows are never recorded.
-- **Report:** select a recording and click **Make report**; it opens when ready. With a Meta API key
-  (**Settings**, saved as the `MODEL_API_KEY` user variable) the report uses Muse Spark, capped at $2 per
-  report. Without one it uses the built-in rules.
-- **Save for the FlowSME team** zips a recording to the desktop, to send for analysis.
+- **Make report...** opens the report options first:
+  - AI analysis with Muse Spark (needs a Meta API key, saved in **Settings** as the `MODEL_API_KEY` user
+    variable) or built-in rules only. Also: a spending limit per report, whether screenshots go to the AI,
+    and web search on or off.
+  - How often the process runs and what an hour of the person's time costs, for hours and money saved.
+  - The tools the business already has: tick any of 18 common ones, or add your own as
+    "MyERP: database, reporting". The tool plan then shows what they can do with their own tools.
+  - Options are saved with each recording, so a re-run starts from the same answers. The report opens
+    when it's ready.
+- **Build automation...** picks a task from the report and writes the n8n workflow, Postman collection, SQL
+  and Playwright starters, with `BUILD.md` listing what a person must fill in. Optionally it also creates
+  the workflow in your n8n, switched off (address and API key are saved as `N8N_URL` and `N8N_API_KEY`).
+- **Send to FlowSME team** zips a recording to the desktop, to send for analysis.
 - Recordings and settings stay in `%LOCALAPPDATA%\FlowSME`, which OneDrive doesn't sync. Uninstalling keeps
   them.
 - The installer isn't code-signed yet. When it's downloaded, Windows may show "Windows protected your PC":
