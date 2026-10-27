@@ -248,6 +248,31 @@ directly. It is created inactive.
 - `analysis.json`: everything in machine-readable form.
 - `automations/`: the automation drafts as files.
 
+The report also has:
+
+- **What to automate first:** an impact vs effort matrix of all tasks, and a Now / Next / Later / Hold
+  roadmap. It shows hours and money saved a month, days to build, and the payback time. Effort starts
+  from the recommendation's estimate. It adds 2 days for each system without a known API and half a day
+  for each open question. Anything paying back in over 2 years goes on Hold.
+- **User stories and acceptance tests** for each task, for whoever builds the automation. Given / When /
+  Then criteria come from the business rules: mappings, calculations, validations, duplicates, the
+  review queue and the run log. `flowsme build` also writes them as `user_stories.md` and a Gherkin
+  `acceptance.feature`, to run with Cucumber, Behave or similar.
+
+### Team view
+
+When several people record the same process, compare them:
+
+```bash
+.venv/Scripts/python.exe -m flowsme team <session1> <session2> <session3> --names "Asha, Ben, Chen" --items "3, 3, 3"
+```
+
+In the app: **More > Team view...**. You get each person's time per item (all the work in the recording
+÷ items done), spread, steps, manual entries and app switches. It picks the fastest steady method and
+lists exactly which steps the others add or skip compared with it. It also shows the hours a month the
+team would save by all working that way, before any automation, and links that person's SOP as the
+standard to train on. If the recordings look like different work, it warns you.
+
 ### Before and after
 
 Record the process again after a change, then compare the two recordings:

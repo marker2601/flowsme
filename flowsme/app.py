@@ -292,6 +292,8 @@ class App:
         self.compare_btn = ttk.Button(row, text="Compare...", command=self.compare)
         self.more_btn = ttk.Menubutton(row, text="More")
         more = tk.Menu(self.more_btn, tearoff=False)
+        more.add_command(label="Team view...", command=self.team)
+        more.add_separator()
         more.add_command(label="Open folder", command=self.open_folder)
         more.add_command(label="Send to FlowSME team...", command=self.export)
         self.more_btn["menu"] = more
@@ -577,6 +579,8 @@ class App:
             self.open_report()
         elif kind == "compared":
             os.startfile(self._compared)
+        elif kind == "team":
+            os.startfile(self._team_out / "team.html")
         else:
             print("Automation files ready: start with BUILD.md.")
             os.startfile(self._built_dir(path))
@@ -769,6 +773,83 @@ class App:
 
         self._buttons(win, f, 4, "Compare", go)
 
+    def team(self) -> None:
+        """Several people's recordings of the same process: who is fastest, and what the others do differently."""
+        if self.busy or self.recorder is not None:
+            return
+        options = [p for p in reversed(list_sessions(self.cfg.sessions_dir))
+                   if (p / "analysis" / "analysis.json").exists()]
+        if len(options) < 2:
+            messagebox.showinfo("FlowSME", "Make reports for at least two recordings of the same process first, "
+                                           "one per person.", parent=self.root)
+            return
+        win, f = self._dialog("Team view")
+        scale = self.root.winfo_fpixels("1i") / 96
+        ttk.Label(f, text="Which recordings show the same process done by different people?",
+                  style="Heading.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(f, style="Muted.TLabel", text="Select two or more (Ctrl+click). Give each the person's name and "
+                  "the number of items they did.").grid(row=1, column=0, sticky="w", pady=(2, 8))
+        tree = ttk.Treeview(f, columns=("person", "items", "name", "when"), show="headings",
+                            height=min(len(options), 8), selectmode="extended")
+        for col, text, width in (("person", "Person", 130), ("items", "Items", 60), ("name", "Process", 220),
+                                 ("when", "Recorded", 140)):
+            tree.heading(col, text=text, anchor="w")
+            tree.column(col, width=int(width * scale), anchor="w")
+        for n, p in enumerate(options, 1):
+            tree.insert("", "end", iid=str(p), values=(f"Person {n}", self._items(p), _title(p),
+                                                      (load_meta(p).get("started") or "")[:16].replace("T", " ")))
+        tree.grid(row=2, column=0, sticky="we")
+        edit = ttk.Frame(f)
+        edit.grid(row=3, column=0, sticky="w", pady=(8, 0))
+        person, items = tk.StringVar(), tk.StringVar()
+        ttk.Label(edit, text="Selected: name").pack(side="left")
+        name_box = ttk.Entry(edit, textvariable=person, width=20)
+        name_box.pack(side="left", padx=6)
+        ttk.Label(edit, text="items done").pack(side="left", padx=(8, 0))
+        items_box = ttk.Spinbox(edit, from_=1, to=10000, width=6, textvariable=items)
+        items_box.pack(side="left", padx=6)
+
+        def show(_=None) -> None:
+            chosen = tree.selection()
+            person.set(tree.set(chosen[-1], "person") if chosen else "")
+            items.set(tree.set(chosen[-1], "items") if chosen else "")
+
+        def edit_one(*_) -> None:
+            chosen = tree.selection()
+            if not chosen:
+                return
+            if person.get().strip():
+                tree.set(chosen[-1], "person", person.get().strip())
+            if items.get().strip().isdigit() and int(items.get()) > 0:
+                tree.set(chosen[-1], "items", items.get().strip())
+        tree.bind("<<TreeviewSelect>>", show)
+        name_box.bind("<KeyRelease>", edit_one)
+        items_box.bind("<KeyRelease>", edit_one)
+        items_box.configure(command=edit_one)
+
+        def go() -> None:
+            chosen = list(tree.selection())
+            if len(chosen) < 2:
+                messagebox.showerror("FlowSME", "Select two or more recordings.", parent=win)
+                return
+            names = [tree.set(i, "person") for i in chosen]
+            counts = [int(tree.set(i, "items")) for i in chosen]
+            win.destroy()
+            self._team_out = self.cfg.sessions_dir / "team-views" / time.strftime("%Y%m%d-%H%M%S")
+            self._busy(True)
+            print(f"Team view of {len(chosen)} recordings...")
+            threading.Thread(target=self._work, args=("team", Path(chosen[0]), self._team_job,
+                                                     [Path(i) for i in chosen], names, counts, self._team_out),
+                             daemon=True).start()
+
+        self._buttons(win, f, 4, "Show team view", go)
+
+    @staticmethod
+    def _team_job(_first: Path, sessions: list[Path], names: list[str], counts: list[int], out: Path) -> None:
+        from .team import team_view
+
+        team_view(sessions, names, out, log=print, items=counts)
+
     @staticmethod
     def _items(path: Path) -> int:
         """Items FlowSME found in a recording's routine (its repeated runs)."""
@@ -892,7 +973,7 @@ class App:
                     lines.append(event[1])
                 elif event[0] == "recorded":
                     self._recorded(event[1])
-                elif event[0] in ("reported", "built"):
+                elif event[0] in ("reported", "built", "compared", "team"):
                     self._finished(*event)
         if lines:
             self.log_box.config(state="normal")

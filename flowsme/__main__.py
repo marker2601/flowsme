@@ -1,4 +1,4 @@
-"""Command line: python -m flowsme {app, record, analyze, build, compare, sessions, demo}."""
+"""Command line: python -m flowsme {app, record, analyze, build, compare, team, sessions, demo}."""
 from __future__ import annotations
 
 import argparse
@@ -45,6 +45,11 @@ def main(argv: list[str] | None = None) -> None:
     cmp.add_argument("--before-items", type=int, help="items done in the before recording, if FlowSME miscounted")
     cmp.add_argument("--after-items", type=int, help="items done in the after recording, if FlowSME miscounted")
 
+    team = sub.add_parser("team", help="the same process recorded by several people: who is fastest and why")
+    team.add_argument("sessions_list", nargs="+", metavar="session", help="two or more analysed recordings")
+    team.add_argument("--names", help="names in the same order, comma-separated, e.g. \"Asha, Ben, Chen\"")
+    team.add_argument("--items", help="items each person did, same order, e.g. \"3, 3, 3\" (default: FlowSME's count)")
+
     sub.add_parser("sessions", help="list recorded sessions")
 
     demo = sub.add_parser("demo", help="generate a synthetic invoice-processing session and analyse it")
@@ -76,6 +81,13 @@ def main(argv: list[str] | None = None) -> None:
             cfg.recorder.narrate = True
         path = Recorder(cfg, new_session_dir(cfg.sessions_dir, args.name)).run(duration=args.duration)
         print(f"Analyse it with:  python -m flowsme analyze {path.name}")
+    elif args.command == "team":
+        from .team import team_view
+
+        names = [n.strip() for n in args.names.split(",")] if args.names else None
+        items = [int(n) for n in args.items.split(",")] if args.items else None
+        paths = team_view([resolve_session(s, cfg.sessions_dir) for s in args.sessions_list], names, items=items)
+        print(f"Team view: {paths['html'].resolve()}")
     elif args.command == "compare":
         from .measure import compare
 

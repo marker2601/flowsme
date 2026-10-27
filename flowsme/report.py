@@ -124,6 +124,24 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
           f"{t.level} ({t.score:.0f}/100) | {fmt_minutes(t.estimate.get('minutes_saved_per_run', 0))} |")
     w("")
 
+    pri = meta.get("priorities")
+    if pri:
+        w("## What to automate first\n")
+        w(f"Impact (hours saved a month) against effort (days to build). Quick wins come first: high impact for "
+          f"under {pri['effort_cut_days']:g} days of work. High impact here means at least "
+          f"{pri['impact_cut_hours']:g} hours a month.\n")
+        w(pri["svg"] + "\n")
+        w("| Phase | # | Task | Saves a month | Effort | Pays back | Why this effort |")
+        w("|---|---|---|---|---|---|---|")
+        for i in pri["items"]:
+            back = f"{i['payback_months']:g} months" if i["payback_months"] is not None else "-"
+            w(f"| **{i['phase']}** ({i['quadrant']}) | {i['id']} | {_cell(i['name'])} | {i['hours_per_month']} h "
+              f"({cur}{i['money_per_month']:,}) | {i['effort_days']:g} days | {back} | "
+              f"{_cell('; '.join(i['effort_reasons']))} |")
+        w(f"\n<sub>Effort starts from the recommendation's estimate (hours 0.5, days 3, weeks 15) and adds 2 days per "
+          f"system without a known API and half a day per open question. Payback: days × 8 hours × {cur}"
+          f"{a.hourly_cost:g} against the monthly saving. Planning estimates: confirm with whoever builds it.</sub>\n")
+
     w("## Workflow map\n")
     w("Tasks in the order they happened. Double-bordered boxes are routines that repeated. "
       "Colour shows automation potential: red high, amber medium, green low.\n")
@@ -341,6 +359,7 @@ def _tobe_section(w, t: Task) -> None:
     for s in tb["steps"]:
         w(f"| {s['n']} | {s['actor']} | {_cell(s['what'])} | {_cell(s['how'] or '-')} |")
     w("")
+    stories = imp.get("stories") or []
     rules = imp.get("rules") or []
     if rules:
         w("#### Business rules\n")
@@ -352,6 +371,14 @@ def _tobe_section(w, t: Task) -> None:
             w(f"| {r['id']} | {r['type']} | {_cell(r['rule'])} | {_cell(r['field'] or '-')} | {_cell(r['evidence'])} "
               f"| {r['status']} |")
         w("")
+    if stories:
+        w("#### User stories and acceptance tests\n")
+        w("For whoever builds the automation: each criterion is a test to pass before go-live. `flowsme build` "
+          "also writes them as `acceptance.feature` (Gherkin) and `user_stories.md`.\n")
+        for st in stories:
+            w(f"**{st['id']} {_cell(st['title'])}.** {_cell(st['story'])}\n")
+            w("\n".join(f"- Given {_cell(c['given'])}, when {_cell(c['when'])}, then {_cell(c['then'])}."
+                        for c in st["criteria"]) + "\n")
 
 
 def _improvement_section(w, t: Task, cfg: Config) -> None:
@@ -463,7 +490,7 @@ def _as_json(session_dir: Path, meta: dict, steps: list[Step], tasks: list[Task]
     def step_dict(s: Step) -> dict:
         return {"index": s.index, "start": s.start, "duration": round(s.duration, 1), "app": s.app,
                 "action": s.action, "target": s.target, "chars_typed": s.chars_typed, "shortcuts": s.shortcuts,
-                "description": s.description, "screenshot": s.screenshot}
+                "description": s.description, "screenshot": s.screenshot, "signature": s.signature}
 
     return {
         "session": session_dir.name,

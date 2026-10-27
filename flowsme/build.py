@@ -61,6 +61,14 @@ def build_task(session_dir: Path, task_id: int | None = None, deploy: bool = Fal
         files["API for the web form"].write_text(api_wrapper(spec), encoding="utf-8")
     files["Run log and KPIs"] = out / "report_kpis.sql"
     files["Run log and KPIs"].write_text(kpi_sql(spec), encoding="utf-8")
+    stories = (task.get("improvement") or {}).get("stories")
+    if stories:
+        from .stories import gherkin, stories_markdown
+
+        files["User stories"] = out / "user_stories.md"
+        files["User stories"].write_text(stories_markdown(task["name"], stories), encoding="utf-8")
+        files["Acceptance tests (Gherkin)"] = out / "acceptance.feature"
+        files["Acceptance tests (Gherkin)"].write_text(gherkin(task["name"], stories), encoding="utf-8")
     files["Guide"] = out / "BUILD.md"
     files["Guide"].write_text(build_guide(task, spec, files), encoding="utf-8")
     for name, file in files.items():

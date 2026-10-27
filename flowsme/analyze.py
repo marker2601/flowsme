@@ -17,7 +17,9 @@ from .recommend import candidates, recommend
 from .report import write_report
 from .score import apply_estimates, score_task, task_features
 from .segment import build_steps, build_tasks
+from .prioritize import prioritize
 from .sop import write_sop
+from .stories import user_stories
 from .tobe import business_rules, to_be
 from .session import load_events, load_meta
 from .workflow import app_map, summarize_tasks
@@ -69,6 +71,9 @@ def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
                              designed))
     for task, path in zip(designed, sops):
         task.improvement["sop"] = path.name
+        imp = task.improvement
+        imp["stories"] = user_stories(task.name, imp["to_be"], imp["rules"], imp["tools"]["with_suggestions"])
+    meta = {**meta, "priorities": prioritize(tasks, cfg.analysis.hourly_cost, cfg.analysis.currency)}
 
     parts = []
     if from_screenshots:
