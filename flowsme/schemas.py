@@ -30,6 +30,9 @@ API_CHECK = _obj(
 
 TASK = _obj(name=_STR, summary=_STR, inputs=_STRS, outputs=_STRS, decision_points=_STRS)
 
+# A standard operating procedure: one instruction per recorded step, same order and count.
+SOP = _obj(purpose=_STR, steps=_STRS)
+
 RECOMMENDATION = _obj(
     automation_potential={"type": "string", "enum": ["high", "medium", "low"]},
     assumptions=_STRS,

@@ -1,12 +1,14 @@
 """The analysis pipeline: events -> steps -> tasks -> descriptions -> scores -> recommendations -> report."""
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from .config import Config
 from .describe import describe_steps
 from .llm import LLM
 from .integration import plan
+from .measure import variation
 from .methods import analyse
 from .narration import attach, transcribe_session
 from .toolplan import tool_plan
@@ -15,6 +17,8 @@ from .recommend import candidates, recommend
 from .report import write_report
 from .score import apply_estimates, score_task, task_features
 from .segment import build_steps, build_tasks
+from .sop import write_sop
+from .tobe import business_rules, to_be
 from .session import load_events, load_meta
 from .workflow import app_map, summarize_tasks
 
@@ -51,11 +55,20 @@ def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
         tools = tool_plan(task, task.integration, cfg.customer.tools)
         checks = checklist(task, task.integration, steps)
         lean = analyse(task, task.integration, tools, checks, task.runs * cfg.analysis.runs_per_month)
-        task.improvement = {"tools": tools, "validation": checks, "lean": lean}
+        rules = business_rules(task, task.integration, checks)
+        task.improvement = {"tools": tools, "validation": checks, "lean": lean, "variation": variation(task),
+                            "rules": rules, "to_be": to_be(task, task.integration, tools, checks, rules)}
     log("Integration design ready: data flow, connections, tool plan, checklist, Lean Six Sigma analysis"
         + (f" (customer tools: {', '.join(cfg.customer.tools)})" if cfg.customer.tools else " (no customer tools given)"))
     recommend(tasks, llm, cfg.analysis, out, concurrency, log)
     apply_estimates(tasks, cfg.analysis)
+    designed = [t for t in tasks if t.improvement]
+    with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:  # one SOP per designed task
+        sops = list(pool.map(lambda t: write_sop(session_dir, t, t.integration, t.improvement["validation"],
+                                                 t.improvement["rules"], t.improvement["variation"], llm, log),
+                             designed))
+    for task, path in zip(designed, sops):
+        task.improvement["sop"] = path.name
 
     parts = []
     if from_screenshots:

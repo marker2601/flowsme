@@ -232,8 +232,36 @@ directly. It is created inactive.
   - an application map: window switches, plus values copied by hand from one app to another
   - for each task: a step-by-step list, key screens, recommendations, quick wins, risks, tools found
     online, and an automation draft
+  - **To-be process:** the improved process step by step, with who does each part (automation or a
+    person, who only handles flagged exceptions). It comes as a diagram, plus an as-is vs to-be table
+    for minutes, manual entries and steps per item.
+  - **Business rules:** every rule the process follows, in one table. Mappings proven by the recording,
+    calculations you stated in the narration, recommended validation rules, decision points still to
+    write down, and fields whose source is unknown. Each rule shows its evidence and status.
+  - **Run-to-run variation** (Six Sigma Measure): mean, standard deviation, fastest and slowest item,
+    and a control chart that flags unusual items. It also lists the steps that vary most.
+- `sop-task<N>.html` and `.md`: a **standard operating procedure** for each task, ready for the process
+  owner to review. It has the purpose and scope, what to open first, and numbered instructions (worded
+  by the AI model) with a screenshot of the window. The "why" from your narration, and the rules and
+  checks for each field, sit under the step they apply to. It ends with what to do when something is
+  off, and an approval block. The HTML is one file you can share.
 - `analysis.json`: everything in machine-readable form.
 - `automations/`: the automation drafts as files.
+
+### Before and after
+
+Record the process again after a change, then compare the two recordings:
+
+```bash
+.venv/Scripts/python.exe -m flowsme compare <before-session> <after-session>
+```
+
+In the app, select the after recording and click **Compare...**. You get the time per item before and
+after, the spread, steps and values entered by hand per item, and hours and money saved per month. The
+estimate from the first report is shown alongside. A two-sample t-test (Welch) shows whether the saving
+is bigger than normal run-to-run variation. If FlowSME counted the items in a recording wrong (a short
+review routine can look like one item), enter the right count with `--before-items` / `--after-items`
+or in the dialog. Times are then averages only, without the significance test.
 
 ## How it works
 

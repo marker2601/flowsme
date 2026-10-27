@@ -1,4 +1,4 @@
-"""Command line: python -m flowsme {app, record, analyze, build, sessions, demo}."""
+"""Command line: python -m flowsme {app, record, analyze, build, compare, sessions, demo}."""
 from __future__ import annotations
 
 import argparse
@@ -37,6 +37,14 @@ def main(argv: list[str] | None = None) -> None:
     bld.add_argument("--deploy-n8n", action="store_true",
                      help="also create the workflow in n8n (needs N8N_URL and N8N_API_KEY)")
 
+    cmp = sub.add_parser("compare", help="before/after: what an improvement really saved, beyond run-to-run noise")
+    cmp.add_argument("before", help="the recording made before the change (session id or folder)")
+    cmp.add_argument("after", help="the recording made after the change")
+    cmp.add_argument("--before-task", type=int, help="task number in the before report (default: the routine)")
+    cmp.add_argument("--after-task", type=int, help="task number in the after report (default: the routine)")
+    cmp.add_argument("--before-items", type=int, help="items done in the before recording, if FlowSME miscounted")
+    cmp.add_argument("--after-items", type=int, help="items done in the after recording, if FlowSME miscounted")
+
     sub.add_parser("sessions", help="list recorded sessions")
 
     demo = sub.add_parser("demo", help="generate a synthetic invoice-processing session and analyse it")
@@ -68,6 +76,13 @@ def main(argv: list[str] | None = None) -> None:
             cfg.recorder.narrate = True
         path = Recorder(cfg, new_session_dir(cfg.sessions_dir, args.name)).run(duration=args.duration)
         print(f"Analyse it with:  python -m flowsme analyze {path.name}")
+    elif args.command == "compare":
+        from .measure import compare
+
+        paths = compare(resolve_session(args.before, cfg.sessions_dir), resolve_session(args.after, cfg.sessions_dir),
+                        args.before_task, args.after_task, before_items=args.before_items,
+                        after_items=args.after_items)
+        print(f"Comparison: {paths['html'].resolve()}")
     elif args.command == "sessions":
         _list(cfg)
     elif args.command == "build":

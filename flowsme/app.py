@@ -287,10 +287,15 @@ class App:
         row.pack(fill="x", pady=(10, 0))
         self.report_btn = ttk.Button(row, text="Make report...", command=self.make_report)
         self.open_btn = ttk.Button(row, text="Open report", command=self.open_report)
+        self.sop_btn = ttk.Button(row, text="Open SOP", command=self.open_sop)
         self.build_btn = ttk.Button(row, text="Build automation...", command=self.build)
-        self.folder_btn = ttk.Button(row, text="Open folder", command=self.open_folder)
-        self.send_btn = ttk.Button(row, text="Send to FlowSME team", command=self.export)
-        for button in (self.report_btn, self.open_btn, self.build_btn, self.folder_btn, self.send_btn):
+        self.compare_btn = ttk.Button(row, text="Compare...", command=self.compare)
+        self.more_btn = ttk.Menubutton(row, text="More")
+        more = tk.Menu(self.more_btn, tearoff=False)
+        more.add_command(label="Open folder", command=self.open_folder)
+        more.add_command(label="Send to FlowSME team...", command=self.export)
+        self.more_btn["menu"] = more
+        for button in (self.report_btn, self.open_btn, self.sop_btn, self.build_btn, self.compare_btn, self.more_btn):
             button.pack(side="left", padx=(0, 6))
         self.progress = ttk.Progressbar(row, mode="indeterminate", length=90)
 
@@ -335,12 +340,15 @@ class App:
         path = self._selected()
         idle = not self.busy and self.recorder is None
         has_report = bool(path and (path / "analysis" / "report.html").exists())
-        for button, ok in ((self.report_btn, path), (self.open_btn, has_report), (self.build_btn, has_report),
-                           (self.folder_btn, path),
-                           (self.send_btn, path), (self.record_btn, True)):
+        others = has_report and any(p != path and (p / "analysis" / "analysis.json").exists()
+                                    for p in list_sessions(self.cfg.sessions_dir))
+        for button, ok in ((self.report_btn, path), (self.open_btn, has_report), (self.sop_btn, self._sop(path)),
+                           (self.build_btn, has_report), (self.compare_btn, others), (self.more_btn, path),
+                           (self.record_btn, True)):
             button.state(["!disabled"] if ok and idle else ["disabled"])
-        if has_report and idle:
-            self.open_btn.state(["!disabled"])  # reading a report is fine while another is being made
+        if not self.busy:  # reading is fine while a recording runs
+            for button, ok in ((self.open_btn, has_report), (self.sop_btn, self._sop(path))):
+                button.state(["!disabled"] if ok else ["disabled"])
 
     # ---- recording --------------------------------------------------------------------------------
 
@@ -567,6 +575,8 @@ class App:
         elif kind == "reported":
             print("Report ready.")
             self.open_report()
+        elif kind == "compared":
+            os.startfile(self._compared)
         else:
             print("Automation files ready: start with BUILD.md.")
             os.startfile(self._built_dir(path))
@@ -683,6 +693,97 @@ class App:
         path = self._selected()
         if path and (path / "analysis" / "report.html").exists():
             os.startfile(path / "analysis" / "report.html")
+
+    @staticmethod
+    def _sop(path: Path | None) -> Path | None:
+        """The SOP of the recording's best opportunity, if the report made one."""
+        report = _read_json(path / "analysis" / "analysis.json") if path else None
+        tasks = [t for t in (report or {}).get("tasks", []) if (t.get("improvement") or {}).get("sop")]
+        if not tasks:
+            return None
+        best = max(tasks, key=lambda t: t["score"])
+        sop = path / "analysis" / best["improvement"]["sop"]
+        return sop if sop.exists() else None
+
+    def open_sop(self) -> None:
+        sop = self._sop(self._selected())
+        if sop:
+            os.startfile(sop)
+
+    def compare(self) -> None:
+        """Before/after: pick the recording made before the change; the selected one is the after."""
+        after = self._selected()
+        if not after or self.busy or self.recorder is not None:
+            return
+        before_options = [p for p in reversed(list_sessions(self.cfg.sessions_dir))
+                          if p != after and (p / "analysis" / "analysis.json").exists()]
+        win, f = self._dialog("Compare before and after")
+        scale = self.root.winfo_fpixels("1i") / 96
+        ttk.Label(f, text="Which recording was made before the change?", style="Heading.TLabel").grid(
+            row=0, column=0, sticky="w")
+        ttk.Label(f, style="Muted.TLabel", wraplength=int(520 * scale), justify="left", text=(
+            f"'{_title(after)}' is the after. FlowSME compares the time per item, how much items vary, the steps "
+            "and the values entered by hand, and tests whether the saving is bigger than the normal run-to-run "
+            "variation. Record at least 2 or 3 items each time.")).grid(row=1, column=0, sticky="w", pady=(4, 8))
+        tree = ttk.Treeview(f, columns=("name", "when"), show="headings", height=min(max(len(before_options), 1), 6),
+                            selectmode="browse")
+        for col, text, width in (("name", "Process", 300), ("when", "Recorded", 150)):
+            tree.heading(col, text=text, anchor="w")
+            tree.column(col, width=int(width * scale), anchor="w")
+        for p in before_options:
+            tree.insert("", "end", iid=str(p), values=(_title(p), (load_meta(p).get("started") or "")[:16]
+                                                      .replace("T", " ")))
+        tree.grid(row=2, column=0, sticky="we")
+        counts = ttk.Frame(f)
+        counts.grid(row=3, column=0, sticky="w", pady=(10, 0))
+        before_items, after_items = tk.StringVar(), tk.StringVar(value=str(self._items(after)))
+        ttk.Label(counts, text="Items done in the before recording").grid(row=0, column=0, sticky="w")
+        ttk.Spinbox(counts, from_=1, to=10000, width=6, textvariable=before_items).grid(row=0, column=1, padx=6)
+        ttk.Label(counts, text="in the after recording").grid(row=0, column=2, sticky="w", padx=(8, 0))
+        ttk.Spinbox(counts, from_=1, to=10000, width=6, textvariable=after_items).grid(row=0, column=3, padx=6)
+        ttk.Label(counts, style="Muted.TLabel", text="FlowSME's count of repeated items; correct it if you did "
+                  "more.").grid(row=1, column=0, columnspan=4, sticky="w", pady=(2, 0))
+        tree.bind("<<TreeviewSelect>>", lambda _: before_items.set(str(self._items(Path(tree.selection()[0])))))
+        if before_options:
+            tree.selection_set(str(before_options[0]))
+            before_items.set(str(self._items(before_options[0])))
+
+        def go() -> None:
+            if not tree.selection():
+                return
+            before = Path(tree.selection()[0])
+            try:
+                items = (int(before_items.get()), int(after_items.get()))
+                if min(items) < 1:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("FlowSME", "Enter how many items each recording covered (1 or more).",
+                                     parent=win)
+                return
+            win.destroy()
+            self._compared = after / "analysis" / f"compare-{before.name}" / "comparison.html"
+            self._busy(True)
+            print(f"Comparing '{_title(before)}' (before) with '{_title(after)}' (after)...")
+            threading.Thread(target=self._work, args=("compared", after, self._compare_job, before, *items),
+                             daemon=True).start()
+
+        self._buttons(win, f, 4, "Compare", go)
+
+    @staticmethod
+    def _items(path: Path) -> int:
+        """Items FlowSME found in a recording's routine (its repeated runs)."""
+        try:
+            from .measure import summarize
+
+            return summarize(path)["detected_runs"]
+        except (SystemExit, OSError, ValueError, KeyError):
+            return 1
+
+    @staticmethod
+    def _compare_job(after: Path, before: Path, before_items: int, after_items: int) -> None:
+        from .measure import compare
+
+        compare(before, after, log=print, before_items=before_items, after_items=after_items)
 
     def open_folder(self) -> None:
         path = self._selected()

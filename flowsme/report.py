@@ -8,6 +8,7 @@ from pathlib import Path
 from .config import Config
 from .integration import label
 from .knowledge import EVIDENCE, METHODS
+from .measure import control_chart_svg
 from .models import Step, Task, fmt_minutes
 from .workflow import mermaid_apps, mermaid_workflow
 
@@ -212,7 +213,11 @@ def _task_section(w, t: Task, cfg: Config, session: str, turns: list[dict]) -> N
         if len(said) > 15:
             w(f"\n_...and {len(said) - 15} more._")
         w("")
+    if (t.improvement or {}).get("sop"):
+        w(f"**Standard operating procedure:** [{t.improvement['sop']}]({t.improvement['sop']}) (a draft with "
+          "a screenshot per step, the rules and checks; for the process owner to review and approve)\n")
     _integration_section(w, t, session)
+    _tobe_section(w, t)
     _improvement_section(w, t, cfg)
 
     rec = t.recommendation
@@ -317,6 +322,38 @@ def _integration_section(w, t: Task, session: str) -> None:
       "collection to test each connection, and SQL and Playwright starters.\n")
 
 
+def _tobe_section(w, t: Task) -> None:
+    imp = t.improvement
+    if not imp or not imp.get("to_be"):
+        return
+    tb = imp["to_be"]
+    w("#### To-be process\n")
+    w("What the work looks like after the change, and who does each part: automation (blue) or a person "
+      "(orange). People handle only the exceptions the checks flag.\n")
+    w("| | As-is | To-be with your tools | To-be with suggested tools |")
+    w("|---|---|---|---|")
+    for row in tb["compare"]:
+        w(f"| {row['measure']} | {row['as_is']} | {row['to_be_yours']} | {row['to_be']} |")
+    w("")
+    w(f"```mermaid\n{tb['mermaid']}\n```\n")
+    w("| # | Who | What | How |")
+    w("|---|---|---|---|")
+    for s in tb["steps"]:
+        w(f"| {s['n']} | {s['actor']} | {_cell(s['what'])} | {_cell(s['how'] or '-')} |")
+    w("")
+    rules = imp.get("rules") or []
+    if rules:
+        w("#### Business rules\n")
+        w("Every rule the process follows, in one place: what the recording proves, what you said, and what is "
+          "recommended or still to confirm. Confirm the open ones with the process owner before building.\n")
+        w("| ID | Type | Rule | Field | Evidence | Status |")
+        w("|---|---|---|---|---|---|")
+        for r in rules:
+            w(f"| {r['id']} | {r['type']} | {_cell(r['rule'])} | {_cell(r['field'] or '-')} | {_cell(r['evidence'])} "
+              f"| {r['status']} |")
+        w("")
+
+
 def _improvement_section(w, t: Task, cfg: Config) -> None:
     imp = t.improvement
     if not imp:
@@ -337,6 +374,23 @@ def _improvement_section(w, t: Task, cfg: Config) -> None:
     names = {"VA?": "value-adding? (judgement, confirm)", "BVA": "business-required", "NVA": "waste (non-value-adding)"}
     w(f"**Measure.** {tools['minutes_per_run']} min of hands-on work per item, {t.runs} items in this recording, "
       f"{checks['manual_entries_per_item']} manual entries per item.\n")
+    var = imp.get("variation")
+    if var:
+        w(f"Run-to-run variation over {var['runs']} items: mean {var['mean']:.0f} s, standard deviation "
+          f"{var['sd']:.0f} s (coefficient of variation {var['cv']:.0%}), fastest {var['min']:.0f} s (item "
+          f"{var['fastest_run']}), slowest {var['max']:.0f} s (item {var['slowest_run']}).\n")
+        w(control_chart_svg(var["seconds"], var["mean"], var["ucl"], var["lcl"], f"Seconds per item, {t.name}") + "\n")
+        if var["out_of_control"]:
+            w(f"Item(s) {', '.join(map(str, var['out_of_control']))} fall outside the control limits: something "
+              "special happened there (an exception, a slow system, a correction). Find out what before "
+              "automating.\n")
+        else:
+            w("<sub>Individuals control chart: limits at the mean ± 2.66 × the average change between items. All "
+              "items are inside, so the process is stable and its time is predictable.</sub>\n")
+        if var["variable_steps"]:
+            w("Steps that vary most between items:\n")
+            w("\n".join(f"- Step {v['step']}: {_cell(v['description'])} ({v['mean_seconds']:.0f} s on average, "
+                        f"± {v['sd_seconds']:.0f} s)" for v in var["variable_steps"]) + "\n")
     w("| Time per item | Minutes | Share |")
     w("|---|---|---|")
     for cls, minutes in sorted(lean["time_by_class"].items(), key=lambda kv: -kv[1]):
