@@ -49,6 +49,7 @@ SYSTEM = ("You watch screen recordings of office work and say exactly what the p
           "it. Only report what the screenshots show. Never copy personal or confidential data (names, emails, "
           "account numbers, amounts) into your answer: describe it generically, e.g. 'the invoice number'.")
 NO_NARRATION = 0.3
+VALUE_LIKE = re.compile(r"[\d\s.,:/()$€£¥%+-]{2,}")  # amounts, dates, phone numbers: data, not field names
 
 
 def ffmpeg() -> str:
@@ -244,7 +245,10 @@ def video_to_session(video: Path, sessions_dir: Path, name: str, cfg: Config, lo
             if (exe, title) != window:
                 events.append({"t": t, "type": "focus", "app": exe, "title": title})
                 window = (exe, title)
-            element = {"name": (a["element"] or "").strip()[:120], "role": KINDS.get(a["element_kind"], "")}
+            name = (a["element"] or "").strip()[:120]
+            if VALUE_LIKE.fullmatch(name) or "@" in name:  # a selected value, not a field's name: keep it out
+                name = "selected text"
+            element = {"name": name, "role": KINDS.get(a["element_kind"], "")}
             base = {"t": t, "app": exe, "title": title}
             if kind in ("click", "type", "copy", "paste", "switch"):
                 events.append({**base, "type": "click", "button": "left", "element": element,

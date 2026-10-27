@@ -166,7 +166,7 @@ def _analyze(path, cfg) -> None:
 
     print(f"Analysing {path}")
     result = analyze_session(path, cfg)
-    ranked = sorted((t for t in result["tasks"] if not t.misc), key=lambda t: -t.score)
+    ranked = sorted((t for t in result["tasks"] if not t.misc and not t.same_as), key=lambda t: -t.score)
     print("\nTop opportunities:")
     for t in ranked[:5]:
         print(f"  {t.id}. {t.name}: {t.level} ({t.score:.0f}/100), "

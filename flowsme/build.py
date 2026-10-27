@@ -35,7 +35,8 @@ def build_task(session_dir: Path, task_id: int | None = None, deploy: str | bool
     path = session_dir / "analysis" / "analysis.json"
     if not path.exists():
         raise SystemExit(f"Analyse the session first: python -m flowsme analyze {session_dir.name}")
-    tasks = [t for t in json.loads(path.read_text(encoding="utf-8"))["tasks"] if t.get("integration")]
+    tasks = [t for t in json.loads(path.read_text(encoding="utf-8"))["tasks"]
+             if t.get("integration") and not t.get("same_as")]  # one build per process
     if not tasks:
         raise SystemExit("No task in this session has an integration design (none had automation potential).")
     if task_id is None:

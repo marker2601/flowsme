@@ -149,7 +149,8 @@ def summary(store: Store, record: dict, money: bool) -> dict:
                 "minutes_saved_per_run": est.get("minutes_saved_per_run", 0),
                 "hours_saved_per_month": est.get("hours_saved_per_month", 0),
                 "money_saved_per_month": est.get("cost_saved_per_month", 0) if money else None,
-                "phase": phases.get(t["id"], "-"), "can_build": bool(t.get("integration")),
+                "phase": f"with task {t['same_as']}" if t.get("same_as") else phases.get(t["id"], "-"),
+                "can_build": bool(t.get("integration")) and not t.get("same_as"),
                 "has_sop": bool((t.get("improvement") or {}).get("sop"))})
         if money:
             out["currency"] = (_json(session / "analysis" / "options.json") or {}).get("currency", "$")

@@ -1,8 +1,8 @@
 """Write the analysis as report.md, a self-contained report.html, and analysis.json."""
 from __future__ import annotations
 
-import html
 import json
+import re
 from pathlib import Path
 
 from .config import Config
@@ -10,6 +10,7 @@ from .integration import label
 from .knowledge import EVIDENCE, METHODS
 from .measure import control_chart_svg
 from .models import Step, Task, fmt_minutes
+from .page import render
 from .workflow import mermaid_apps, mermaid_workflow
 
 APPROACH_LABELS = {
@@ -19,71 +20,53 @@ APPROACH_LABELS = {
 }
 SKETCH_FENCE_LANG = {"python": "python", "n8n": "json"}
 
-HTML = """<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>__TITLE__</title>
-<style>
-  :root { --bg:#fbfaf8; --fg:#1d1d1f; --muted:#5f6368; --line:#e3e1dc; --accent:#2f5bd3; --card:#ffffff; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#16171a; --fg:#e8e8ea; --muted:#a0a3a8; --line:#2c2e33; --accent:#8fb0ff; --card:#1d1f23; }
-  }
-  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
-  main { max-width:980px; margin:0 auto; padding:32px 16px 80px; }
-  h1 { font-size:1.9rem; margin-bottom:.3rem; }
-  h2 { margin-top:2.6rem; padding-bottom:.3rem; border-bottom:1px solid var(--line); }
-  h3 { margin-top:2.2rem; }
-  table { border-collapse:collapse; width:100%; font-size:.93rem; display:block; overflow-x:auto; }
-  th, td { text-align:left; padding:.45rem .6rem; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { color:var(--muted); font-weight:600; }
-  code, pre { font-family:ui-monospace,Consolas,monospace; font-size:.86rem; }
-  pre { background:var(--card); border:1px solid var(--line); padding:12px; overflow-x:auto; border-radius:6px; }
-  .mermaid { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px; overflow-x:auto; margin:1rem 0; }
-  img { max-width:100%; border:1px solid var(--line); border-radius:4px; }
-  a { color:var(--accent); }
-  blockquote { color:var(--muted); border-left:3px solid var(--line); margin-left:0; padding-left:1rem; }
-</style>
-</head>
-<body>
-<main id="content">Loading report...</main>
-<script type="text/markdown" id="md">__MARKDOWN__</script>
-<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-<script>
-  const main = document.getElementById("content");
-  main.innerHTML = marked.parse(document.getElementById("md").textContent);
-  main.querySelectorAll("code.language-mermaid").forEach((code) => {
-    const div = document.createElement("div");
-    div.className = "mermaid";
-    div.textContent = code.textContent;
-    code.parentElement.replaceWith(div);
-  });
-  mermaid.initialize({ startOnLoad: false, theme: "default", flowchart: { htmlLabels: true } });
-  mermaid.run();
-</script>
-</body>
-</html>
-"""
 
 
 def write_report(session_dir: Path, meta: dict, steps: list[Step], tasks: list[Task], amap: dict,
                  cfg: Config, engine: str, name: str = "report") -> dict[str, Path]:
     """report.md, report.html and analysis.json; another `name` writes only that copy's Markdown and HTML."""
     out = session_dir / "analysis"
-    title = f"Workflow analysis: {meta.get('name') or session_dir.name}"
+    title = f"Workflow analysis: {meta.get('name') or _process_name(session_dir.name)}"
     markdown = _markdown(title, session_dir.name, meta, steps, tasks, amap, cfg, engine)
     paths = {"markdown": out / f"{name}.md", "html": out / f"{name}.html", "json": out / "analysis.json"}
     paths["markdown"].write_text(markdown, encoding="utf-8")
-    page = HTML.replace("__TITLE__", html.escape(title)).replace("__MARKDOWN__", markdown.replace("</script", "<\\/script"))
-    paths["html"].write_text(page, encoding="utf-8")
+    paths["html"].write_text(render(title, markdown, "report", {"kpis": _kpis(steps, tasks, cfg)}),
+                             encoding="utf-8")
     if name != "report":
         del paths["json"]
         return paths
     paths["json"].write_text(json.dumps(_as_json(session_dir, meta, steps, tasks, amap, engine), indent=2,
                                         ensure_ascii=False), encoding="utf-8")
     return paths
+
+
+def _process_name(folder: str) -> str:
+    """'20261024-161537-ap-invoice-narrated' -> 'Ap invoice narrated'."""
+    name = re.sub(r"^\d{8}-\d{6}-?", "", folder).replace("-", " ").strip()
+    return (name[:1].upper() + name[1:]) if name else folder
+
+
+def _kpis(steps: list[Step], tasks: list[Task], cfg: Config) -> list[dict]:
+    """The summary cards at the top of the report page."""
+    a = cfg.analysis
+    main = [t for t in tasks if not t.misc]
+    total = sum(s.duration for s in steps) / 60
+    saved = sum(t.estimate.get("minutes_saved_per_run", 0) for t in main)
+    hours = sum(t.estimate.get("hours_saved_per_month", 0) for t in main)
+    share = f"{saved / total * 100:.0f}%" if total else "0%"
+    cards = [{"label": "Recorded work", "value": fmt_minutes(total)},
+             {"label": "Could be saved per run", "value": f"{fmt_minutes(saved)} ({share})"},
+             {"label": f"Hours saved a month ({a.runs_per_month} runs)", "value": f"{hours:.1f} h"}]
+    if a.show_money:
+        money = sum(t.estimate.get("cost_saved_per_month", 0) for t in main)
+        cards.append({"label": "Worth a month", "value": f"{a.currency}{money:,}"})
+    processes = [t for t in main if not t.same_as]
+    cards.append({"label": "Processes found", "value": str(len(processes))})
+    if processes:
+        top = max(processes, key=lambda t: t.score)
+        cards.append({"label": f"Biggest opportunity · {top.level.lower()} potential", "value": top.name,
+                      "wide": True})
+    return cards
 
 
 def _cell(text: str) -> str:
@@ -104,8 +87,10 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
 
     w(f"# {title}\n")
     started = (meta.get("started") or "")[:16].replace("T", " ")
+    engine, _, usage = engine.partition(". AI usage: ")  # the token counts go under "How to read this"
+    n = len([t for t in main if not t.same_as])
     w(f"Recorded {started or 'n/a'} · {fmt_minutes(total)} of activity · {len(steps)} steps · "
-      f"{len(amap['apps'])} applications · {len(main)} tasks · analysed with {engine}\n")
+      f"{len(amap['apps'])} applications · {n} task{'s' if n != 1 else ''} · analysed with {engine}\n")
     source = meta.get("source") or {}
     if source.get("kind") == "video":
         w(f"> **Made from a screen video** ({source.get('file', 'video')}). The AI model read the steps from "
@@ -135,8 +120,9 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
     w("| # | Task | Time | Runs | Applications | Automation potential | Est. saving per run |")
     w("|---|---|---|---|---|---|---|")
     for t in ranked:
+        potential = f"same process as task {t.same_as}" if t.same_as else f"{t.level} ({t.score:.0f}/100)"
         w(f"| {t.id} | {_cell(t.name)} | {fmt_minutes(t.minutes)} | {t.runs} | {_cell(', '.join(t.apps[:4]))} | "
-          f"{t.level} ({t.score:.0f}/100) | {fmt_minutes(t.estimate.get('minutes_saved_per_run', 0))} |")
+          f"{potential} | {fmt_minutes(t.estimate.get('minutes_saved_per_run', 0))} |")
     w("")
 
     pri = meta.get("priorities")
@@ -201,6 +187,8 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
     w("- **Savings** use the AI model's estimate of the automatable share when one was available, otherwise 60%, "
       "35% or 10% for high, medium or low potential.")
     w("- **Automation drafts** are starting points. Review and test them on sample data before using them on real work.")
+    if usage:
+        w(f"- **AI used for this report:** {usage}")
     privacy = ("Typed text was not stored, only counted." if not cfg.recorder.capture_typed_text
                else "Typed text was stored (capture_typed_text = true).")
     w(f"- **Privacy:** {privacy} Excluded apps and windows were not captured.\n")
@@ -210,6 +198,12 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
 def _task_section(w, t: Task, cfg: Config, session: str, turns: list[dict]) -> None:
     rep = t.representative
     w(f"### {t.id}. {t.name}\n")
+    if t.same_as:  # the design, SOP and roadmap entry are under the task it repeats
+        w(f"**The same process as task {t.same_as}** (the same fields filled in the same applications), recorded "
+          f"outside its main run: {fmt_minutes(t.minutes)}, {len(t.steps)} steps in {', '.join(t.apps)}. Its "
+          f"data flow, automation design, checks and SOP are described once, under task {t.same_as}, and the "
+          f"roadmap counts this time there.\n")
+        return
     runs = f"{t.runs} runs of about {fmt_minutes(t.minutes / t.runs)}" if t.repeated else "1 run"
     w(f"**Automation potential: {t.level} ({t.score:.0f}/100)** · {fmt_minutes(t.minutes)} in total · {runs} · "
       f"{', '.join(t.apps)}\n")
@@ -518,7 +512,7 @@ def _as_json(session_dir: Path, meta: dict, steps: list[Step], tasks: list[Task]
             "minutes": round(t.minutes, 1), "apps": t.apps, "inputs": t.inputs, "outputs": t.outputs,
             "decision_points": t.decision_points, "score": t.score, "level": t.level, "reasons": t.reasons,
             "features": t.features, "estimate": t.estimate, "recommendation": t.recommendation,
-            "integration": t.integration, "improvement": t.improvement,
+            "integration": t.integration, "improvement": t.improvement, "same_as": t.same_as,
             "steps_one_run": [s.index for s in t.representative],
             "runs_step_indexes": [[s.index for s in run] for run in t.iterations],
         } for t in tasks],

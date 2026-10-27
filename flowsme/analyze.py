@@ -23,7 +23,7 @@ from .sop import write_sop
 from .stories import user_stories
 from .tobe import business_rules, to_be
 from .session import load_events, load_meta
-from .workflow import app_map, summarize_tasks
+from .workflow import app_map, mark_same_process, summarize_tasks
 
 
 def analyze_session(session_dir: Path, cfg: Config, log=print, hours_copy: bool = False) -> dict:
@@ -69,9 +69,10 @@ def analyze_session(session_dir: Path, cfg: Config, log=print, hours_copy: bool 
                             "rules": rules, "to_be": to_be(task, task.integration, tools, checks, rules)}
     log("Integration design ready: data flow, connections, tool plan, checklist, Lean Six Sigma analysis"
         + (f" (customer tools: {', '.join(cfg.customer.tools)})" if cfg.customer.tools else " (no customer tools given)"))
+    mark_same_process(tasks, log)  # one design, SOP and roadmap entry per process, not per piece of it
     recommend(tasks, llm, cfg.analysis, out, concurrency, log)
     apply_estimates(tasks, cfg.analysis)
-    designed = [t for t in tasks if t.improvement]
+    designed = [t for t in tasks if t.improvement and not t.same_as]
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:  # one SOP per designed task
         sops = list(pool.map(lambda t: write_sop(session_dir, t, t.integration, t.improvement["validation"],
                                                  t.improvement["rules"], t.improvement["variation"], llm, log),

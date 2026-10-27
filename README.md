@@ -361,6 +361,26 @@ and Google Apps Script have APIs that could be added next.
 
 ## What you get
 
+**How the pages look.** The report, SOP, before/after comparison and team view open in the browser as one
+designed page:
+- **Top bar:** Contents, Expand all and Collapse all, Print / Save PDF, and a light or dark theme switch.
+- **Report:** summary cards (recorded time, time saved per run and per month, what it's worth, processes found,
+  the biggest opportunity), and a contents list that follows you as you scroll. Each task is a card with tabs
+  (Overview, Data flow, Connections, Automation, To-be, Rules, User stories, Lean Six Sigma) instead of one long
+  page.
+- **Tables:** coloured High / Medium / Low and Now / Next / Later / Hold labels, and you can sort by clicking a
+  heading. Clicking a row of the opportunities table opens that task. Screenshots open full size on a click.
+- **SOP:** each step is a numbered card with its screenshot and a Done box, and a progress bar shows "3 of 10
+  steps done". The ticks are remembered in that browser; Reset clears them. Hide screenshots gives a
+  text-only checklist.
+- **Printing** shows every tab and step, without the buttons.
+
+**Said once, not three times.** When one recording holds the same process in pieces (say, a run before and
+a run after the repeating routine), FlowSME treats them as one process. They fill the same fields in the
+same applications, so the design, SOP and roadmap entry appear once, and the other pieces say "same process
+as task N". The same check on several columns is one rule, and an SOP explains each check at its first step
+only.
+
 `sessions/<id>/analysis/` contains:
 
 - `report.html` and `report.md`. The report has these sections:

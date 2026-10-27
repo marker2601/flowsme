@@ -163,6 +163,8 @@ class ClientApp:
         scale = r.winfo_fpixels("1i") / 96
         top = ttk.Frame(r, padding=(16, 14, 16, 2))
         top.pack(fill="x")
+        tk.Label(top, text="F", bg="#3355d1", fg="#ffffff", font=("Segoe UI", 13, "bold"), width=2).pack(
+            side="left", padx=(0, 10))
         ttk.Label(top, text="FlowSME", style="Title.TLabel").pack(side="left")
         ttk.Label(top, text="Record your work. Get the workflow, what to automate and the minutes saved.",
                   style="Muted.TLabel").pack(side="left", padx=12, pady=(4, 0))
@@ -190,13 +192,13 @@ class ClientApp:
 
         box = ttk.LabelFrame(r, text="Recordings", padding=12)
         box.pack(fill="both", expand=True, padx=16, pady=(0, 8))
-        cols = (("name", "Process", 230), ("by", "By", 110), ("when", "Recorded", 140), ("length", "Length", 70),
+        cols = (("name", "Process", 200), ("by", "By", 100), ("when", "Recorded", 125), ("length", "Length", 65),
                 ("status", "Report", 110))
         self.tree = ttk.Treeview(box, columns=[c for c, _, _ in cols], show="headings", height=6, selectmode="browse")
         for col, label, width in cols:
             self.tree.heading(col, text=label, anchor="w")
             self.tree.column(col, width=int(width * scale), minwidth=int(width * scale * 0.8), anchor="w",
-                             stretch=col == "name")
+                             stretch=True)  # all share the window, so the last column never falls off
         self.tree.pack(fill="both", expand=True)
         self.tree.bind("<<TreeviewSelect>>", lambda _: self._selected_changed())
         self.tree.bind("<Double-1>", lambda _: self.open_report())
@@ -218,7 +220,7 @@ class ClientApp:
         self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 8))
         results = ttk.Frame(self.tabs, padding=(10, 8))
         self.tabs.add(results, text="Results")
-        self.summary = ttk.Label(results, wraplength=int(660 * scale), justify="left")
+        self.summary = ttk.Label(results, wraplength=int(840 * scale), justify="left")
         self.summary.pack(fill="x")
         cols = (("id", "#", 34), ("task", "Task", 260), ("potential", "Potential", 100), ("saves", "Saves per item", 100),
                 ("month", "A month", 110), ("phase", "Roadmap", 80))
@@ -232,12 +234,12 @@ class ClientApp:
         said = ttk.Frame(self.tabs, padding=(10, 8))
         self.tabs.add(said, text="Narration")
         self.narration_box = tk.Text(said, height=6, wrap="word", state="disabled", relief="flat",
-                                     font=("Segoe UI", 9), background="#f7f7f8")
+                                     font=("Segoe UI", 9), background="#ffffff")
         self.narration_box.pack(fill="both", expand=True)
         logs = ttk.Frame(self.tabs, padding=(10, 8))
         self.tabs.add(logs, text="Activity")
         self.log_box = tk.Text(logs, height=6, wrap="word", state="disabled", relief="flat", font=("Consolas", 9),
-                               background="#f7f7f8")
+                               background="#ffffff")
         self.log_box.pack(fill="both", expand=True)
 
         foot = ttk.Frame(r, padding=(16, 0, 16, 12))
@@ -1113,8 +1115,18 @@ class ClientApp:
 
 def style(root: tk.Tk) -> None:
     s = ttk.Style(root)
-    if "vista" in s.theme_names():
-        s.theme_use("vista")
+    try:  # a Windows 11 look (the Sun Valley theme); the plain Windows theme if it isn't installed
+        import sv_ttk
+
+        sv_ttk.set_theme("light")
+        # The theme sizes its fonts for 96 DPI; on scaled screens they come out tiny. Use real point sizes.
+        for name, size, weight in (("Caption", 9, "normal"), ("Body", 10, "normal"), ("BodyStrong", 10, "bold"),
+                                   ("BodyLarge", 11, "normal"), ("Subtitle", 13, "bold"), ("Title", 16, "bold"),
+                                   ("TitleLarge", 20, "bold"), ("Display", 26, "bold")):
+            tkfont.nametofont(f"SunValley{name}Font").configure(family="Segoe UI", size=size, weight=weight)
+    except Exception:  # noqa: BLE001 - any problem with the theme: fall back, the app still works
+        if "vista" in s.theme_names():
+            s.theme_use("vista")
     scale = root.winfo_fpixels("1i") / 96
     for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont"):
         tkfont.nametofont(name).configure(family="Segoe UI", size=10)
@@ -1122,10 +1134,10 @@ def style(root: tk.Tk) -> None:
     s.configure("Heading.TLabel", font=("Segoe UI", 11, "bold"))
     s.configure("Muted.TLabel", foreground="#5f6368")
     s.configure("Accent.TButton", font=("Segoe UI", 11, "bold"), padding=(16, 8))
-    s.configure("Treeview", rowheight=int(24 * scale))
-    s.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"))
-    root.geometry(f"{int(760 * scale)}x{int(740 * scale)}")
-    root.minsize(int(600 * scale), int(520 * scale))
+    s.configure("Treeview", rowheight=int(28 * scale))
+    s.configure("Treeview.Heading", font=("Segoe UI Semibold", 10))
+    root.geometry(f"{int(920 * scale)}x{int(800 * scale)}")
+    root.minsize(int(720 * scale), int(560 * scale))
 
 
 def self_test() -> tuple[bool, str]:

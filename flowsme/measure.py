@@ -206,13 +206,12 @@ def compare(before_dir: Path, after_dir: Path, before_task: int | None = None, a
     out = after_dir / "analysis" / f"compare-{before_dir.name}"
     out.mkdir(parents=True, exist_ok=True)
     md = _comparison_markdown(result)
-    from .report import HTML  # the report's page shell renders the Markdown
+    from .page import render
 
     title = f"Before and after: {a['task']}"
     paths = {"markdown": out / "comparison.md", "html": out / "comparison.html", "json": out / "comparison.json"}
     paths["markdown"].write_text(md, encoding="utf-8")
-    paths["html"].write_text(HTML.replace("__TITLE__", html.escape(title)).replace(
-        "__MARKDOWN__", md.replace("</script", "<\\/script")), encoding="utf-8")
+    paths["html"].write_text(render(title, md, "compare"), encoding="utf-8")
     paths["json"].write_text(json.dumps(result, indent=2), encoding="utf-8")
     log(f"Before {fmt_minutes(b['time']['mean'] / 60)} per item, after {fmt_minutes(a['time']['mean'] / 60)}. "
         f"{result['verdict']}")

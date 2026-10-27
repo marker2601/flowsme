@@ -88,12 +88,11 @@ def team_view(session_dirs: list[Path], names: list[str] | None = None, out_dir:
     out = out_dir or (session_dirs[0].parent / "team-views" / datetime.now().strftime("%Y%m%d-%H%M%S"))
     out.mkdir(parents=True, exist_ok=True)
     md = _markdown(result, out)
-    from .report import HTML  # the report's page shell renders the Markdown
+    from .page import render
 
     paths = {"markdown": out / "team.md", "html": out / "team.html", "json": out / "team.json"}
     paths["markdown"].write_text(md, encoding="utf-8")
-    paths["html"].write_text(HTML.replace("__TITLE__", "Team view").replace(
-        "__MARKDOWN__", md.replace("</script", "<\\/script")), encoding="utf-8")
+    paths["html"].write_text(render("Team view", md, "team"), encoding="utf-8")
     paths["json"].write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
     log(f"Team view of {len(people)} recordings: fastest method {best['name']} at "
         f"{fmt_minutes(best['time']['mean'] / 60)} per item.")

@@ -85,7 +85,7 @@ working code or a step-by-step flow (not a link) that implements the top recomme
 
 def candidates(tasks: list[Task], cfg: AnalysisConfig) -> list[Task]:
     """Tasks worth an integration design and recommendations, best first."""
-    ranked = sorted((t for t in tasks if not t.misc and t.score >= 15), key=lambda t: -t.score)
+    ranked = sorted((t for t in tasks if not t.misc and not t.same_as and t.score >= 15), key=lambda t: -t.score)
     return ranked[:cfg.max_recommended_tasks]
 
 

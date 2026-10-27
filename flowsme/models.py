@@ -107,6 +107,7 @@ class Task:
     estimate: dict = field(default_factory=dict)
     integration: dict = field(default_factory=dict)
     improvement: dict = field(default_factory=dict)  # tool plan, validation checklist, Lean Six Sigma analysis
+    same_as: int | None = None  # the same process as this task (its design, SOP and roadmap entry cover both)
 
     @property
     def runs(self) -> int:

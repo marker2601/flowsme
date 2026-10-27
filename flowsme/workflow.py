@@ -147,3 +147,27 @@ def mermaid_apps(amap: dict, max_edges: int = 14) -> str:
     for edge in amap["handoffs"][:max_edges]:
         lines.append(f'  {ids[edge["from"]]} -.->|"{edge["count"]}× copy-paste"| {ids[edge["to"]]}')
     return "\n".join(lines)
+
+
+def mark_same_process(tasks: list[Task], log=print) -> None:
+    """Tasks that fill the same fields of the same systems are one process recorded in pieces (say the runs
+    before and after a routine). The most typical one (the routine with the most runs, else the best score)
+    keeps the design, SOP and roadmap entry; the others point to it, so the report says it once."""
+    def fields(t: Task) -> set:
+        return {(f["to"]["system"], f["to"]["field"]) for f in (t.integration or {}).get("data_flows", [])}
+
+    designed = sorted((t for t in tasks if t.integration and not t.misc),
+                      key=lambda t: (-(t.runs if t.repeated else 0), -t.score))
+    primaries: list[Task] = []
+    for task in designed:
+        mine = fields(task)
+        for primary in primaries:
+            theirs = fields(primary)
+            if len(mine) >= 2 and len(theirs) >= 2 and len(mine & theirs) / min(len(mine), len(theirs)) >= 0.6:
+                task.same_as = primary.id
+                break
+        else:
+            primaries.append(task)
+    merged = [t for t in tasks if t.same_as]
+    if merged:
+        log(f"Same process, described once: {', '.join(f'task {t.id} with task {t.same_as}' for t in merged)}")

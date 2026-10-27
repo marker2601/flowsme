@@ -3,7 +3,6 @@ with a screenshot of the window, why each step matters (from the narration), the
 to do when something is off, and an approval block. A draft for the process owner to review, not a final SOP."""
 from __future__ import annotations
 
-import html
 import re
 from datetime import date
 from pathlib import Path
@@ -45,11 +44,10 @@ def write_sop(session_dir: Path, task: Task, plan: dict, checks: dict, rules: li
     name = f"sop-task{task.id}"
     md = _markdown(session_dir, task, steps, instructions, purpose, plan, checks, rules, variation, embed=False)
     page = _markdown(session_dir, task, steps, instructions, purpose, plan, checks, rules, variation, embed=True)
-    from .report import HTML  # the report's page shell renders the Markdown
+    from .page import render
 
     (out / f"{name}.md").write_text(md, encoding="utf-8")
-    (out / f"{name}.html").write_text(HTML.replace("__TITLE__", html.escape(f"SOP: {task.name}")).replace(
-        "__MARKDOWN__", page.replace("</script", "<\\/script")), encoding="utf-8")
+    (out / f"{name}.html").write_text(render(f"SOP: {task.name}", page, "sop"), encoding="utf-8")
     log(f"SOP written for task {task.id}: {name}.html")
     return out / f"{name}.html"
 
@@ -108,7 +106,7 @@ def _markdown(session_dir: Path, task: Task, steps, instructions, purpose, plan,
     for r in rules:
         if r["type"] in ("mapping", "calculation") and r["field"]:
             by_field_rules.setdefault(r["field"], []).append(r)
-    shown, last_shot = 0, None
+    shown, last_shot, told = 0, None, set()  # each check is explained at its first step only
     for n, (step, text) in enumerate(zip(steps, instructions), 1):
         where = f"{step.app}" + (f" · {step.target}" if step.target and step.action != "type" else "")
         w.append(f"### {n}. {text}\n")
@@ -124,7 +122,8 @@ def _markdown(session_dir: Path, task: Task, steps, instructions, purpose, plan,
         field = label(endpoint(step)) if (step.pastes or step.chars_typed) else ""
         for r in by_field_rules.get(field, []):
             w.append(f"- **Rule {r['id']}:** {_cell(r['rule'])}")
-        for check in by_field_checks.get(field, [])[:3]:
+        for check in [c for c in by_field_checks.get(field, []) if c not in told][:3]:
+            told.add(check)
             w.append(f"- **Check:** {_cell(check)}")
         w.append("")
 
@@ -136,7 +135,10 @@ def _markdown(session_dir: Path, task: Task, steps, instructions, purpose, plan,
     w.append("## When something is off\n")
     off = [f"**{_cell(p)}:** decide as the process owner has agreed, and write the rule into this SOP."
            for p in task.decision_points]
-    off += [f"{_cell(r['text'])} Check the source before saving." for r in checks.get("rework", [])]
+    rework = checks.get("rework", [])
+    off += [f"{_cell(r['text'])} Check the source before saving." for r in rework[:3]]
+    if len(rework) > 3:
+        off.append(f"{len(rework) - 3} more corrections and extra steps were seen: the report lists them all.")
     off.append("A value doesn't match its source, or a field is missing: stop, don't guess, and ask the process "
                "owner.")
     w.append("\n".join(f"- {line}" for line in off) + "\n")

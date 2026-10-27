@@ -39,7 +39,23 @@ def business_rules(task: Task, plan: dict, checks: dict) -> list[dict]:
             add("validation", c["check"], c["where"], c["evidence"], "recommended")
     for point in task.decision_points:
         add("decision", point, "", "a judgement call seen in the recording", "write down the rule")
-    return rules
+    return _merge_same(rules)
+
+
+def _merge_same(rules: list[dict]) -> list[dict]:
+    """One row per rule: the same check on columns A, B and C is one rule for "column A, column B, column C"."""
+    merged: list[dict] = []
+    for r in rules:
+        twin = next((m for m in merged if (m["type"], m["rule"], m["status"]) == (r["type"], r["rule"], r["status"])),
+                    None)
+        if twin is None:
+            merged.append(dict(r))
+        elif r["field"] and r["field"] not in twin["field"]:
+            head, _, tail = r["field"].rpartition(" · ")
+            twin["field"] += f", {tail}" if head and twin["field"].startswith(head + " · ") else f"; {r['field']}"
+    for n, r in enumerate(merged, 1):
+        r["id"] = f"BR-{n}"
+    return merged
 
 
 def to_be(task: Task, plan: dict, tools: dict, checks: dict, rules: list[dict]) -> dict:

@@ -6,3 +6,4 @@ uiautomation>=2.0; sys_platform == "win32"
 openai>=1.40
 ddgs>=9
 sounddevice>=0.4
+sv-ttk>=2.6

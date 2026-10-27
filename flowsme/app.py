@@ -270,6 +270,8 @@ class App:
         r.title("FlowSME")
         top = ttk.Frame(r, padding=(16, 14, 16, 2))
         top.pack(fill="x")
+        tk.Label(top, text="F", bg="#3355d1", fg="#ffffff", font=("Segoe UI", 13, "bold"), width=2).pack(
+            side="left", padx=(0, 10))
         ttk.Label(top, text="FlowSME", style="Title.TLabel").pack(side="left")
         ttk.Label(top, text="Record your work. Get the workflow, what to automate and the minutes saved.",
                   style="Muted.TLabel").pack(side="left", padx=12, pady=(4, 0))
@@ -297,14 +299,14 @@ class App:
         box = ttk.LabelFrame(r, text="Recordings", padding=12)
         box.pack(fill="both", expand=True, padx=16, pady=(0, 8))
         scale = r.winfo_fpixels("1i") / 96  # column widths are in pixels
-        cols = (("name", "Process", 230), ("by", "By", 110), ("when", "Recorded", 140), ("length", "Length", 70),
+        cols = (("name", "Process", 200), ("by", "By", 100), ("when", "Recorded", 125), ("length", "Length", 65),
                 ("report", "Report", 110))
         self.tree = ttk.Treeview(box, columns=[c for c, _, _ in cols], show="headings", height=6,
                                  selectmode="browse")
         for col, label, width in cols:
             self.tree.heading(col, text=label, anchor="w")
             self.tree.column(col, width=int(width * scale), minwidth=int(width * scale * 0.8), anchor="w",
-                             stretch=col == "name")
+                             stretch=True)  # all share the window, so the last column never falls off
         self.tree.pack(fill="both", expand=True)
         self.tree.bind("<<TreeviewSelect>>", lambda _: self._update_buttons())
         self.tree.bind("<Double-1>", lambda _: self.open_report())
@@ -326,7 +328,7 @@ class App:
         self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 8))
         results = ttk.Frame(self.tabs, padding=(10, 8))
         self.tabs.add(results, text="Results")
-        self.summary = ttk.Label(results, wraplength=int(660 * scale), justify="left")
+        self.summary = ttk.Label(results, wraplength=int(840 * scale), justify="left")
         self.summary.pack(fill="x")
         cols = (("id", "#", 34), ("task", "Task", 260), ("potential", "Potential", 100), ("saves", "Saves per item", 100),
                 ("month", "A month", 110), ("phase", "Roadmap", 80))
@@ -340,12 +342,12 @@ class App:
         said = ttk.Frame(self.tabs, padding=(10, 8))
         self.tabs.add(said, text="Narration")
         self.narration_box = tk.Text(said, height=6, wrap="word", state="disabled", relief="flat",
-                                     font=("Segoe UI", 9), background="#f7f7f8")
+                                     font=("Segoe UI", 9), background="#ffffff")
         self.narration_box.pack(fill="both", expand=True)
         logs = ttk.Frame(self.tabs, padding=(10, 8))
         self.tabs.add(logs, text="Activity")
         self.log_box = tk.Text(logs, height=6, wrap="word", state="disabled", relief="flat",
-                               font=("Consolas", 9), background="#f7f7f8")
+                               font=("Consolas", 9), background="#ffffff")
         self.log_box.pack(fill="both", expand=True)
 
         foot = ttk.Frame(r, padding=(16, 0, 16, 12))
@@ -785,7 +787,8 @@ class App:
         if not path or self.busy or self.recorder is not None:
             return
         report = _read_json(path / "analysis" / "analysis.json") or {}
-        tasks = sorted((t for t in report.get("tasks", []) if t.get("integration")), key=lambda t: -t["score"])
+        tasks = sorted((t for t in report.get("tasks", []) if t.get("integration") and not t.get("same_as")),
+                       key=lambda t: -t["score"])
         if not tasks:
             messagebox.showinfo("FlowSME", "No task in this report has an automation design: none showed enough "
                                            "automation potential.", parent=self.root)
@@ -1141,7 +1144,7 @@ class App:
                     t["id"], t["name"], f"{t['level']} ({t['score']:.0f})",
                     fmt_minutes(est.get("minutes_saved_per_run", 0)),
                     f"{est.get('hours_saved_per_month', 0)} h{money(est.get('cost_saved_per_month', 0))}",
-                    phases.get(t["id"], "-")))
+                    f"with task {t['same_as']}" if t.get("same_as") else phases.get(t["id"], "-")))
         turns = (_read_json(path / "analysis" / "narration.json") or {}).get("turns") if path else None
         if turns:
             text = "\n".join(f"{int(t['start'] // 60)}:{int(t['start'] % 60):02d}   {t['text']}" for t in turns)
@@ -1394,8 +1397,18 @@ class App:
 
 def _style(root: tk.Tk) -> None:
     style = ttk.Style(root)
-    if "vista" in style.theme_names():
-        style.theme_use("vista")
+    try:  # a Windows 11 look (the Sun Valley theme); the plain Windows theme if it isn't installed
+        import sv_ttk
+
+        sv_ttk.set_theme("light")
+        # The theme sizes its fonts for 96 DPI; on scaled screens they come out tiny. Use real point sizes.
+        for name, size, weight in (("Caption", 9, "normal"), ("Body", 10, "normal"), ("BodyStrong", 10, "bold"),
+                                   ("BodyLarge", 11, "normal"), ("Subtitle", 13, "bold"), ("Title", 16, "bold"),
+                                   ("TitleLarge", 20, "bold"), ("Display", 26, "bold")):
+            tkfont.nametofont(f"SunValley{name}Font").configure(family="Segoe UI", size=size, weight=weight)
+    except Exception:  # noqa: BLE001 - any problem with the theme: fall back, the app still works
+        if "vista" in style.theme_names():
+            style.theme_use("vista")
     scale = root.winfo_fpixels("1i") / 96
     for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont"):  # not option_add: it would
         tkfont.nametofont(name).configure(family="Segoe UI", size=10)          # override the styles below
@@ -1403,10 +1416,10 @@ def _style(root: tk.Tk) -> None:
     style.configure("Heading.TLabel", font=("Segoe UI", 11, "bold"))
     style.configure("Muted.TLabel", foreground="#5f6368")
     style.configure("Accent.TButton", font=("Segoe UI", 11, "bold"), padding=(16, 8))
-    style.configure("Treeview", rowheight=int(24 * scale))
-    style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"))
-    root.geometry(f"{int(760 * scale)}x{int(740 * scale)}")
-    root.minsize(int(600 * scale), int(520 * scale))
+    style.configure("Treeview", rowheight=int(28 * scale))
+    style.configure("Treeview.Heading", font=("Segoe UI Semibold", 10))
+    root.geometry(f"{int(920 * scale)}x{int(800 * scale)}")
+    root.minsize(int(720 * scale), int(560 * scale))
 
 
 def self_test() -> tuple[bool, str]:

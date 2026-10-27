@@ -25,7 +25,7 @@ from flowsme import __version__  # noqa: E402
 BUILD, DIST = ROOT / "build", ROOT / "dist"
 ICON = ROOT / "flowsme" / "assets" / "flowsme.ico"
 # Loaded at run time, so PyInstaller can't see them: input hooks and UI Automation.
-RECORDER_HIDDEN = ["--collect-submodules", "pynput", "--collect-all", "uiautomation"]
+RECORDER_HIDDEN = ["--collect-submodules", "pynput", "--collect-all", "uiautomation", "--collect-all", "sv_ttk"]
 CLIENT_MODULES = {"flowsme", "flowsme.config", "flowsme.recorder", "flowsme.session", "flowsme.connect",
                   "flowsme.client", "flowsme.client.app", "flowsme.client.admin", "flowsme.client.account",
                   "flowsme.client.cloud"}

@@ -44,10 +44,13 @@ def effort(task: Task) -> dict:
 def prioritize(tasks: list[Task], currency: str = "$", show_money: bool = True) -> dict | None:
     items = []
     for t in tasks:
-        if t.misc or not t.estimate or not t.estimate.get("hours_saved_per_month"):
+        if t.misc or t.same_as or not t.estimate or not t.estimate.get("hours_saved_per_month"):
             continue
         e = effort(t)
-        hours, money = t.estimate["hours_saved_per_month"], t.estimate["cost_saved_per_month"]
+        # The other pieces of the same process are built with it, so their time counts here.
+        same = [t] + [o for o in tasks if o.same_as == t.id and o.estimate]
+        hours = round(sum(o.estimate["hours_saved_per_month"] for o in same), 1)
+        money = sum(o.estimate["cost_saved_per_month"] for o in same)
         # Building costs days x 8 hours of the same people's time, so payback needs no hourly rate.
         items.append({"id": t.id, "name": t.name, "hours_per_month": hours, "money_per_month": money,
                       "effort_days": e["days"], "effort_reasons": e["reasons"],
