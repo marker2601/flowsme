@@ -13,6 +13,7 @@ import json
 import os
 import re
 import threading
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -33,6 +34,7 @@ PRICES = {
 }
 WEB_SEARCH_USD = 2.50 / 1000
 TRANSCRIBE_USD_PER_HOUR = 0.18
+SHARED_DAYS = 30  # how long a vendor API check stays valid
 
 
 class LLM:
@@ -46,13 +48,16 @@ class LLM:
         self.used_roles: set[str] = set()     # roles whose model answered at least once
         self.failed_roles: set[str] = set()   # roles switched off after repeated failures
         self.usage = {"calls": 0, "cache_hits": 0, "input_tokens": 0, "cached_tokens": 0, "output_tokens": 0,
-                      "searches": 0, "audio_seconds": 0.0, "cost_usd": 0.0, "unpriced_models": []}
+                      "searches": 0, "audio_seconds": 0.0, "cost_usd": 0.0, "unpriced_models": [],
+                      "by_kind": {}}  # screenshots / text / web search / audio: calls and dollars each
         self._failures: dict[str, int] = {}
         self._unsupported: dict[str, set[str]] = {}  # endpoint -> optional features it rejected
         self._clients: dict[tuple[str, str], object] = {}
         self._lock = threading.Lock()
         self._cache: dict = {}
         self._cache_path: Path | None = None
+        self._shared: dict = {}  # answers true for every recording, e.g. "does Excel have a public API?"
+        self._shared_path: Path | None = None
         self._endpoints = {
             "text": (cfg.base_url, cfg.api_key_env),
             "vision": (cfg.vision_base_url or cfg.base_url, cfg.vision_api_key_env or cfg.api_key_env),
@@ -74,6 +79,18 @@ class LLM:
             except json.JSONDecodeError:
                 self._cache = {}
 
+    def use_shared_cache(self, path: Path) -> None:
+        """Keep answers that hold for every recording (vendor API checks) in `path` for SHARED_DAYS days, so
+        later reports don't pay for the same web searches again."""
+        self._shared_path = path
+        if path.exists():
+            try:
+                now = time.time()
+                self._shared = {k: v for k, v in json.loads(path.read_text(encoding="utf-8")).items()
+                                if now - v.get("at", 0) < SHARED_DAYS * 86400}
+            except (json.JSONDecodeError, AttributeError):
+                self._shared = {}
+
     def _cached(self, key: str):
         with self._lock:
             if key in self._cache:
@@ -93,7 +110,7 @@ class LLM:
         return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
     def _charge(self, model: str, url: str, inp: int = 0, cached: int = 0, out: int = 0, searches: int = 0,
-                audio_seconds: float = 0.0) -> None:
+                audio_seconds: float = 0.0, kind: str = "text") -> None:
         local = any(h in url for h in ("localhost", "127.0.0.1", "[::1]"))
         price = (0.0, 0.0, 0.0) if local else PRICES.get(model)
         with self._lock:
@@ -108,9 +125,14 @@ class LLM:
                 if model not in u["unpriced_models"]:
                     u["unpriced_models"].append(model)
                 price = (0.0, 0.0, 0.0)
-            u["cost_usd"] += ((max(inp - cached, 0) * price[0] + cached * price[1] + out * price[2]) / 1e6
-                              + (0 if local else searches * WEB_SEARCH_USD
-                                 + audio_seconds / 3600 * TRANSCRIBE_USD_PER_HOUR))
+            cost = ((max(inp - cached, 0) * price[0] + cached * price[1] + out * price[2]) / 1e6
+                    + (0 if local else searches * WEB_SEARCH_USD + audio_seconds / 3600 * TRANSCRIBE_USD_PER_HOUR))
+            u["cost_usd"] += cost
+            part = u["by_kind"].setdefault(kind, {"calls": 0, "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0})
+            part["calls"] += 1
+            part["input_tokens"] += inp
+            part["output_tokens"] += out
+            part["cost_usd"] += cost
             if self.cfg.max_cost_usd and u["cost_usd"] >= self.cfg.max_cost_usd and not self.over_budget:
                 self.over_budget = True
                 print(f"  Spending cap of ${self.cfg.max_cost_usd:.2f} reached: built-in rules take over for the rest "
@@ -125,6 +147,10 @@ class LLM:
         if u["audio_seconds"]:
             text += f", {u['audio_seconds'] / 60:.1f} min of audio"
         text += f": about ${u['cost_usd']:.2f}"
+        names = {"vision": "screenshots", "text": "text", "search": "web search", "audio": "narration"}
+        parts = [f"{names.get(k, k)} ${v['cost_usd']:.2f}" for k, v in u["by_kind"].items() if v["cost_usd"] >= 0.005]
+        if len(parts) > 1:
+            text += f" ({', '.join(parts)})"
         if u["unpriced_models"]:
             text += f" (not priced: {', '.join(u['unpriced_models'])})"
         return text
@@ -204,7 +230,7 @@ class LLM:
         if usage:
             details = getattr(usage, "prompt_tokens_details", None)
             self._charge(model, url, usage.prompt_tokens or 0, getattr(details, "cached_tokens", 0) or 0,
-                         usage.completion_tokens or 0)
+                         usage.completion_tokens or 0, kind=role)
         choice = resp.choices[0]
         text = (choice.message.content or "").strip()
         if not text and choice.finish_reason == "length":
@@ -218,7 +244,7 @@ class LLM:
         self._remember(key, text or None)
         return text or None
 
-    def grounded(self, question: str, schema: dict | None = None) -> dict | None:
+    def grounded(self, question: str, schema: dict | None = None, shared: bool = False) -> dict | None:
         """Answer with the model's own web search (Responses API `web_search` tool, e.g. Meta Model API).
         Returns {"answer", "data" (parsed when a schema is given), "citations", "results"}, or None when
         grounding is off, the endpoint has no web search, or the call fails (callers then use DuckDuckGo)."""
@@ -236,6 +262,10 @@ class LLM:
         hit, value = self._cached(key)
         if hit:
             return value
+        if shared and key in self._shared:
+            with self._lock:
+                self.usage["cache_hits"] += 1
+            return self._shared[key]["value"]
         request = {"model": model, "input": question, "store": False,
                    "tools": [{"type": "web_search", "search_context_size": self.cfg.search_context_size}],
                    "include": ["web_search_call.results"],
@@ -243,8 +273,18 @@ class LLM:
                    "reasoning": {"effort": self.cfg.search_reasoning_effort or self.cfg.reasoning_effort or "low"}}
         if schema:
             request["text"] = {"format": {"type": "json_schema", "name": "result", "schema": schema, "strict": True}}
+        if self.cfg.max_searches_per_call and "max_tool_calls" not in unsupported:
+            request["max_tool_calls"] = self.cfg.max_searches_per_call
         try:
-            data = client.responses.create(**request).model_dump()
+            try:
+                data = client.responses.create(**request).model_dump()
+            except openai.BadRequestError:
+                if "max_tool_calls" not in request:
+                    raise
+                with self._lock:  # this endpoint doesn't take a search limit: ask without one
+                    unsupported.add("max_tool_calls")
+                del request["max_tool_calls"]
+                data = client.responses.create(**request).model_dump()
         except openai.APIError as exc:
             # Only web search is switched off: the model itself may be fine for everything else.
             with self._lock:
@@ -269,12 +309,16 @@ class LLM:
         usage = data.get("usage") or {}
         self._charge(model, url, usage.get("input_tokens") or 0,
                      (usage.get("input_tokens_details") or {}).get("cached_tokens") or 0,
-                     usage.get("output_tokens") or 0, searches=searches)
+                     usage.get("output_tokens") or 0, searches=searches, kind="search")
         with self._lock:
             self.used_roles.add("text")
         result = {"answer": answer.strip(), "data": parse_json(answer) if schema else None,
                   "citations": list(citations.values()), "results": results}
         self._remember(key, result)
+        if shared and result and self._shared_path:
+            with self._lock:
+                self._shared[key] = {"at": time.time(), "value": result}
+                self._shared_path.write_text(json.dumps(self._shared, ensure_ascii=False), encoding="utf-8")
         return result
 
     def transcribe(self, wav: bytes, seconds: float, mode: str = "ENDPOINTING") -> dict | None:
@@ -306,7 +350,7 @@ class LLM:
         except (urllib.error.URLError, TimeoutError) as exc:
             print(f"  {self.cfg.transcribe_model}: cannot reach {url} ({exc}).")
             return None
-        self._charge(self.cfg.transcribe_model, url, audio_seconds=seconds)
+        self._charge(self.cfg.transcribe_model, url, audio_seconds=seconds, kind="audio")
         self._remember(key, data)
         return data
 

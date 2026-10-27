@@ -282,8 +282,11 @@ report    ->  HTML / Markdown / JSON
   sends it to the transcription endpoint.
 - **Everything stays on your computer** unless you configure a hosted AI model. Web searches send only
   generic queries such as "automate copying data from Acrobat Reader to Excel".
-- Screenshots capture the whole monitor, so close anything private before recording. `sessions/` is
-  git-ignored.
+- **Only the window being worked in goes to the AI.** Screenshots are saved full-screen on your computer,
+  but each one records where the active window was. A hosted model only receives that window, plus any
+  menu or dialog in front of it. Other windows, such as mail or chats, never reach it, and the smaller
+  images cost less. Recordings made before version 0.3 send the full screen. Set
+  `crop_screenshots = false` to always send the full screen. `sessions/` is git-ignored.
 - If you use this on other people's work, get their consent and check the local rules on employee
   monitoring (for example GDPR or works councils).
 

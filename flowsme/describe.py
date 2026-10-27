@@ -138,10 +138,11 @@ def _describe_group(group: list[Step], by_index: dict, llm: LLM, cfg: LLMConfig,
                     state: dict) -> list[tuple[Step, str | None]]:
     """Runs in a worker thread. One request for the whole group; one per step if the model can't do that."""
     if len(group) > 1 and state["group_failures"] < 2:
-        images = [_encode_screenshot(session_dir, s, cfg.vision_image_width) for s in group]
+        images = [_encode_screenshot(session_dir, s, cfg.vision_image_width, cfg.crop_screenshots)
+                  for s in group]
         after = by_index.get(group[-1].index + 1)
         if after and after.screenshot and not after.excluded:
-            images.append(_encode_screenshot(session_dir, after, cfg.vision_image_width))
+            images.append(_encode_screenshot(session_dir, after, cfg.vision_image_width, cfg.crop_screenshots))
         if all(images):
             n = len(group)
             lines = [f"Step {i} (image {i}): {_facts(s)}" for i, s in enumerate(group, 1)]
@@ -162,7 +163,7 @@ def _describe_group(group: list[Step], by_index: dict, llm: LLM, cfg: LLMConfig,
 
 
 def _describe_one(step: Step, by_index: dict, llm: LLM, cfg: LLMConfig, session_dir: Path) -> str | None:
-    image = _encode_screenshot(session_dir, step, cfg.vision_image_width)
+    image = _encode_screenshot(session_dir, step, cfg.vision_image_width, cfg.crop_screenshots)
     if image is None:
         return None
     lines = [_facts(step)]
@@ -185,14 +186,21 @@ def _facts(step: Step) -> str:
     return facts
 
 
-def _encode_screenshot(session_dir: Path, step: Step, max_width: int = 1024) -> str | None:
+def _encode_screenshot(session_dir: Path, step: Step, max_width: int = 1024, crop: bool = True) -> str | None:
     path = session_dir / step.screenshot
     if not path.exists():
         return None
     with Image.open(path) as im:
         img = im.convert("RGB")
+    left = top = 0
+    if crop and step.shot_rect:
+        # Only the window being worked in: other windows (mail, chats) never reach the model, and fewer pixels
+        # cost less. A small margin keeps the window's edges readable.
+        x0, y0, x1, y1 = step.shot_rect
+        left, top = max(0, x0 - 8), max(0, y0 - 8)
+        img = img.crop((left, top, min(img.width, x1 + 8), min(img.height, y1 + 8)))
     if step.shot_xy and step.action == "click":
-        x, y = step.shot_xy
+        x, y = step.shot_xy[0] - left, step.shot_xy[1] - top
         r = max(12, img.width // 60)
         ImageDraw.Draw(img).ellipse([x - r, y - r, x + r, y + r], outline=(255, 0, 0), width=4)
     if img.width > max_width:

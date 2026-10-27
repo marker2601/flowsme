@@ -11,7 +11,7 @@ import re
 from collections import defaultdict
 from difflib import SequenceMatcher
 
-from .integration import label, source_of
+from .integration import _navigation, label, source_of
 from .models import Task
 
 FIELD_RULES = [
@@ -68,7 +68,8 @@ def _rework(task: Task, flows: list[dict], context: list | None = None) -> list[
     # The same cell or field written more than once: something had to be corrected.
     apps, writes = set(task.apps), defaultdict(list)
     for s in context or task.steps:
-        if s.app in apps and s.target and not s.excluded and (s.pastes or s.chars_typed or "ctrl+x" in s.shortcuts):
+        if (s.app in apps and s.target and not s.excluded and not _navigation(s)
+                and (s.pastes or s.chars_typed or "ctrl+x" in s.shortcuts)):
             writes[(s.app, s.title, s.target)].append(s)
     for (app, _, target), hits in writes.items():
         if len(hits) > 1 and not re.fullmatch(r"(text editor|document|edit cell)", target, re.I):

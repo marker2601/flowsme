@@ -64,6 +64,7 @@ class Step:
     excluded: bool = False
     screenshot: str | None = None
     shot_xy: list[float] | None = None
+    shot_rect: list[int] | None = None  # the window being worked in, on the screenshot (left, top, right, bottom)
     duration: float = 0.0
     description: str = ""
     signature: str = ""

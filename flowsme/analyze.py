@@ -33,6 +33,7 @@ def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
     out.mkdir(exist_ok=True)
     llm = LLM(cfg.llm)
     llm.use_cache(out / "ai_cache.json")  # re-runs don't pay twice for the same request
+    llm.use_shared_cache(Path(cfg.sessions_dir) / "shared_ai_cache.json")  # vendor API checks, across reports
     turns = transcribe_session(session_dir, meta, llm, log)
     if turns:
         attach(steps, turns)

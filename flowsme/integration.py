@@ -99,6 +99,17 @@ def endpoint(step: Step) -> dict:
     return {"system": step.app, "document": document_of(step), "field": field_of(step)}
 
 
+# Typing here moves around (a cell address in Go To or the Name Box, a search term), it doesn't enter data.
+_NAV_WINDOWS = re.compile(r"^(go ?to( special)?|find( and replace)?|replace|search|\[closed dialog\])$", re.I)
+_NAV_FIELDS = re.compile(r"^(name box|desktop \d*|search( box)?|find what:?)$", re.I)
+
+
+def _navigation(step: Step) -> bool:
+    if step.app in ("System Idle Process", "Unknown app"):  # typed into a window that had already closed
+        return True
+    return bool(_NAV_WINDOWS.match((step.title or "").strip()) or _NAV_FIELDS.match((step.target or "").strip()))
+
+
 def label(ep: dict | None) -> str:
     if not ep:
         return "typed by hand"
@@ -161,8 +172,17 @@ def data_flows(task: Task, context: list[Step] | None = None) -> list[dict]:
         if step.index in numbers:
             row["steps"].append(numbers[step.index])
 
+    def copied_before(step: Step) -> dict | None:
+        """The last copy just before a run starts: a run boundary can fall between a copy and its paste."""
+        for prev in reversed(history[:position.get(step.index, 0)]):
+            if step.start - prev.start > VALUE_WINDOW:
+                break
+            if prev.copies and not prev.excluded:
+                return endpoint(prev)
+        return None
+
     for run_no, run in enumerate(task.iterations or [task.steps]):
-        clipboard = None
+        clipboard = copied_before(run[0]) if run else None
         for step in run:
             if step.excluded:
                 continue
@@ -170,7 +190,7 @@ def data_flows(task: Task, context: list[Step] | None = None) -> list[dict]:
             if step.pastes:
                 src = clipboard or {"system": "?", "document": "", "field": "copied outside the recording"}
                 add(src, here, "copy-paste", step, run_no)
-            if step.chars_typed:
+            if step.chars_typed and not _navigation(step):
                 add(None, here, "typed", step, run_no, step.chars_typed,
                     earlier_value(step, here) if step.typed_hashes else None, bool(step.typed_hashes))
             if step.copies:
@@ -261,7 +281,8 @@ def _grounded_api_check(name: str, llm) -> tuple[dict | None, list[dict]]:
     counts if it appears in the search citations or results: the model can't invent evidence."""
     found = llm.grounded(f'Does the software or web portal called "{name}" offer a public API (REST, SOAP, '
                          "GraphQL, bulk import or webhooks) that another tool could use to create or read records? "
-                         "Answer only from search results, and list official documentation URLs.", API_CHECK) if llm else None
+                         "Answer only from search results, and list official documentation URLs.", API_CHECK,
+                         shared=True) if llm else None
     if not found or not isinstance(found["data"], dict):
         return None, []
     seen = {c["url"] for c in found["citations"]} | {r["url"] for r in found["results"]}

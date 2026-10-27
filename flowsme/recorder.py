@@ -119,13 +119,17 @@ def _clipboard_text() -> str | None:
         user32.CloseClipboard()
 
 
-def _window_info(hwnd, pid_names: dict) -> tuple:
-    """(hwnd, exe name, window title) for a top-level window."""
+def _window_info(hwnd, pid_names: dict, pid_hint: int = 0) -> tuple:
+    """(hwnd, exe name, window title) for a top-level window. A window that has closed since the event (a Go To or
+    Find box) keeps the app it belonged to (pid_hint, noted when the event happened) and the title [closed dialog]."""
     length = user32.GetWindowTextLengthW(hwnd)
     buf = ctypes.create_unicode_buffer(length + 1)
     user32.GetWindowTextW(hwnd, buf, length + 1)
     pid = wintypes.DWORD()
     user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    title = buf.value
+    if not pid.value and pid_hint:
+        pid.value, title = pid_hint, "[closed dialog]"
     exe = pid_names.get(pid.value)
     if exe is None:
         try:
@@ -133,7 +137,7 @@ def _window_info(hwnd, pid_names: dict) -> tuple:
         except psutil.Error:
             exe = "unknown"
         pid_names[pid.value] = exe
-    return hwnd, exe, buf.value
+    return hwnd, exe, title
 
 
 def _root_window_at(x: int, y: int):
@@ -237,6 +241,7 @@ class Recorder:
         self.clip_seq: int | None = None
         self.last_t = 0.0
         self.mic: _Microphone | None = None
+        self.hook_pids: dict = {}  # window -> process, noted by the key hook in case the window closes
         self.audio: dict | None = None
 
     # ---- main thread -------------------------------------------------------------------------
@@ -312,7 +317,11 @@ class Recorder:
         self.q.put(("scroll", time.time(), x, y))
 
     def _hook_press(self, key):
-        self.q.put(("press", time.time(), key))
+        fg = user32.GetForegroundWindow()
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(fg, ctypes.byref(pid))  # cheap: no message to the window
+        self.hook_pids[fg] = pid.value
+        self.q.put(("press", time.time(), key, fg))
 
     def _hook_release(self, key):
         self.q.put(("release", time.time(), key))
@@ -363,7 +372,7 @@ class Recorder:
             if name in MOD_NAMES:
                 self.mods.pop(MOD_NAMES[name], None)
         elif kind == "press":
-            self._key(t, item[2])
+            self._key(t, item[2], item[3])
         elif kind == "toggle_pause":
             self._toggle_pause(t)
         elif self.paused:
@@ -373,7 +382,8 @@ class Recorder:
         elif kind == "scroll":
             self._scroll(t, item[2], item[3])
 
-    def _key(self, t: float, key) -> None:
+    def _key(self, t: float, key, fg=None) -> None:
+        """fg: the window that was in front when the key was pressed."""
         name, char = _key_name(key)
         if name in MOD_NAMES:
             self.mods[MOD_NAMES[name]] = t
@@ -382,12 +392,12 @@ class Recorder:
         held = set(self.mods)
         if held == {"shift"} and name in ("insert", "delete"):  # Shift+Insert pastes, Shift+Delete cuts
             if not self.paused:
-                self._poll_focus(t)
+                self._poll_focus(t, fg)
                 if self.window is None:
                     return
                 self._flush_typing()
                 self._flush_scroll()
-                self._emit(t, "shortcut", keys=f"shift+{name}", **self._focus_fields())
+                self._emit(t, "shortcut", keys=f"shift+{name}", **self._focus_fields(fg))
             return
         # AltGr (reported as ctrl+alt) types characters such as @ on many keyboards: treat it as typing.
         is_combo = "altgr" not in held and bool(held & {"ctrl", "alt", "win"})
@@ -401,28 +411,28 @@ class Recorder:
                 return
             if self.paused:
                 return
-            self._poll_focus(t)
+            self._poll_focus(t, fg)
             if self.window is None:  # FlowSME's own window is in front
                 return
             self._flush_typing()
             self._flush_scroll()
-            self._emit(t, "shortcut", keys=combo, **(self._focus_fields() if combo in DATA_COMBOS else {}))
+            self._emit(t, "shortcut", keys=combo, **(self._focus_fields(fg) if combo in DATA_COMBOS else {}))
             return
         if self.paused:
             return
-        self._poll_focus(t)
+        self._poll_focus(t, fg)
         if self.window is None:  # typing into FlowSME's own window
             return
         if name == "space":
             char = " "
         if char is not None or name == "backspace":
-            self._type(t, char)
+            self._type(t, char, fg)
         elif name not in IGNORED_KEYS and not name.startswith(("media", "volume")):
             self._flush_typing()
             self._flush_scroll()
             self._emit(t, "key", keys=name)
 
-    def _type(self, t: float, char: str | None) -> None:
+    def _type(self, t: float, char: str | None, fg=None) -> None:
         if self.typing and self.typing["window"] != self.window:
             self._flush_typing()
         if self.typing is None:
@@ -432,7 +442,7 @@ class Recorder:
             # "secret" holds the typed characters in memory only, to fingerprint them; it is never written.
             self.typing = {"t": t, "t_end": t, "chars": 0, "edits": 0, "text": [], "secret": [],
                            "window": self.window, "private": private,
-                           "focus": None if private else self._focus_fields().get("focus")}
+                           "focus": None if private else self._focus_fields(fg).get("focus")}
         tb = self.typing
         tb["t_end"] = t
         keep_text = self.cfg.capture_typed_text and not tb["private"]
@@ -499,9 +509,9 @@ class Recorder:
             element = self._element_at(x, y, root)
             if element:
                 fields["element"] = element
-            path, xy = self._screenshot(x, y)
+            path, xy, rect = self._screenshot(x, y, root)
             if path:
-                fields.update(shot=path, shot_xy=xy)
+                fields.update(shot=path, shot_xy=xy, shot_rect=rect)
         self.last_click = (window[0] if window else None, bool(fields.get("element", {}).get("password")))
         self._emit(t, "click", window=window, **fields)
         self._poll_focus(t)
@@ -526,13 +536,13 @@ class Recorder:
         fields: dict = {"t_end": self._rel(sc["t_end"]), "count": sc["count"]}
         window = sc["window"]
         if window and not self._is_excluded(window[1], window[2]):
-            path, _ = self._screenshot(*sc["xy"])
+            path, _, rect = self._screenshot(*sc["xy"], window[0])
             if path:
-                fields["shot"] = path
+                fields.update(shot=path, shot_rect=rect)
         self._emit(sc["t"], "scroll", window=window, **fields)
 
-    def _poll_focus(self, t: float) -> None:
-        hwnd = user32.GetForegroundWindow()
+    def _poll_focus(self, t: float, hwnd=None) -> None:
+        hwnd = hwnd or user32.GetForegroundWindow()
         if not hwnd:
             return
         if _own_window(hwnd):
@@ -541,7 +551,7 @@ class Recorder:
                 self._flush_scroll()
                 self.window = None  # back in another app later = a fresh focus event
             return
-        info = _window_info(hwnd, self.pid_names)
+        info = _window_info(hwnd, self.pid_names, self.hook_pids.get(hwnd, 0))
         if info == self.window:
             return
         self._flush_typing()
@@ -551,9 +561,9 @@ class Recorder:
             return
         fields = {}
         if not self._is_excluded(info[1], info[2]):
-            path, _ = self._screenshot(*_window_center(hwnd))
+            path, _, rect = self._screenshot(*_window_center(hwnd), hwnd)
             if path:
-                fields["shot"] = path
+                fields.update(shot=path, shot_rect=rect)
         self._emit(t, "focus", **fields)
 
     def _toggle_pause(self, t: float) -> None:
@@ -574,10 +584,11 @@ class Recorder:
             self._poll_focus(t)
             print("  Recording again.", flush=True)
 
-    def _focus_fields(self) -> dict:
+    def _focus_fields(self, fg=None) -> dict:
         """The element that has keyboard focus: where a paste or typing really lands, even when the user
-        moved there with Tab or Enter, or a click didn't select what it aimed at."""
-        if not self.auto:
+        moved there with Tab or Enter, or a click didn't select what it aimed at. Nothing when the person has
+        already moved to another window since the key press (fg): better unknown than wrong."""
+        if not self.auto or (fg and user32.GetForegroundWindow() != fg):
             return {}
         try:
             ctrl = self.auto.GetFocusedControl()
@@ -638,11 +649,13 @@ class Recorder:
             ctrl = best
         return ctrl
 
-    def _screenshot(self, x: int, y: int) -> tuple[str | None, list[float] | None]:
+    def _screenshot(self, x: int, y: int, hwnd=None) -> tuple[str | None, list[float] | None, list[int] | None]:
+        """Full-monitor screenshot, the click position on it, and where the window being worked in sits on it
+        (so the analysis can send only that window to an AI model)."""
         now = time.time()
         last_time, last_path, last_thumb = self.last_shot
         if now - last_time < self.cfg.min_screenshot_interval:
-            return None, None
+            return None, None, None
         monitors = self.sct.monitors[1:] or self.sct.monitors
         mon = next((m for m in monitors
                     if m["left"] <= x < m["left"] + m["width"] and m["top"] <= y < m["top"] + m["height"]),
@@ -653,15 +666,33 @@ class Recorder:
         if scale < 1:
             img = img.resize((round(img.width * scale), round(img.height * scale)), Image.Resampling.LANCZOS)
         xy = [round((x - mon["left"]) * scale, 1), round((y - mon["top"]) * scale, 1)]
+        rect = self._shot_rect(hwnd, mon, scale, img.size)
         thumb = img.convert("L").resize((48, 27))
         if last_thumb is not None and ImageStat.Stat(ImageChops.difference(thumb, last_thumb)).mean[0] < 1.0:
             self.last_shot = (now, last_path, last_thumb)  # screen unchanged: reuse the previous file
-            return last_path, xy
+            return last_path, xy, rect
         self.n_shots += 1
         rel = f"shots/{self.n_shots:06d}.jpg"
         img.save(self.dir / rel, "JPEG", quality=self.cfg.screenshot_quality)
         self.last_shot = (now, rel, thumb)
-        return rel, xy
+        return rel, xy, rect
+
+    def _shot_rect(self, hwnd, mon: dict, scale: float, size: tuple[int, int]) -> list[int] | None:
+        """The clicked window together with the window in front (a menu or dialog plus the app it belongs to),
+        in screenshot pixels."""
+        rects = []
+        for handle in (hwnd, user32.GetForegroundWindow()):
+            if handle:
+                r = wintypes.RECT()
+                if user32.GetWindowRect(handle, ctypes.byref(r)) and r.right > r.left and r.bottom > r.top:
+                    rects.append(r)
+        if not rects:
+            return None
+        left = max(0, round((min(r.left for r in rects) - mon["left"]) * scale))
+        top = max(0, round((min(r.top for r in rects) - mon["top"]) * scale))
+        right = min(size[0], round((max(r.right for r in rects) - mon["left"]) * scale))
+        bottom = min(size[1], round((max(r.bottom for r in rects) - mon["top"]) * scale))
+        return [left, top, right, bottom] if right - left > 40 and bottom - top > 40 else None
 
     def _is_excluded(self, exe: str, title: str) -> bool:
         lowered = (title or "").lower()

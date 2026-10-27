@@ -116,7 +116,7 @@ def _merge(step: Step, ev: dict) -> None:
         step.scrolls += ev.get("count", 1)
     step.end = max(step.end, ev.get("t_end", ev["t"]))
     if not step.screenshot and ev.get("shot"):
-        step.screenshot, step.shot_xy = ev["shot"], ev.get("shot_xy")
+        step.screenshot, step.shot_xy, step.shot_rect = ev["shot"], ev.get("shot_xy"), ev.get("shot_rect")
 
 
 def _signature(step: Step) -> str:

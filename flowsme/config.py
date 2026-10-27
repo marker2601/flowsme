@@ -41,6 +41,9 @@ class LLMConfig:
     vision_model: str = "llama3.2-vision"
     text_model: str = "llama3.1:8b"
     send_screenshots: bool = True
+    # Send only the window being worked in (recorded from this version on), not the whole screen: other
+    # windows never reach the model, and smaller images cost less.
+    crop_screenshots: bool = True
     max_vision_steps: int = 300
     temperature: float = 0.2
     timeout: float = 120.0
@@ -69,6 +72,8 @@ class LLMConfig:
     # How much search context the model pulls in per web search (low / medium / high): low costs least.
     search_context_size: str = "low"
     search_reasoning_effort: str = ""  # empty = same as reasoning_effort
+    # Web searches one grounded question may run (each is billed). 0 = the model decides.
+    max_searches_per_call: int = 3
     # Stop paying AI calls once a single run's estimated cost reaches this many dollars (0 = no cap).
     max_cost_usd: float = 0.0
     transcribe_model: str = "muse-voice-transcribe-1.0"
