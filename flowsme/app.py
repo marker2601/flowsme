@@ -16,14 +16,15 @@ import sys
 import threading
 import time
 import tkinter as tk
+import zipfile
 from pathlib import Path
 from tkinter import font as tkfont
-from tkinter import messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from . import __version__
 from .config import Config, load_config
 from .models import fmt_minutes
-from .session import list_sessions, load_meta, new_session_dir
+from .session import import_recording, list_sessions, load_meta, new_session_dir
 from .toolplan import CATALOG
 
 # First-run settings for the app: Muse Spark on the Meta Model API, with a spending cap per report.
@@ -189,6 +190,19 @@ def _read_json(path: Path) -> dict | None:
     return None
 
 
+def _recycle(path: Path) -> bool:
+    """Move a folder to the Recycle Bin, where it can be restored."""
+    class SHFILEOPSTRUCTW(ctypes.Structure):
+        _fields_ = [("hwnd", ctypes.c_void_p), ("wFunc", ctypes.c_uint), ("pFrom", ctypes.c_wchar_p),
+                    ("pTo", ctypes.c_wchar_p), ("fFlags", ctypes.c_ushort), ("fAnyOperationsAborted", ctypes.c_int),
+                    ("hNameMappings", ctypes.c_void_p), ("lpszProgressTitle", ctypes.c_wchar_p)]
+
+    # FO_DELETE with undo (Recycle Bin), no confirmation (we asked), silent, no error dialogs
+    op = SHFILEOPSTRUCTW(None, 3, str(path.resolve()) + "\0", None, 0x0040 | 0x0010 | 0x0004 | 0x0400, 0, None, None)
+    return ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op)) == 0 and not op.fAnyOperationsAborted and \
+        not path.exists()
+
+
 def _desktop() -> Path:
     buf = ctypes.create_unicode_buffer(260)
     with contextlib.suppress(Exception):
@@ -266,8 +280,8 @@ class App:
                         variable=self.narrate).grid(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
         self.record_btn = ttk.Button(rec, text="●  Record", style="Accent.TButton", command=self.start)
         self.record_btn.grid(row=0, column=2, rowspan=2, sticky="ns", padx=(4, 0))
-        ttk.Label(rec, text="While recording: Ctrl+Alt+P pauses, Ctrl+Alt+Q stops. Pause before anything private.",
-                  style="Muted.TLabel").grid(row=2, column=0, columnspan=3, sticky="w", pady=(10, 0))
+        self.hint = ttk.Label(rec, style="Muted.TLabel")
+        self.hint.grid(row=2, column=0, columnspan=3, sticky="w", pady=(10, 0))
         rec.columnconfigure(1, weight=1)
 
         box = ttk.LabelFrame(r, text="Recordings", padding=12)
@@ -294,16 +308,41 @@ class App:
         more = tk.Menu(self.more_btn, tearoff=False)
         more.add_command(label="Team view...", command=self.team)
         more.add_separator()
+        more.add_command(label="Rename...", command=self.rename)
+        more.add_command(label="Delete...", command=self.delete)
         more.add_command(label="Open folder", command=self.open_folder)
         more.add_command(label="Send to FlowSME team...", command=self.export)
+        more.add_separator()
+        more.add_command(label="Import a recording (.zip)...", command=self.import_zip)
+        more.add_command(label="Create demo recording", command=self.demo)
         self.more_btn["menu"] = more
         for button in (self.report_btn, self.open_btn, self.sop_btn, self.build_btn, self.compare_btn, self.more_btn):
             button.pack(side="left", padx=(0, 6))
         self.progress = ttk.Progressbar(row, mode="indeterminate", length=90)
 
-        logs = ttk.LabelFrame(r, text="Activity", padding=(10, 6))
-        logs.pack(fill="both", padx=16, pady=(0, 8))
-        self.log_box = tk.Text(logs, height=7, wrap="word", state="disabled", relief="flat",
+        self.tabs = ttk.Notebook(r)
+        self.tabs.pack(fill="both", expand=True, padx=16, pady=(0, 8))
+        results = ttk.Frame(self.tabs, padding=(10, 8))
+        self.tabs.add(results, text="Results")
+        self.summary = ttk.Label(results, wraplength=int(660 * scale), justify="left")
+        self.summary.pack(fill="x")
+        cols = (("id", "#", 34), ("task", "Task", 260), ("potential", "Potential", 100), ("saves", "Saves per item", 100),
+                ("month", "A month", 110), ("phase", "Roadmap", 80))
+        self.results = ttk.Treeview(results, columns=[c for c, _, _ in cols], show="headings", height=4,
+                                    selectmode="browse")
+        for col, label, width in cols:
+            self.results.heading(col, text=label, anchor="w")
+            self.results.column(col, width=int(width * scale), anchor="w", stretch=col == "task")
+        self.results.pack(fill="both", expand=True, pady=(6, 0))
+        self.results.bind("<Double-1>", lambda _: self.open_report())
+        said = ttk.Frame(self.tabs, padding=(10, 8))
+        self.tabs.add(said, text="Narration")
+        self.narration_box = tk.Text(said, height=6, wrap="word", state="disabled", relief="flat",
+                                     font=("Segoe UI", 9), background="#f7f7f8")
+        self.narration_box.pack(fill="both", expand=True)
+        logs = ttk.Frame(self.tabs, padding=(10, 8))
+        self.tabs.add(logs, text="Activity")
+        self.log_box = tk.Text(logs, height=6, wrap="word", state="disabled", relief="flat",
                                font=("Consolas", 9), background="#f7f7f8")
         self.log_box.pack(fill="both", expand=True)
 
@@ -332,6 +371,9 @@ class App:
             self.tree.selection_set(pick)
             self.tree.see(pick)
         self.engine.config(text=engine_text(self.cfg))
+        keys = self.cfg.recorder
+        self.hint.config(text=f"While recording: {keys.pause_hotkey.title()} pauses, {keys.stop_hotkey.title()} stops. "
+                              "Pause before anything private.")
         self._update_buttons()
 
     def _selected(self) -> Path | None:
@@ -344,10 +386,12 @@ class App:
         has_report = bool(path and (path / "analysis" / "report.html").exists())
         others = has_report and any(p != path and (p / "analysis" / "analysis.json").exists()
                                     for p in list_sessions(self.cfg.sessions_dir))
+        self._show_results(path)
         for button, ok in ((self.report_btn, path), (self.open_btn, has_report), (self.sop_btn, self._sop(path)),
                            (self.build_btn, has_report), (self.compare_btn, others), (self.more_btn, path),
                            (self.record_btn, True)):
             button.state(["!disabled"] if ok and idle else ["disabled"])
+        self.more_btn.state(["!disabled"] if idle else ["disabled"])  # Import and the demo need no selection
         if not self.busy:  # reading is fine while a recording runs
             for button, ok in ((self.open_btn, has_report), (self.sop_btn, self._sop(path))):
                 button.state(["!disabled"] if ok else ["disabled"])
@@ -562,6 +606,7 @@ class App:
     def _busy(self, on: bool) -> None:
         self.busy = on
         if on:
+            self.tabs.select(2)
             self.progress.pack(side="left", padx=(6, 0))
             self.progress.start(12)
         else:
@@ -576,6 +621,7 @@ class App:
             messagebox.showerror("FlowSME", error, parent=self.root)
         elif kind == "reported":
             print("Report ready.")
+            self.tabs.select(0)
             self.open_report()
         elif kind == "compared":
             os.startfile(self._compared)
@@ -866,6 +912,116 @@ class App:
 
         compare(before, after, log=print, before_items=before_items, after_items=after_items)
 
+    # ---- results ----------------------------------------------------------------------------------
+
+    def _show_results(self, path: Path | None) -> None:
+        """The selected recording's headline numbers and tasks, and what was said, without opening the report."""
+        self.results.delete(*self.results.get_children())
+        report = _read_json(path / "analysis" / "analysis.json") if path else None
+        meta = load_meta(path) if path else {}
+        if not path:
+            self.summary.config(text="Record something, or import a recording, to see results here.")
+        elif not report:
+            self.summary.config(text="No report yet. Click Make report... to analyse this recording.")
+        else:
+            tasks = sorted((t for t in report["tasks"] if not t.get("misc")), key=lambda t: -t["score"])
+            phases = {i["id"]: i["phase"] for i in ((report["meta"].get("priorities") or {}).get("items") or [])}
+            cur = self.cfg.analysis.currency
+            saved = sum((t.get("estimate") or {}).get("minutes_saved_per_run", 0) for t in tasks)
+            hours = sum((t.get("estimate") or {}).get("hours_saved_per_month", 0) for t in tasks)
+            money = sum((t.get("estimate") or {}).get("cost_saved_per_month", 0) for t in tasks)
+            cost = (report["meta"].get("ai_usage") or {}).get("cost_usd")
+            secs = meta.get("duration_seconds") or 0
+            self.summary.config(text=(
+                f"{fmt_minutes(secs / 60)} recorded, {len(tasks)} task{'s' if len(tasks) != 1 else ''}. About "
+                f"{fmt_minutes(saved)} could be saved per run: {hours:.1f} hours ({cur}{money:,}) a month."
+                + (f" AI cost of the report: about ${cost:.2f}." if cost else " Made with built-in rules.")
+                + " Double-click a task to open the report."))
+            for t in tasks:
+                est = t.get("estimate") or {}
+                self.results.insert("", "end", values=(
+                    t["id"], t["name"], f"{t['level']} ({t['score']:.0f})",
+                    fmt_minutes(est.get("minutes_saved_per_run", 0)),
+                    f"{est.get('hours_saved_per_month', 0)} h ({cur}{est.get('cost_saved_per_month', 0):,})",
+                    phases.get(t["id"], "-")))
+        turns = (_read_json(path / "analysis" / "narration.json") or {}).get("turns") if path else None
+        if turns:
+            text = "\n".join(f"{int(t['start'] // 60)}:{int(t['start'] % 60):02d}   {t['text']}" for t in turns)
+        elif path and (path / "narration.wav").exists():
+            text = "Narration was recorded. It is transcribed when you make an AI report."
+        else:
+            text = "No narration in this recording. Tick Narrate before recording to explain what you do and why."
+        self.narration_box.config(state="normal")
+        self.narration_box.delete("1.0", "end")
+        self.narration_box.insert("1.0", text)
+        self.narration_box.config(state="disabled")
+
+    # ---- managing recordings ----------------------------------------------------------------------
+
+    def import_zip(self) -> None:
+        file = filedialog.askopenfilename(parent=self.root, title="Import a FlowSME recording",
+                                          filetypes=[("FlowSME recording", "*.zip"), ("All files", "*.*")])
+        if not file:
+            return
+        try:
+            path = import_recording(Path(file), self.cfg.sessions_dir)
+        except (zipfile.BadZipFile, ValueError, OSError) as exc:
+            messagebox.showerror("FlowSME", f"Couldn't import it: {exc}", parent=self.root)
+            return
+        print(f"Imported '{_title(path)}'. Click Make report... to analyse it.")
+        self.refresh(select=path)
+
+    def rename(self) -> None:
+        path = self._selected()
+        if not path or self.busy or self.recorder is not None:
+            return
+        new = simpledialog.askstring("Rename", "Process name:", initialvalue=_title(path), parent=self.root)
+        slug = re.sub(r"[^a-z0-9]+", "-", (new or "").lower()).strip("-")
+        if not slug:
+            return
+        stamp = _STAMP.match(path.name)
+        target = path.parent / (f"{stamp.group(0).rstrip('-')}-{slug}" if stamp else slug)
+        if target == path:
+            return
+        if target.exists():
+            messagebox.showerror("FlowSME", "A recording with that name already exists.", parent=self.root)
+            return
+        try:
+            path.rename(target)
+        except OSError as exc:
+            messagebox.showerror("FlowSME", f"Couldn't rename it (close its report and folder first): {exc}",
+                                 parent=self.root)
+            return
+        meta = load_meta(target)
+        if meta:
+            meta["session"] = target.name
+            (target / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        self.refresh(select=target)
+
+    def delete(self) -> None:
+        path = self._selected()
+        if not path or self.busy or self.recorder is not None:
+            return
+        if not messagebox.askyesno("FlowSME", f"Move '{_title(path)}' (recording, screenshots and report) to the "
+                                              "Recycle Bin?", parent=self.root):
+            return
+        if _recycle(path):
+            print(f"Moved '{_title(path)}' to the Recycle Bin.")
+        else:
+            messagebox.showerror("FlowSME", "Couldn't move it to the Recycle Bin: close its report and folder, then "
+                                            "try again.", parent=self.root)
+        self.refresh()
+
+    def demo(self) -> None:
+        if self.busy or self.recorder is not None:
+            return
+        from .demo import build_demo
+
+        path = build_demo(self.cfg.sessions_dir)
+        print("Demo recording created: a synthetic invoice process (8 invoices from email into a tracker and a "
+              "web portal). Click Make report... to see a full report.")
+        self.refresh(select=path)
+
     def open_folder(self) -> None:
         path = self._selected()
         if path:
@@ -895,54 +1051,9 @@ class App:
     # ---- settings and first run -------------------------------------------------------------------
 
     def settings(self) -> None:
-        env = self.cfg.llm.api_key_env
-        win = tk.Toplevel(self.root)
-        win.title("FlowSME settings")
-        win.resizable(False, False)
-        win.transient(self.root)
-        win.grab_set()
-        frame = ttk.Frame(win, padding=16)
-        frame.pack(fill="both")
-        ttk.Label(frame, text="Meta API key", style="Heading.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(frame, text=f"Used for AI reports with Muse Spark. Saved for your Windows user as {env}.",
-                  style="Muted.TLabel").grid(row=1, column=0, columnspan=3, sticky="w", pady=(2, 8))
-        status = ttk.Label(frame)
-        status.grid(row=2, column=0, columnspan=3, sticky="w")
-        value = tk.StringVar()
-        entry = ttk.Entry(frame, textvariable=value, show="•", width=46)
-        entry.grid(row=3, column=0, sticky="we", pady=8)
+        from .settings_ui import open_settings
 
-        def show() -> None:
-            status.config(text="A key is saved." if saved_key(env) else "No key saved yet.")
-            self.engine.config(text=engine_text(self.cfg))
-
-        def save() -> None:
-            key = value.get().strip()
-            if key:
-                store_key(env, key)
-                value.set("")
-                print("API key saved.")
-                show()
-
-        def remove() -> None:
-            if saved_key(env) and messagebox.askyesno("FlowSME", "Remove the saved API key?", parent=win):
-                store_key(env, "")
-                print("API key removed.")
-                show()
-
-        ttk.Button(frame, text="Save key", command=save).grid(row=3, column=1, padx=(8, 0))
-        ttk.Button(frame, text="Remove", command=remove).grid(row=3, column=2, padx=(6, 0))
-        ttk.Separator(frame).grid(row=4, column=0, columnspan=3, sticky="we", pady=12)
-        links = ttk.Frame(frame)
-        links.grid(row=5, column=0, columnspan=3, sticky="w")
-        ttk.Button(links, text="Edit all settings", command=lambda: subprocess.Popen(
-            ["notepad.exe", str(self.cfg_path.resolve())])).pack(side="left")
-        ttk.Button(links, text="Open recordings folder", command=lambda: (
-            self.cfg.sessions_dir.mkdir(parents=True, exist_ok=True), os.startfile(self.cfg.sessions_dir))
-        ).pack(side="left", padx=6)
-        ttk.Button(frame, text="Close", command=win.destroy).grid(row=6, column=2, sticky="e", pady=(14, 0))
-        show()
-        entry.focus_set()
+        open_settings(self)
 
     def _welcome(self) -> None:
         if messagebox.askokcancel("Welcome to FlowSME", WELCOME, parent=self.root):
@@ -1005,7 +1116,7 @@ def _style(root: tk.Tk) -> None:
     style.configure("Accent.TButton", font=("Segoe UI", 11, "bold"), padding=(16, 8))
     style.configure("Treeview", rowheight=int(24 * scale))
     style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"))
-    root.geometry(f"{int(720 * scale)}x{int(600 * scale)}")
+    root.geometry(f"{int(760 * scale)}x{int(740 * scale)}")
     root.minsize(int(600 * scale), int(520 * scale))
 
 

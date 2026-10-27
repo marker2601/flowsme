@@ -1,6 +1,7 @@
 """Settings: built-in defaults, overridden by config.toml."""
 from __future__ import annotations
 
+import json
 import tomllib
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -30,6 +31,7 @@ class RecorderConfig:
     # Mono 16-bit at 16 kHz, the format Muse Voice Transcribe expects. Pausing records silence.
     narrate: bool = False
     audio_rate: int = 16000
+    mic_device: str = ""  # microphone name (or part of it); empty = the Windows default
 
 
 @dataclass
@@ -135,3 +137,31 @@ def load_config(path: str | Path | None = None) -> Config:
     if data:
         raise SystemExit(f"Unknown section(s) in config.toml: {', '.join(data)}")
     return cfg
+
+
+def _toml(value) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return repr(value)
+    if isinstance(value, (list, tuple)):
+        return "[" + ", ".join(_toml(v) for v in value) + "]"
+    return json.dumps(str(value), ensure_ascii=False)  # JSON string escapes are valid TOML basic strings
+
+
+def save_config(cfg: Config, path: str | Path) -> None:
+    """Write every setting to `path` as TOML (the app's Settings window saves through this)."""
+    path = Path(path)
+    sessions = Path(cfg.sessions_dir)
+    try:  # keep the recordings folder relative to the settings file when it sits beside it
+        sessions = sessions.resolve().relative_to(path.resolve().parent)
+    except ValueError:
+        pass
+    lines = ["# FlowSME settings, saved by the app's Settings window. Every setting is listed here.",
+             f"sessions_dir = {_toml(sessions.as_posix())}", ""]
+    for name in ("recorder", "llm", "analysis", "customer"):
+        section = getattr(cfg, name)
+        lines.append(f"[{name}]")
+        lines += [f"{f.name} = {_toml(getattr(section, f.name))}" for f in fields(section)]
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")

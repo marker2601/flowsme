@@ -181,7 +181,7 @@ class _Microphone:
     """Narration: the microphone to a mono 16-bit WAV file. While paused it writes silence, so nothing private
     is captured and the audio stays in step with the event timeline."""
 
-    def __init__(self, path: Path, rate: int):
+    def __init__(self, path: Path, rate: int, device: str = ""):
         import sounddevice as sd
 
         self.wav = wave.open(str(path), "wb")
@@ -190,7 +190,11 @@ class _Microphone:
         self.wav.setframerate(rate)
         self.paused = False
         self.q: queue.Queue = queue.Queue()
-        self.stream = sd.RawInputStream(samplerate=rate, channels=1, dtype="int16", callback=self._callback)
+        # The same microphone is listed once per Windows audio system: take the first input with that name.
+        index = next((i for i, d in enumerate(sd.query_devices())
+                      if device and d["max_input_channels"] > 0 and d["name"] == device), None)
+        self.stream = sd.RawInputStream(samplerate=rate, channels=1, dtype="int16", callback=self._callback,
+                                        device=index)
         self.writer = threading.Thread(target=self._write, name="flowsme-mic", daemon=True)
 
     def _callback(self, data, frames, time_info, status):  # audio thread: just hand the buffer over
@@ -272,7 +276,7 @@ class Recorder:
             print("  Typed text is counted, not stored.", flush=True)
         if self.cfg.narrate:
             try:
-                self.mic = _Microphone(self.dir / "narration.wav", self.cfg.audio_rate)
+                self.mic = _Microphone(self.dir / "narration.wav", self.cfg.audio_rate, self.cfg.mic_device)
                 self.mic.start()
                 self.audio = {"file": "narration.wav", "start": round(time.time() - self.t0, 3),
                               "rate": self.cfg.audio_rate}

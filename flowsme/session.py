@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import zipfile
 from datetime import datetime
 from pathlib import Path
 
@@ -55,3 +57,28 @@ def load_meta(session_dir: Path) -> dict:
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def import_recording(zip_path: Path, sessions_dir: Path) -> Path:
+    """Unpack a recording someone zipped with "Send to FlowSME team" into the recordings folder."""
+    with zipfile.ZipFile(zip_path) as archive:
+        events = sorted((n for n in archive.namelist() if n.endswith("events.jsonl")), key=len)
+        if not events:
+            raise ValueError("This zip has no FlowSME recording in it (no events.jsonl).")
+        top = events[0][:-len("events.jsonl")].rstrip("/")
+        name = Path(top).name if top else Path(zip_path).stem.removeprefix("FlowSME-")
+        dest, n = Path(sessions_dir) / name, 2
+        while dest.exists():
+            dest, n = Path(sessions_dir) / f"{name}-{n}", n + 1
+        root = dest.resolve()
+        for member in archive.infolist():
+            if member.is_dir() or (top and not member.filename.startswith(top + "/")):
+                continue
+            rel = member.filename[len(top) + 1:] if top else member.filename
+            target = (dest / rel).resolve()
+            if root not in target.parents:  # a path like ../../x would land outside the folder
+                raise ValueError(f"Unsafe path in the zip: {member.filename}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(member) as src, open(target, "wb") as out:
+                shutil.copyfileobj(src, out)
+    return dest

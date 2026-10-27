@@ -30,6 +30,22 @@ For people who don't use a terminal. Run `FlowSME-Setup-0.3.0.exe`, click **Inst
   and Playwright starters, with `BUILD.md` listing what a person must fill in. Optionally it also creates
   the workflow in your n8n, switched off (address and API key are saved as `N8N_URL` and `N8N_API_KEY`).
 - **Send to FlowSME team** zips a recording to the desktop, to send for analysis.
+- **Results without opening the report:** below the recordings, the **Results** tab shows the selected
+  recording's time, tasks, minutes and money saved, the AI cost, and each task with its potential and
+  roadmap phase. Double-click a task to open the report. The **Narration** tab shows what was said, with
+  timestamps. **Activity** shows the log.
+- **More** menu: Team view, Rename, Delete (to the Recycle Bin, so it can be restored), Open folder, Send
+  to FlowSME team, **Import a recording (.zip)** a pilot sent you (also `python -m flowsme import
+  file.zip`), and **Create demo recording**, for showing FlowSME without recording anything.
+- **Settings** has four tabs, saved to the settings file so nobody edits it by hand:
+  - **AI:** Meta Muse Spark, a local model with Ollama, or no AI; models, address, spending limit, web
+    search, API key.
+  - **Privacy:** typed text, value fingerprints, screenshots and window-only, apps and window titles
+    never recorded.
+  - **Recording:** microphone for narration, pause and stop shortcuts, screenshot size and quality, the
+    pause that splits tasks.
+  - **Business:** default runs per month, hourly cost, currency, tools the business has, recordings
+    folder.
 - Recordings and settings stay in `%LOCALAPPDATA%\FlowSME`, which OneDrive doesn't sync. Uninstalling keeps
   them.
 - The installer isn't code-signed yet. When it's downloaded, Windows may show "Windows protected your PC":

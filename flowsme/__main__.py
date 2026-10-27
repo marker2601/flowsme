@@ -1,4 +1,4 @@
-"""Command line: python -m flowsme {app, record, analyze, build, compare, team, sessions, demo}."""
+"""Command line: python -m flowsme {app, record, analyze, build, compare, team, import, sessions, demo}."""
 from __future__ import annotations
 
 import argparse
@@ -50,6 +50,9 @@ def main(argv: list[str] | None = None) -> None:
     team.add_argument("--names", help="names in the same order, comma-separated, e.g. \"Asha, Ben, Chen\"")
     team.add_argument("--items", help="items each person did, same order, e.g. \"3, 3, 3\" (default: FlowSME's count)")
 
+    imp = sub.add_parser("import", help="add a recording someone zipped with \"Send to FlowSME team\"")
+    imp.add_argument("zip", help="the .zip file")
+
     sub.add_parser("sessions", help="list recorded sessions")
 
     demo = sub.add_parser("demo", help="generate a synthetic invoice-processing session and analyse it")
@@ -81,6 +84,13 @@ def main(argv: list[str] | None = None) -> None:
             cfg.recorder.narrate = True
         path = Recorder(cfg, new_session_dir(cfg.sessions_dir, args.name)).run(duration=args.duration)
         print(f"Analyse it with:  python -m flowsme analyze {path.name}")
+    elif args.command == "import":
+        from pathlib import Path
+
+        from .session import import_recording
+
+        path = import_recording(Path(args.zip), cfg.sessions_dir)
+        print(f"Imported {path.name}. Analyse it with:  python -m flowsme analyze {path.name}")
     elif args.command == "team":
         from .team import team_view
 
