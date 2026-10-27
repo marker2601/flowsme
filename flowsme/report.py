@@ -69,14 +69,18 @@ HTML = """<!doctype html>
 
 
 def write_report(session_dir: Path, meta: dict, steps: list[Step], tasks: list[Task], amap: dict,
-                 cfg: Config, engine: str) -> dict[str, Path]:
+                 cfg: Config, engine: str, name: str = "report") -> dict[str, Path]:
+    """report.md, report.html and analysis.json; another `name` writes only that copy's Markdown and HTML."""
     out = session_dir / "analysis"
     title = f"Workflow analysis: {meta.get('name') or session_dir.name}"
     markdown = _markdown(title, session_dir.name, meta, steps, tasks, amap, cfg, engine)
-    paths = {"markdown": out / "report.md", "html": out / "report.html", "json": out / "analysis.json"}
+    paths = {"markdown": out / f"{name}.md", "html": out / f"{name}.html", "json": out / "analysis.json"}
     paths["markdown"].write_text(markdown, encoding="utf-8")
     page = HTML.replace("__TITLE__", html.escape(title)).replace("__MARKDOWN__", markdown.replace("</script", "<\\/script"))
     paths["html"].write_text(page, encoding="utf-8")
+    if name != "report":
+        del paths["json"]
+        return paths
     paths["json"].write_text(json.dumps(_as_json(session_dir, meta, steps, tasks, amap, engine), indent=2,
                                         ensure_ascii=False), encoding="utf-8")
     return paths
@@ -102,6 +106,12 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
     started = (meta.get("started") or "")[:16].replace("T", " ")
     w(f"Recorded {started or 'n/a'} · {fmt_minutes(total)} of activity · {len(steps)} steps · "
       f"{len(amap['apps'])} applications · {len(main)} tasks · analysed with {engine}\n")
+    source = meta.get("source") or {}
+    if source.get("kind") == "video":
+        w(f"> **Made from a screen video** ({source.get('file', 'video')}). The AI model read the steps from "
+          f"{source.get('frames', 'the')} frames where the screen changed, so step times are approximate and "
+          "copying between applications is inferred from what was visible, not proven. Record with FlowSME for "
+          "exact timings, field names and proven data flows.\n")
 
     w("## Summary\n")
     w(f"- **Recorded work:** {fmt_minutes(total)}")

@@ -7,9 +7,77 @@ recommends how to automate it, with links to existing tools and a draft automati
 It works like a process consultant shadowing you. It sees what you click, type and copy, not just which apps
 were open.
 
+## For customers: FlowSME Recorder and the FlowSME server
+
+Customers never get FlowSME itself. They install **FlowSME Recorder**, which only records and shows results.
+Everything that makes the results runs on the **FlowSME server**, which you run:
+
+| On the customer's PC (FlowSME Recorder) | Only on your server |
+|---|---|
+| Record, Pause, Stop and narration; sending a recording; the report, SOP and Results tabs; Build (saves the files and sends the workflow to the customer's own n8n, Node-RED...); the manager's Admin panel | The analysis, AI prompts, Lean / Six Sigma knowledge base, SOP, to-be and rules builders, the automation generators, the Meta API key, seat keys, positions and rates |
+
+- **The installer is checked.** `packaging/build_installer.py --client` fails the build if any FlowSME module
+  other than the recorder, the client and the workflow connectors ends up in the Recorder.
+- **Seats:** you create a customer organisation with its number of seats. Its manager adds people in the
+  Admin panel, and each person gets a seat file holding their key. The server keeps only a hash of each key.
+  The Recorder keeps the key encrypted for that Windows user. A revoked seat stops working on its next request.
+- **Who sees what:** employees see their own recordings and hours saved. Managers see the whole team, with
+  money at each person's position rate. One organisation never sees another's data.
+- **On the wire:** the Recorder only talks to an `https://` server (plain `http` only on the same computer).
+  Uploads are limited to 1 GB and checked before unpacking. The API's documentation pages are switched off.
+
+Run it on one computer first:
+
+```bash
+uv pip install --python .venv/Scripts/python.exe -r requirements-server.txt
+.venv/Scripts/python.exe -m flowsme.server create-org "Acme Finance" --seats 5 --manager "Dana Lee"
+.venv/Scripts/python.exe -m flowsme.server serve
+```
+
+```bash
+.venv/Scripts/python.exe -m flowsme.client
+```
+
+The first command writes the manager's seat file to `server-data/seat-files/`. Open it in FlowSME Recorder,
+then add people from the Admin panel. Set `MODEL_API_KEY` for the server process to use Muse Spark; without
+it, reports use the built-in rules. Other server commands: `add-manager`, `seats` (change a plan's seats) and
+`list`.
+
+Build the Recorder for customers with `.venv/Scripts/python.exe packaging/build_installer.py --client`. This
+writes `dist/FlowSME-Recorder-Setup-0.5.0.exe`, which installs as "FlowSME Recorder", separate from FlowSME. Run
+`FlowSMERecorder.exe --self-test` to check a PC.
+
+To put the server online, use the `Dockerfile` on any host that serves it over HTTPS. Keep the data folder on
+an encrypted, backed-up disk, and set `FLOWSME_SERVER_URL` to its public address so seat files point to it.
+
+### Screen videos instead of a recording
+
+A customer who already has a screen video of the work (Teams, Loom, Snipping Tool, OBS, Xbox Game Bar) can
+send that instead: **More > Import a video...** in FlowSME Recorder, **More > Import a screen video...** in
+FlowSME, or `python -m flowsme import-video file.mp4` from the command line.
+
+- **How it works:** FlowSME keeps a frame each time the screen changes, about 2 a second for short videos. The
+  AI model reads what the person did between frames: the app, the button, field or cell, and whether they
+  typed, copied or pasted. Those steps then go through the same analysis as a recording. The soundtrack
+  becomes the narration.
+- **Less exact than a recording, and the report says so:** step times are approximate. Copying between apps
+  is inferred from what was visible rather than proven by value fingerprints. A video also can't show a
+  copy, so repeated routines are matched on where each step happened.
+- **It needs the AI model and ffmpeg** (`winget install ffmpeg`; the server's Docker image includes it).
+  Videos can be up to 60 minutes and 1 GB. The AI's answers are cached per video, so reading it again is free.
+- **Tested:** a 5.6-minute narrated video of real invoice work (Notepad to Excel), built from a recording made
+  on this PC. 47 of the 50 screen changes were found and the narration was transcribed. The 3-invoice routine
+  was found as repeating with high potential, close to what the recorder found from the same work. Reading
+  plus the report cost about $0.3 with Muse Spark.
+
+Still to do before many customers: rate limits on failed sign-ins, a database in place of the JSON files,
+compiling the Recorder to native code (Nuitka), signing the installers, and a licence agreement customers
+accept.
+
 ## The desktop app (Windows)
 
-For people who don't use a terminal. Run `FlowSME-Setup-0.4.0.exe`, click **Install**, then **Open FlowSME**.
+The full app, for you and your demos; it contains everything, so don't give it to customers (they get
+FlowSME Recorder, above). Run `FlowSME-Setup-0.5.0.exe`, click **Install**, then **Open FlowSME**.
 
 - **No administrator rights needed.** It installs for the current Windows user in
   `%LOCALAPPDATA%\Programs\FlowSME`, with Start menu and desktop shortcuts, and appears in Settings > Apps
@@ -86,7 +154,7 @@ seat file**. (Later: **More > Set up a team** or **Join a team**.)
   `inbox/`. Rates stay in the manager's `team.json` in `%LOCALAPPDATA%\FlowSME`. Without a folder, seats
   and recordings travel by email, and the manager imports them with More > Import.
 
-Silent install for IT: `FlowSME-Setup-0.4.0.exe /S` (add `/nodesktop` to skip the desktop shortcut).
+Silent install for IT: `FlowSME-Setup-0.5.0.exe /S` (add `/nodesktop` to skip the desktop shortcut).
 
 Build the app and the installer:
 

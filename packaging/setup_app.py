@@ -1,10 +1,12 @@
 """FlowSME Setup (FlowSME-Setup-<version>.exe): installs the app for the current Windows user, without administrator
-rights. Program: %LOCALAPPDATA%\\Programs\\FlowSME. Recordings and settings: %LOCALAPPDATA%\\FlowSME, kept on upgrade.
+rights. Program: %LOCALAPPDATA%\\Programs\\<folder>. Recordings and settings: %LOCALAPPDATA%\\<data>, kept on upgrade.
+product.json names the app (the full FlowSME, or FlowSME Recorder for customers); without it, the full app.
 
 FlowSME-Setup.exe /S installs silently (no window, FlowSME is not started): exit code 0 when it worked."""
 from __future__ import annotations
 
 import ctypes
+import json
 import os
 import shutil
 import subprocess
@@ -19,9 +21,14 @@ from tkinter import ttk
 
 HERE = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
 VERSION = (HERE / "version.txt").read_text(encoding="ascii").strip()
-DEST = Path(os.environ["LOCALAPPDATA"]) / "Programs" / "FlowSME"
-DATA = Path(os.environ["LOCALAPPDATA"]) / "FlowSME"
-UNINSTALL_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\FlowSME"
+PRODUCT = {"name": "FlowSME", "exe": "FlowSME.exe", "folder": "FlowSME", "data": "FlowSME",
+           "about": "FlowSME records how you work, maps the process and shows what to automate and the minutes saved."}
+if (HERE / "product.json").exists():
+    PRODUCT.update(json.loads((HERE / "product.json").read_text(encoding="utf-8")))
+NAME, EXE = PRODUCT["name"], PRODUCT["exe"]
+DEST = Path(os.environ["LOCALAPPDATA"]) / "Programs" / PRODUCT["folder"]
+DATA = Path(os.environ["LOCALAPPDATA"]) / PRODUCT["data"]
+UNINSTALL_KEY = rf"Software\Microsoft\Windows\CurrentVersion\Uninstall\{PRODUCT['folder']}"
 NO_WINDOW = 0x08000000
 
 SHORTCUTS = r"""
@@ -29,7 +36,7 @@ $shell = New-Object -ComObject WScript.Shell
 $folders = @([Environment]::GetFolderPath('Programs'))
 if ($env:FLOWSME_DESKTOP -eq '1') { $folders += [Environment]::GetFolderPath('Desktop') }
 foreach ($folder in $folders) {
-    $link = $shell.CreateShortcut((Join-Path $folder 'FlowSME.lnk'))
+    $link = $shell.CreateShortcut((Join-Path $folder ($env:FLOWSME_NAME + '.lnk')))
     $link.TargetPath = $env:FLOWSME_EXE
     $link.WorkingDirectory = $env:FLOWSME_DIR
     $link.IconLocation = $env:FLOWSME_EXE + ',0'
@@ -40,14 +47,14 @@ foreach ($folder in $folders) {
 
 
 def flowsme_running() -> bool:
-    out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq FlowSME.exe", "/NH"], capture_output=True, text=True,
+    out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {EXE}", "/NH"], capture_output=True, text=True,
                          creationflags=NO_WINDOW).stdout
-    return "FlowSME.exe" in out
+    return EXE.lower() in out.lower()
 
 
 def install(desktop: bool, progress=lambda done, total: None) -> Path:
     if flowsme_running():
-        raise RuntimeError("FlowSME is open. Close it (stop any recording first), then run Setup again.")
+        raise RuntimeError(f"{NAME} is open. Close it (stop any recording first), then run Setup again.")
     if DEST.exists():
         shutil.rmtree(DEST)  # program files only: recordings live in DATA
     DEST.mkdir(parents=True)
@@ -58,14 +65,15 @@ def install(desktop: bool, progress=lambda done, total: None) -> Path:
             if n % 25 == 0 or n == len(members):
                 progress(n, len(members))
     shutil.copy(HERE / "uninstall.ps1", DEST)
-    exe = DEST / "FlowSME.exe"
+    (DEST / "product.json").write_text(json.dumps(PRODUCT), encoding="utf-8")  # for uninstall.ps1
+    exe = DEST / EXE
     subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", SHORTCUTS],
-                   env={**os.environ, "FLOWSME_EXE": str(exe), "FLOWSME_DIR": str(DEST),
+                   env={**os.environ, "FLOWSME_EXE": str(exe), "FLOWSME_DIR": str(DEST), "FLOWSME_NAME": NAME,
                         "FLOWSME_DESKTOP": "1" if desktop else "0"},
                    check=True, capture_output=True, creationflags=NO_WINDOW)
     size_kb = sum(p.stat().st_size for p in DEST.rglob("*") if p.is_file()) // 1024
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, UNINSTALL_KEY) as key:  # listed in Settings > Apps
-        for name, value in (("DisplayName", "FlowSME"), ("DisplayVersion", VERSION), ("Publisher", "FlowSME"),
+        for name, value in (("DisplayName", NAME), ("DisplayVersion", VERSION), ("Publisher", "FlowSME"),
                             ("DisplayIcon", str(exe)), ("InstallLocation", str(DEST)),
                             ("UninstallString", "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle "
                                                 f'Hidden -File "{DEST / "uninstall.ps1"}"'),
@@ -81,13 +89,13 @@ class SetupWindow:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.exe: Path | None = None
-        root.title("FlowSME Setup")
+        root.title(f"{NAME} Setup")
         root.resizable(False, False)
         frame = ttk.Frame(root, padding=20)
         frame.pack(fill="both", expand=True)
-        ttk.Label(frame, text=f"Install FlowSME {VERSION}", style="Title.TLabel").pack(anchor="w")
+        ttk.Label(frame, text=f"Install {NAME} {VERSION}", style="Title.TLabel").pack(anchor="w")
         self.text = ttk.Label(frame, wraplength=int(430 * self.scale), justify="left", text=(
-            "FlowSME records how you work, maps the process and shows what to automate and the minutes saved.\n\n"
+            f"{PRODUCT['about']}\n\n"
             f"It installs for your Windows user only, no administrator rights needed, in:\n{DEST}\n\n"
             f"Your recordings and settings are kept in {DATA}."))
         self.text.pack(anchor="w", pady=(10, 12))
@@ -137,17 +145,17 @@ class SetupWindow:
         self.close_btn.state(["!disabled"])
         self.close_btn.config(text="Close")
         if error:
-            self.text.config(text=f"FlowSME could not be installed:\n\n{error}")
+            self.text.config(text=f"{NAME} could not be installed:\n\n{error}")
             self.main_btn.config(text="Try again")
             self.main_btn.state(["!disabled"])
             self.check.state(["!disabled"])
             return
         self.exe = exe
         self.bar.config(value=100)
-        self.text.config(text="FlowSME is installed. Find it in the Start menu"
+        self.text.config(text=f"{NAME} is installed. Find it in the Start menu"
                               + (" and on your desktop." if self.desktop.get() else ".")
-                              + "\n\nTo remove it later: Settings > Apps > FlowSME.")
-        self.main_btn.config(text="Open FlowSME", command=self.launch)
+                              + f"\n\nTo remove it later: Settings > Apps > {NAME}.")
+        self.main_btn.config(text=f"Open {NAME}", command=self.launch)
         self.main_btn.state(["!disabled"])
 
     def launch(self) -> None:

@@ -57,3 +57,15 @@ RECOMMENDATION = _obj(
         code=_STR,
     ),
 )
+
+# What a person did between two frames of a screen video (video.py turns these into recorder events).
+VIDEO_ACTIONS = _obj(actions={"type": "array", "items": _obj(
+    app=_STR,
+    window=_STR,
+    action={"type": "string", "enum": ["click", "type", "copy", "paste", "shortcut", "scroll", "switch", "none"]},
+    element=_STR,
+    element_kind={"type": "string", "enum": ["button", "field", "cell", "tab", "link", "menu item", "list item",
+                                             "document", "checkbox", "drop-down", "other"]},
+    chars={"type": "integer"},
+    description=_STR,
+)})

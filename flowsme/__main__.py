@@ -55,6 +55,12 @@ def main(argv: list[str] | None = None) -> None:
     imp = sub.add_parser("import", help="add a recording someone zipped with \"Send to FlowSME team\"")
     imp.add_argument("zip", help="the .zip file")
 
+    vid = sub.add_parser("import-video", help="turn a screen video (Teams, Loom, OBS...) into a recording and "
+                                               "analyse it; the AI model reads the steps from the frames")
+    vid.add_argument("video", help="the video file (.mp4, .mov, .webm, .mkv...)")
+    vid.add_argument("--name", help="process name (default: the file name)")
+    _analysis_flags(vid)
+
     sub.add_parser("sessions", help="list recorded sessions")
 
     demo = sub.add_parser("demo", help="generate a synthetic invoice-processing session and analyse it")
@@ -118,6 +124,14 @@ def main(argv: list[str] | None = None) -> None:
         print("Read BUILD.md in that folder first: it lists what must be decided and filled in.")
     elif args.command == "analyze":
         _analyze(resolve_session(args.session, cfg.sessions_dir), cfg)
+    elif args.command == "import-video":
+        from pathlib import Path
+
+        from .video import video_to_session
+
+        path = video_to_session(Path(args.video), cfg.sessions_dir, args.name or "", cfg)
+        print(f"Recording made from the video: {path}")
+        _analyze(path, cfg)
     elif args.command == "demo":
         from .demo import build_demo
 

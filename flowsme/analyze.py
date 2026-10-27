@@ -1,6 +1,7 @@
 """The analysis pipeline: events -> steps -> tasks -> descriptions -> scores -> recommendations -> report."""
 from __future__ import annotations
 
+import copy
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -25,12 +26,18 @@ from .session import load_events, load_meta
 from .workflow import app_map, summarize_tasks
 
 
-def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
+def analyze_session(session_dir: Path, cfg: Config, log=print, hours_copy: bool = False) -> dict:
+    """Analyse a recording and write its report. `hours_copy` also writes report-hours.html, the same report
+    without money, for people who may see the hours saved but not what an hour of anyone's time costs."""
     events = load_events(session_dir)
     meta = load_meta(session_dir)
     steps = build_steps(events, cfg.analysis.idle_gap_seconds)
     if not steps:
         raise SystemExit(f"No clicks or keystrokes found in {session_dir}")
+    if (meta.get("source") or {}).get("kind") == "video":
+        from .video import coarse_signatures
+
+        coarse_signatures(steps)
     tasks = build_tasks(steps, cfg.analysis.idle_gap_seconds)
     repeated = sum(t.repeated for t in tasks)
     log(f"{len(events)} events -> {len(steps)} steps -> {len(tasks)} tasks ({repeated} repeated routines)")
@@ -94,5 +101,12 @@ def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
         log(f"AI usage: {llm.cost_summary()}")
         engine += f". AI usage: {llm.cost_summary()}"
         meta = {**meta, "ai_usage": llm.usage}
-    paths = write_report(session_dir, meta, steps, tasks, app_map(steps), cfg, engine)
+    amap = app_map(steps)
+    paths = write_report(session_dir, meta, steps, tasks, amap, cfg, engine)
+    if hours_copy:
+        hours = copy.deepcopy(cfg)
+        hours.analysis.show_money = False
+        hours_meta = {**meta, "priorities": prioritize(tasks, cfg.analysis.currency, False)}
+        paths["hours"] = write_report(session_dir, hours_meta, steps, tasks, amap, hours, engine,
+                                      name="report-hours")["html"]
     return {"steps": steps, "tasks": tasks, "paths": paths}

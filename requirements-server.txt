@@ -1,0 +1,7 @@
+# The FlowSME server (analysis, prompts, knowledge base, builders, seats). Runs on Linux or Windows.
+Pillow>=10.1
+openai>=1.40
+ddgs>=9
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9

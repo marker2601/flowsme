@@ -6,3 +6,7 @@ sessions/
 config.toml
 build/
 dist/
+# The server's data: customers' recordings, seat key hashes and rates.
+server-data/
+# Test videos made from recordings (screenshots of real screens).
+test-videos/

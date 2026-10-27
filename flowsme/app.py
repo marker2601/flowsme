@@ -422,6 +422,7 @@ class App:
             m.add_command(label="Send to FlowSME team...", command=self.export)
         m.add_separator()
         m.add_command(label="Import a recording (.zip)...", command=self.import_zip)
+        m.add_command(label="Import a screen video...", command=self.import_video)
         m.add_command(label="Create demo recording", command=self.demo)
         m.add_separator()
         if self.mode == "employee":
@@ -768,6 +769,10 @@ class App:
             os.startfile(self._compared)
         elif kind == "team":
             os.startfile(self._team_out / "team.html")
+        elif kind == "video":
+            self.refresh(select=self._imported)
+            print(f"The video is now a recording: '{_title(self._imported)}'. Choose the report options.")
+            self.make_report()
         else:
             print("Automation files ready: start with BUILD.md.")
             os.startfile(self._built_dir(path))
@@ -1151,6 +1156,36 @@ class App:
 
     # ---- managing recordings ----------------------------------------------------------------------
 
+    def import_video(self) -> None:
+        """A screen video (Teams, Loom, Snipping Tool, OBS...) instead of a FlowSME recording: the AI model reads
+        the steps from its frames, then the report options open as usual."""
+        if self.busy or self.recorder is not None:
+            return
+        cfg, _ = app_config(self.config_path)
+        if cfg.llm.provider == "offline" or (needs_key(cfg) and not saved_key(cfg.llm.api_key_env)):
+            messagebox.showinfo("FlowSME", "Reading a video needs the AI model (it reads each frame). Add the "
+                                           "Meta API key in Settings first.", parent=self.root)
+            return
+        file = filedialog.askopenfilename(parent=self.root, title="Choose a screen video of the work",
+                                          filetypes=[("Videos", "*.mp4 *.mov *.webm *.mkv *.avi *.wmv *.m4v"),
+                                                     ("All files", "*.*")])
+        if not file:
+            return
+        name = simpledialog.askstring("Import a screen video", "Process name:", parent=self.root,
+                                      initialvalue=Path(file).stem.replace("-", " ").replace("_", " "))
+        if name is None:
+            return
+        self._busy(True)
+        print(f"Reading '{Path(file).name}' with {cfg.llm.vision_model}: it looks at every change on screen. "
+              "This takes a few minutes.")
+        threading.Thread(target=self._work, args=("video", Path(file), self._video_job, cfg, name.strip()),
+                         daemon=True).start()
+
+    def _video_job(self, video: Path, cfg: Config, name: str) -> None:
+        from .video import video_to_session
+
+        self._imported = video_to_session(video, self.cfg.sessions_dir, name, cfg, log=print)
+
     def import_zip(self) -> None:
         file = filedialog.askopenfilename(parent=self.root, title="Import a FlowSME recording",
                                           filetypes=[("FlowSME recording", "*.zip"), ("All files", "*.*")])
@@ -1338,7 +1373,7 @@ class App:
                     lines.append(event[1])
                 elif event[0] == "recorded":
                     self._recorded(event[1])
-                elif event[0] in ("reported", "built", "compared", "team"):
+                elif event[0] in ("reported", "built", "compared", "team", "video"):
                     self._finished(*event)
         if lines:
             self.log_box.config(state="normal")
