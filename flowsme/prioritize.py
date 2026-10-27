@@ -41,17 +41,17 @@ def effort(task: Task) -> dict:
     return {"days": round(days, 1), "reasons": reasons}
 
 
-def prioritize(tasks: list[Task], hourly_cost: float, currency: str = "$") -> dict | None:
+def prioritize(tasks: list[Task], currency: str = "$", show_money: bool = True) -> dict | None:
     items = []
     for t in tasks:
         if t.misc or not t.estimate or not t.estimate.get("hours_saved_per_month"):
             continue
         e = effort(t)
         hours, money = t.estimate["hours_saved_per_month"], t.estimate["cost_saved_per_month"]
-        build_cost = e["days"] * 8 * hourly_cost
+        # Building costs days x 8 hours of the same people's time, so payback needs no hourly rate.
         items.append({"id": t.id, "name": t.name, "hours_per_month": hours, "money_per_month": money,
                       "effort_days": e["days"], "effort_reasons": e["reasons"],
-                      "payback_months": round(build_cost / money, 1) if money else None})
+                      "payback_months": round(e["days"] * 8 / hours, 1)})
     if not items:
         return None
     # High impact: at least the median task and at least an hour a month.
@@ -65,10 +65,10 @@ def prioritize(tasks: list[Task], hourly_cost: float, currency: str = "$") -> di
     order = {"Now": 0, "Next": 1, "Later": 2, "Hold": 3}
     items.sort(key=lambda i: (order[i["phase"]], -i["hours_per_month"]))
     return {"items": items, "impact_cut_hours": round(cut, 1), "effort_cut_days": LOW_EFFORT_DAYS,
-            "svg": matrix_svg(items, cut, currency)}
+            "svg": matrix_svg(items, cut, currency if show_money else None)}
 
 
-def matrix_svg(items: list[dict], cut: float, currency: str = "$") -> str:
+def matrix_svg(items: list[dict], cut: float, currency: str | None = "$") -> str:
     """Impact (hours saved a month, up) against effort (days to build, right, log scale), one bubble per task."""
     w, h, left, right, top, bottom = 640, 360, 58, 20, 20, 44
     x_lo, x_hi = 0.4, max(40.0, max(i["effort_days"] for i in items) * 1.5)
@@ -99,8 +99,9 @@ def matrix_svg(items: list[dict], cut: float, currency: str = "$") -> str:
              'fill="#5f6368">impact: hours saved a month</text>')
     for i in items:
         cx, cy = x(i["effort_days"]), y(i["hours_per_month"])
-        r = 7 + min(14, i["money_per_month"] / 150)
-        tip = html.escape(f"{i['id']}. {i['name']}: {i['hours_per_month']} h a month ({currency}{i['money_per_month']:,}),"
+        r = 7 + min(14, i["hours_per_month"] / 5)
+        money = f" ({currency}{i['money_per_month']:,})" if currency else ""
+        tip = html.escape(f"{i['id']}. {i['name']}: {i['hours_per_month']} h a month{money},"
                           f" about {i['effort_days']:g} days to build")
         s.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r:.1f}" fill="{i["colour"]}" fill-opacity="0.85">'
                  f'<title>{tip}</title></circle>')

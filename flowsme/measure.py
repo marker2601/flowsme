@@ -172,7 +172,7 @@ def summarize(session_dir: Path, task_id: int | None = None, items: int | None =
             "switches_per_run": round(mean(switches), 1),
             "estimated_minutes_saved": (task.get("estimate") or {}).get("minutes_saved_per_run"),
             "runs_per_month": options.get("runs_per_month", 20), "hourly_cost": options.get("hourly_cost", 30),
-            "currency": options.get("currency", "$")}
+            "currency": options.get("currency", "$"), "show_money": options.get("show_money", True)}
 
 
 def compare(before_dir: Path, after_dir: Path, before_task: int | None = None, after_task: int | None = None,
@@ -234,7 +234,8 @@ def _comparison_markdown(r: dict) -> str:
     est = b["estimated_minutes_saved"]
     lines.append(f"Saved per item: **{fmt_minutes(r['seconds_saved_per_run'] / 60)}** "
                  f"({r['percent_saved']:.0%}). At {b['runs_per_month']} items a month: "
-                 f"**{r['hours_saved_per_month']} hours**, about {b['currency']}{r['money_saved_per_month']:,}."
+                 f"**{r['hours_saved_per_month']} hours**"
+                 + (f", about {b['currency']}{r['money_saved_per_month']:,}." if b["show_money"] else ".")
                  + (f" The report estimated {fmt_minutes(est)} per item." if est else "") + "\n")
     sec = lambda v: "-" if v is None else f"{v:.0f} s"
     rows = [("Items recorded", _items(b), _items(a)),

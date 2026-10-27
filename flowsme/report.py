@@ -107,14 +107,19 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
     w(f"- **Recorded work:** {fmt_minutes(total)}")
     w(f"- **Time automation could save:** about {fmt_minutes(saved)} per run "
       f"({saved / total * 100 if total else 0:.0f}% of the recorded time)")
-    w(f"- **If this process runs {a.runs_per_month} times a month:** about {monthly:.1f} hours a month, roughly "
-      f"{cur}{monthly * a.hourly_cost:,.0f} at {cur}{a.hourly_cost:g} an hour")
+    if a.show_money:
+        rate = f"the {a.position} rate, " if a.position else ""
+        w(f"- **If this process runs {a.runs_per_month} times a month:** about {monthly:.1f} hours a month, roughly "
+          f"{cur}{sum(t.estimate.get('cost_saved_per_month', 0) for t in main):,} at {rate}{cur}{a.hourly_cost:g} an hour")
+    else:
+        w(f"- **If this process runs {a.runs_per_month} times a month:** about {monthly:.1f} hours a month"
+          + (f" of {a.position} time" if a.position else "") + ". Your team's admin sees the money figures.")
     if ranked:
         top = ranked[0]
         why = f" {top.reasons[0]}." if top.reasons else ""
         w(f"- **Biggest opportunity:** {top.name} ({top.level.lower()} potential).{why}")
-    w("\n> Savings are estimates based on this one recording. Set `runs_per_month` and `hourly_cost` in "
-      "`config.toml` to match how often the process really runs.\n")
+    w("\n> Savings are estimates based on this one recording. Set how often the process runs (and, in the "
+      "app's Admin panel, what an hour of each position costs) to match the real business.\n")
 
     w("## Opportunities\n")
     w("| # | Task | Time | Runs | Applications | Automation potential | Est. saving per run |")
@@ -135,12 +140,12 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
         w("|---|---|---|---|---|---|---|")
         for i in pri["items"]:
             back = f"{i['payback_months']:g} months" if i["payback_months"] is not None else "-"
-            w(f"| **{i['phase']}** ({i['quadrant']}) | {i['id']} | {_cell(i['name'])} | {i['hours_per_month']} h "
-              f"({cur}{i['money_per_month']:,}) | {i['effort_days']:g} days | {back} | "
-              f"{_cell('; '.join(i['effort_reasons']))} |")
-        w(f"\n<sub>Effort starts from the recommendation's estimate (hours 0.5, days 3, weeks 15) and adds 2 days per "
-          f"system without a known API and half a day per open question. Payback: days × 8 hours × {cur}"
-          f"{a.hourly_cost:g} against the monthly saving. Planning estimates: confirm with whoever builds it.</sub>\n")
+            money = f" ({cur}{i['money_per_month']:,})" if a.show_money else ""
+            w(f"| **{i['phase']}** ({i['quadrant']}) | {i['id']} | {_cell(i['name'])} | {i['hours_per_month']} h"
+              f"{money} | {i['effort_days']:g} days | {back} | {_cell('; '.join(i['effort_reasons']))} |")
+        w("\n<sub>Effort starts from the recommendation's estimate (hours 0.5, days 3, weeks 15) and adds 2 days per "
+          "system without a known API and half a day per open question. Payback: the hours to build it (days × 8) "
+          "against the hours saved each month. Planning estimates: confirm with whoever builds it.</sub>\n")
 
     w("## Workflow map\n")
     w("Tasks in the order they happened. Double-bordered boxes are routines that repeated. "
@@ -209,9 +214,10 @@ def _task_section(w, t: Task, cfg: Config, session: str, turns: list[dict]) -> N
         w("\n".join(f"- {r}" for r in t.reasons) + "\n")
     est = t.estimate
     if est.get("minutes_saved_per_run"):
+        money = f" or {cfg.analysis.currency}{est['cost_saved_per_month']:,}" if cfg.analysis.show_money else ""
         w(f"**Estimated saving:** about {fmt_minutes(est['minutes_saved_per_run'])} per run "
-          f"({est['automatable_fraction'] * 100:.0f}% of this task), about {est['hours_saved_per_month']} hours "
-          f"or {cfg.analysis.currency}{est['cost_saved_per_month']:,} a month.\n")
+          f"({est['automatable_fraction'] * 100:.0f}% of this task), about {est['hours_saved_per_month']} hours"
+          f"{money} a month.\n")
 
     shots = [s for s in rep if s.screenshot and s.action == "click"]
     if shots:

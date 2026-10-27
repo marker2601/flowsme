@@ -9,7 +9,7 @@ were open.
 
 ## The desktop app (Windows)
 
-For people who don't use a terminal. Run `FlowSME-Setup-0.3.0.exe`, click **Install**, then **Open FlowSME**.
+For people who don't use a terminal. Run `FlowSME-Setup-0.4.0.exe`, click **Install**, then **Open FlowSME**.
 
 - **No administrator rights needed.** It installs for the current Windows user in
   `%LOCALAPPDATA%\Programs\FlowSME`, with Start menu and desktop shortcuts, and appears in Settings > Apps
@@ -21,22 +21,29 @@ For people who don't use a terminal. Run `FlowSME-Setup-0.3.0.exe`, click **Inst
   - AI analysis with Muse Spark (needs a Meta API key, saved in **Settings** as the `MODEL_API_KEY` user
     variable) or built-in rules only. Also: a spending limit per report, whether screenshots go to the AI,
     and web search on or off.
-  - How often the process runs and what an hour of the person's time costs, for hours and money saved.
+  - How often the process runs and who does it: pick the **position** (Accounts payable clerk, Team lead...).
+    The hourly rate comes from that position, set in **Team and rates** (or the manager's **Admin panel**),
+    so nobody types a cost per report.
   - The tools the business already has: tick any of 18 common ones, or add your own as
     "MyERP: database, reporting". The tool plan then shows what they can do with their own tools.
   - Options are saved with each recording, so a re-run starts from the same answers. The report opens
     when it's ready.
-- **Build automation...** picks a task from the report and writes the n8n workflow, Postman collection, SQL
-  and Playwright starters, with `BUILD.md` listing what a person must fill in. Optionally it also creates
-  the workflow in your n8n, switched off (address and API key are saved as `N8N_URL` and `N8N_API_KEY`).
-- **Send to FlowSME team** zips a recording to the desktop, to send for analysis.
+- **Build automation...** picks a task from the report and writes the automation for **n8n, Node-RED,
+  Windmill, Make, Power Automate and Azure Logic Apps**, plus a Postman collection, SQL and Playwright
+  starters, with `BUILD.md` listing what a person must fill in. **Create it in** then creates it in the tool
+  you use through that tool's API, switched off until you turn it on. Enter the address and key once (they are
+  saved as user variables, such as `N8N_URL` and `N8N_API_KEY`) and click **Test connection** to check them.
+  See [Creating it in your workflow tool](#creating-it-in-your-workflow-tool).
+- **Send to FlowSME team** zips a recording to the desktop, to send for analysis. An employee's app has
+  **Send to my manager** instead.
 - **Results without opening the report:** below the recordings, the **Results** tab shows the selected
   recording's time, tasks, minutes and money saved, the AI cost, and each task with its potential and
   roadmap phase. Double-click a task to open the report. The **Narration** tab shows what was said, with
   timestamps. **Activity** shows the log.
 - **More** menu: Team view, Rename, Delete (to the Recycle Bin, so it can be restored), Open folder, Send
   to FlowSME team, **Import a recording (.zip)** a pilot sent you (also `python -m flowsme import
-  file.zip`), and **Create demo recording**, for showing FlowSME without recording anything.
+  file.zip`), **Create demo recording**, for showing FlowSME without recording anything, and the team
+  options below.
 - **Settings** has four tabs, saved to the settings file so nobody edits it by hand:
   - **AI:** Meta Muse Spark, a local model with Ollama, or no AI; models, address, spending limit, web
     search, API key.
@@ -44,8 +51,7 @@ For people who don't use a terminal. Run `FlowSME-Setup-0.3.0.exe`, click **Inst
     never recorded.
   - **Recording:** microphone for narration, pause and stop shortcuts, screenshot size and quality, the
     pause that splits tasks.
-  - **Business:** default runs per month, hourly cost, currency, tools the business has, recordings
-    folder.
+  - **Business:** default runs per month, your position, tools the business has, recordings folder.
 - Recordings and settings stay in `%LOCALAPPDATA%\FlowSME`, which OneDrive doesn't sync. Uninstalling keeps
   them.
 - The installer isn't code-signed yet. When it's downloaded, Windows may show "Windows protected your PC":
@@ -54,7 +60,33 @@ For people who don't use a terminal. Run `FlowSME-Setup-0.3.0.exe`, click **Inst
   UI Automation, screen capture, the microphone and the AI clients, makes a 2-second recording and an
   offline report, and saves the result to `%TEMP%\FlowSME-self-test.txt`.
 
-Silent install for IT: `FlowSME-Setup-0.3.0.exe /S` (add `/nodesktop` to skip the desktop shortcut).
+### Teams: a manager and their employees
+
+On first run FlowSME asks how it will be used: **Just me**, **I manage a team**, or **My manager sent me a
+seat file**. (Later: **More > Set up a team** or **Join a team**.)
+
+- **The manager** sets up the team (name, seats in the plan, an admin PIN) and opens the **Admin panel**:
+  - **People and seats:** add a person with their position and FlowSME saves their seat file
+    (`Priya Sharma - FlowSME seat.flowseat`) to send by email or Teams. It shows how many seats are in use.
+    **Revoke** frees a seat; **Restore** brings it back if one is free.
+  - **Positions and rates:** each position and what an hour of it costs the business, plus the currency.
+    Reports turn hours saved into money with the rate of the person's position.
+  - **Inbox:** recordings employees sent, each checked against the seats before it is imported.
+  - **Team:** name, seats, the team folder, whether employees can make their own reports, and the PIN.
+- **An employee** opens the seat file once. Their app shows their name, position and team. It has no Admin
+  panel and no rates: their reports show hours only. **Send to my manager** puts the recording in the team
+  folder's inbox, or zips it to the Desktop to email.
+- **The manager's app** shows who made each recording (**By**). Making the report there costs it at that
+  person's position rate.
+- **Seats are enforced where it matters.** Seat files are signed with a secret that never leaves the manager's
+  computer, so an edited or made-up seat is refused, and so is a revoked one. Recordings from other teams are
+  refused too. With a team folder, the employee's app sees a revoke and stops recording.
+- **The team folder is the shared back end:** any folder both sides can reach, such as OneDrive, SharePoint
+  or a network drive. It holds `seats.json` (seat codes and whether each is active; no names or rates) and
+  `inbox/`. Rates stay in the manager's `team.json` in `%LOCALAPPDATA%\FlowSME`. Without a folder, seats
+  and recordings travel by email, and the manager imports them with More > Import.
+
+Silent install for IT: `FlowSME-Setup-0.4.0.exe /S` (add `/nodesktop` to skip the desktop shortcut).
 
 Build the app and the installer:
 
@@ -234,8 +266,30 @@ This writes these files to `analysis/automations/task2/`:
   or Excel.
 - `BUILD.md`: the guide that ties these together.
 
-Add `--deploy-n8n`, with `N8N_URL` and `N8N_API_KEY` set, to create the workflow in your n8n instance
-directly. It is created inactive.
+The same automation is also written for other tools: `nodered_flow.json`, `windmill_flow.json`,
+`make_blueprint.json`, `power_automate_flow.json` and `logic_app.json`.
+
+### Creating it in your workflow tool
+
+Add `--deploy n8n` (or `nodered`, `windmill`, `make`, `powerautomate`, `logicapps`) to create it in that tool
+through its API, or use **Create it in** in the app. It is always created switched off. A person then adds
+the credentials, replaces the warning-sign values, tests it and switches it on.
+
+| Tool | What FlowSME needs | Notes |
+|---|---|---|
+| n8n | address, API key | Cloud or self-hosted. Tested on a live n8n. |
+| Node-RED | address, token if `adminAuth` is on | Free and open source. Tested on a live Node-RED. |
+| Windmill | address, workspace, token | Cloud free tier or self-hosted; adds a 15-minute schedule, off. Beta. |
+| Make | zone (eu1...), API token, team (optional) | Core plan and up. Beta. |
+| Power Automate | environment URL; `az login` or a pasted token | Cloud flow with the Outlook and Excel connectors, created off in the Default Solution. Beta. |
+| Azure Logic Apps | subscription, resource group, region; `az login` or a token | Calls Graph with its own managed identity, so no secret sits in the workflow. Beta. |
+
+Beta means it was built from the vendor's API documentation and not yet tried on a live account.
+
+Other tools can't be created this way. Zapier only lets listed partner apps create Zaps. Power Automate
+Desktop and Pipedream can't create flows from a definition (Pipedream can only copy a template). UiPath and
+Automation Anywhere only import packages built in their own studios. Activepieces (paid editions), Workato
+and Google Apps Script have APIs that could be added next.
 
 ## What you get
 
@@ -371,5 +425,6 @@ report    ->  HTML / Markdown / JSON
 - Merge several recordings of the same process into one map, with variants and exception paths.
 - Read browser URLs through UI Automation for better web-app identification.
 - Redact personal data (OCR + PII detection) from screenshots before they are sent to a hosted model.
-- Generate ready-to-import Power Automate and n8n flows, not just drafts.
+- Fill in more of each generated flow (connections, PDF reading) so less is left behind a warning sign.
+- A hosted FlowSME service for seats and licences, in place of the shared team folder.
 - Add a small tray app with record, pause and stop buttons.

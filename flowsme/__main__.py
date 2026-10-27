@@ -34,8 +34,10 @@ def main(argv: list[str] | None = None) -> None:
                                        "Playwright starters")
     bld.add_argument("session", nargs="?", default="latest", help="session id or folder (default: latest)")
     bld.add_argument("--task", type=int, help="task number from the report (default: the top opportunity)")
-    bld.add_argument("--deploy-n8n", action="store_true",
-                     help="also create the workflow in n8n (needs N8N_URL and N8N_API_KEY)")
+    bld.add_argument("--deploy", choices=["n8n", "nodered", "windmill", "make", "powerautomate", "logicapps"],
+                     help="also create it in this platform through its API (settings from the app's Build dialog "
+                          "or environment variables such as N8N_URL and N8N_API_KEY)")
+    bld.add_argument("--deploy-n8n", action="store_true", help="same as --deploy n8n")
 
     cmp = sub.add_parser("compare", help="before/after: what an improvement really saved, beyond run-to-run noise")
     cmp.add_argument("before", help="the recording made before the change (session id or folder)")
@@ -112,7 +114,7 @@ def main(argv: list[str] | None = None) -> None:
 
         path = resolve_session(args.session, cfg.sessions_dir)
         print(f"Building task {args.task or '(top opportunity)'} from {path}")
-        build_task(path, args.task, deploy=args.deploy_n8n)
+        build_task(path, args.task, deploy=args.deploy or ("n8n" if args.deploy_n8n else None))
         print("Read BUILD.md in that folder first: it lists what must be decided and filled in.")
     elif args.command == "analyze":
         _analyze(resolve_session(args.session, cfg.sessions_dir), cfg)

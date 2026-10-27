@@ -73,7 +73,7 @@ def analyze_session(session_dir: Path, cfg: Config, log=print) -> dict:
         task.improvement["sop"] = path.name
         imp = task.improvement
         imp["stories"] = user_stories(task.name, imp["to_be"], imp["rules"], imp["tools"]["with_suggestions"])
-    meta = {**meta, "priorities": prioritize(tasks, cfg.analysis.hourly_cost, cfg.analysis.currency)}
+    meta = {**meta, "priorities": prioritize(tasks, cfg.analysis.currency, cfg.analysis.show_money)}
 
     parts = []
     if from_screenshots:

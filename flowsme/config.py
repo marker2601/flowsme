@@ -87,6 +87,10 @@ class AnalysisConfig:
     runs_per_month: int = 20
     hourly_cost: float = 30.0
     currency: str = "$"
+    # The position whose rate hourly_cost came from (the app's Admin panel keeps positions and rates), and
+    # whether money appears at all: an employee's app shows hours only, the rates stay with the manager.
+    position: str = ""
+    show_money: bool = True
     web_search: bool = True
     max_recommended_tasks: int = 5
 

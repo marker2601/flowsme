@@ -21,7 +21,7 @@ from pathlib import Path
 from tkinter import font as tkfont
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
-from . import __version__
+from . import __version__, org
 from .config import Config, load_config
 from .models import fmt_minutes
 from .session import import_recording, list_sessions, load_meta, new_session_dir
@@ -167,8 +167,10 @@ def apply_options(cfg: Config, options: dict) -> Config:
     cfg.llm.send_screenshots = options["screenshots"]
     cfg.analysis.web_search = options["web_search"]
     cfg.analysis.runs_per_month = options["runs_per_month"]
-    cfg.analysis.hourly_cost = options["hourly_cost"]
-    cfg.analysis.currency = options["currency"]
+    cfg.analysis.hourly_cost = options.get("hourly_cost", cfg.analysis.hourly_cost)
+    cfg.analysis.currency = options.get("currency", cfg.analysis.currency)
+    cfg.analysis.position = options.get("position", "")
+    cfg.analysis.show_money = options.get("show_money", True)
     cfg.customer.tools = options["tools"] + [t.strip() for t in options["other_tools"].split(";") if t.strip()]
     return cfg
 
@@ -244,8 +246,10 @@ class App:
         self.root = root
         self.config_path = config_path
         self.cfg, self.cfg_path = app_config(config_path)
-        self.state_path = self.cfg_path.resolve().parent / "app.json"
+        self.home = self.cfg_path.resolve().parent  # team.json / seat.json live beside the settings
+        self.state_path = self.home / "app.json"
         self.state = self._load_state()
+        self.unlocked = False  # the admin PIN was entered in this session
         self.events: queue.Queue = queue.Queue()
         sys.stdout = sys.stderr = _Pipe(self.events)
         root.report_callback_exception = lambda kind, exc, tb: print(f"Error: {exc}")
@@ -269,6 +273,12 @@ class App:
         ttk.Label(top, text="FlowSME", style="Title.TLabel").pack(side="left")
         ttk.Label(top, text="Record your work. Get the workflow, what to automate and the minutes saved.",
                   style="Muted.TLabel").pack(side="left", padx=12, pady=(4, 0))
+        team = ttk.Frame(r, padding=(16, 2, 16, 0))  # who is using it: on their own, a manager or an employee
+        team.pack(fill="x")
+        self.who = ttk.Label(team, style="Muted.TLabel")
+        self.who.pack(side="left")
+        self.admin_btn = ttk.Button(team, command=self.admin)
+        self.admin_btn.pack(side="right")
 
         rec = ttk.LabelFrame(r, text="New recording", padding=12)
         rec.pack(fill="x", padx=16, pady=8)
@@ -287,7 +297,8 @@ class App:
         box = ttk.LabelFrame(r, text="Recordings", padding=12)
         box.pack(fill="both", expand=True, padx=16, pady=(0, 8))
         scale = r.winfo_fpixels("1i") / 96  # column widths are in pixels
-        cols = (("name", "Process", 230), ("when", "Recorded", 140), ("length", "Length", 70), ("report", "Report", 110))
+        cols = (("name", "Process", 230), ("by", "By", 110), ("when", "Recorded", 140), ("length", "Length", 70),
+                ("report", "Report", 110))
         self.tree = ttk.Treeview(box, columns=[c for c, _, _ in cols], show="headings", height=6,
                                  selectmode="browse")
         for col, label, width in cols:
@@ -305,17 +316,8 @@ class App:
         self.build_btn = ttk.Button(row, text="Build automation...", command=self.build)
         self.compare_btn = ttk.Button(row, text="Compare...", command=self.compare)
         self.more_btn = ttk.Menubutton(row, text="More")
-        more = tk.Menu(self.more_btn, tearoff=False)
-        more.add_command(label="Team view...", command=self.team)
-        more.add_separator()
-        more.add_command(label="Rename...", command=self.rename)
-        more.add_command(label="Delete...", command=self.delete)
-        more.add_command(label="Open folder", command=self.open_folder)
-        more.add_command(label="Send to FlowSME team...", command=self.export)
-        more.add_separator()
-        more.add_command(label="Import a recording (.zip)...", command=self.import_zip)
-        more.add_command(label="Create demo recording", command=self.demo)
-        self.more_btn["menu"] = more
+        self.more = tk.Menu(self.more_btn, tearoff=False)
+        self.more_btn["menu"] = self.more
         for button in (self.report_btn, self.open_btn, self.sop_btn, self.build_btn, self.compare_btn, self.more_btn):
             button.pack(side="left", padx=(0, 6))
         self.progress = ttk.Progressbar(row, mode="indeterminate", length=90)
@@ -356,12 +358,14 @@ class App:
     # ---- recordings list --------------------------------------------------------------------------
 
     def refresh(self, select: Path | None = None) -> None:
+        self._read_team()
         self.tree.delete(*self.tree.get_children())
         for path in reversed(list_sessions(self.cfg.sessions_dir)):
             meta = load_meta(path)
             secs = meta.get("duration_seconds")
             self.tree.insert("", "end", iid=str(path), values=(
                 _title(path),
+                self._by(path),
                 (meta.get("started") or "")[:16].replace("T", " "),
                 fmt_minutes(secs / 60) if secs else "?",
                 _status(path)))
@@ -379,6 +383,107 @@ class App:
     def _selected(self) -> Path | None:
         chosen = self.tree.selection()
         return Path(chosen[0]) if chosen else None
+
+    # ---- team: solo, manager or employee ------------------------------------------------------------
+
+    def _read_team(self) -> None:
+        """Which of the three ways this app is used, and what the header, list and menu show for it."""
+        self.mode = org.mode(self.home)
+        self.org = org.Org(self.home) if self.mode != "employee" else None
+        self.seat = org.my_seat(self.home) if self.mode == "employee" else None
+        self.seat_state = org.seat_status(self.seat) if self.seat else None
+        if self.mode == "manager":
+            self.who.config(text=f"Manager · {self.org.team['name']}", foreground="")
+            self.admin_btn.config(text="Admin panel")
+            self.admin_btn.pack(side="right")
+        elif self.mode == "employee":
+            revoked = self.seat_state == "revoked"
+            self.who.config(text=f"{self.seat['name']} · {self.seat['position']} · {self.seat['team_name']}"
+                                 + ("  ·  seat revoked: ask your manager" if revoked else ""),
+                            foreground="#d93025" if revoked else "")
+            self.admin_btn.pack_forget()
+        else:
+            self.who.config(text="Using FlowSME on your own", foreground="")
+            self.admin_btn.config(text="Team and rates...")
+            self.admin_btn.pack(side="right")
+        self.tree.configure(displaycolumns=[c for c in ("name", "by", "when", "length", "report")
+                                            if c != "by" or self.mode == "manager"])
+        m = self.more
+        m.delete(0, "end")
+        if self.mode != "employee":
+            m.add_command(label="Team view...", command=self.team)
+            m.add_separator()
+        m.add_command(label="Rename...", command=self.rename)
+        m.add_command(label="Delete...", command=self.delete)
+        m.add_command(label="Open folder", command=self.open_folder)
+        if self.mode == "employee":
+            m.add_command(label="Send to my manager...", command=self.export)
+        else:
+            m.add_command(label="Send to FlowSME team...", command=self.export)
+        m.add_separator()
+        m.add_command(label="Import a recording (.zip)...", command=self.import_zip)
+        m.add_command(label="Create demo recording", command=self.demo)
+        m.add_separator()
+        if self.mode == "employee":
+            m.add_command(label="Leave the team...", command=self.leave_team)
+        elif self.mode == "solo":
+            m.add_command(label="Set up a team...", command=lambda: self.admin("team"))
+            m.add_command(label="Join a team (seat file)...", command=self.join_team)
+        else:
+            m.add_command(label="Admin panel...", command=self.admin)
+
+    def _by(self, path: Path) -> str:
+        """Who recorded it, for the manager: the person on the seat it was made on."""
+        if self.mode != "manager":
+            return ""
+        seat = org.recording_seat(path)
+        if not seat:
+            return "me"
+        status, member = self.org.check_seat(seat)
+        name = member["name"] if member else seat.get("name", "?")
+        return name if status == "ok" else f"{name} ({status})"
+
+    def admin(self, tab: str | None = None) -> None:
+        from .admin_ui import open_admin
+
+        open_admin(self, tab)
+
+    def join_team(self) -> None:
+        if self.mode == "manager":
+            messagebox.showinfo("FlowSME", "This app manages a team, so it can't join one.", parent=self.root)
+            return
+        file = filedialog.askopenfilename(parent=self.root, title="Open the seat file your manager sent",
+                                          filetypes=[("FlowSME seat", "*.flowseat"), ("All files", "*.*")])
+        if not file:
+            return
+        try:
+            seat = org.read_seat_file(Path(file))
+        except ValueError as exc:
+            messagebox.showerror("FlowSME", str(exc), parent=self.root)
+            return
+        folder = seat.get("folder", "")
+        if folder and not Path(folder).exists():
+            if messagebox.askyesno("FlowSME", f"Your team shares recordings through the folder\n{folder}\n\nIt isn't "
+                                              "at that place on this computer. Choose where it is here (for example "
+                                              "in your OneDrive)? Choose No to send recordings by email instead.",
+                                   parent=self.root):
+                folder = filedialog.askdirectory(parent=self.root, title="The team folder on this computer") or ""
+            else:
+                folder = ""
+        try:
+            org.join(self.home, seat, folder)
+        except ValueError as exc:
+            messagebox.showerror("FlowSME", str(exc), parent=self.root)
+            return
+        self.refresh()
+        messagebox.showinfo("FlowSME", f"You joined {seat['team_name']} as {seat['name']}, {seat['position']}.\n\n"
+                                       "Record as usual, then use More > Send to my manager.", parent=self.root)
+
+    def leave_team(self) -> None:
+        if self.seat and messagebox.askyesno("FlowSME", f"Leave {self.seat['team_name']}? Your recordings stay on "
+                                                        "this computer.", parent=self.root):
+            org.leave(self.home)
+            self.refresh()
 
     def _update_buttons(self) -> None:
         path = self._selected()
@@ -401,6 +506,12 @@ class App:
     def start(self) -> None:
         if self.recorder is not None or self.busy:
             return
+        if self.mode == "employee":
+            self.seat_state = org.seat_status(self.seat)
+            if self.seat_state in ("revoked", "unknown"):
+                messagebox.showerror("FlowSME", "Your manager has revoked your seat, so FlowSME can't record for the "
+                                                "team. Ask them for a new seat file.", parent=self.root)
+                return
         from .recorder import Recorder
 
         self.cfg, _ = app_config(self.config_path)  # pick up edits to config.toml
@@ -408,6 +519,8 @@ class App:
         name = self.name.get().strip()
         self._save_state(last_name=name, narrate=self.narrate.get())
         path = new_session_dir(self.cfg.sessions_dir, name or "recording")
+        if self.seat:
+            org.stamp(path, self.seat)
         self.recorder = Recorder(self.cfg, path)
         threading.Thread(target=self._record, args=(self.recorder,), name="flowsme-record", daemon=True).start()
         self._update_buttons()
@@ -487,6 +600,10 @@ class App:
         path = self._selected()
         if not path or self.busy or self.recorder is not None:
             return
+        if self.mode == "employee" and not org.can_make_reports(self.seat):
+            messagebox.showinfo("FlowSME", "Your manager makes the reports for your team. Use More > Send to my "
+                                           "manager to send them this recording.", parent=self.root)
+            return
         cfg, _ = app_config(self.config_path)
         saved = _read_json(path / "analysis" / "options.json") or self.state.get("report_options") or {}
         ai_ready = cfg.llm.provider != "offline" and (not needs_key(cfg) or bool(saved_key(cfg.llm.api_key_env)))
@@ -528,17 +645,36 @@ class App:
         mode.trace_add("write", follow_mode)
         follow_mode()
 
-        biz = ttk.LabelFrame(f, text="Your business (for hours and money saved)", padding=10)
+        employee = self.mode == "employee"
+        biz = ttk.LabelFrame(f, text="Your business (for hours saved)" if employee else
+                             "Your business (for hours and money saved)", padding=10)
         biz.grid(row=2, column=0, sticky="we", pady=(10, 0))
         runs = tk.StringVar(value=str(saved.get("runs_per_month", cfg.analysis.runs_per_month)))
-        hourly = tk.StringVar(value=str(saved.get("hourly_cost", cfg.analysis.hourly_cost)))
-        currency = tk.StringVar(value=saved.get("currency", cfg.analysis.currency))
         ttk.Label(biz, text="This process runs").grid(row=0, column=0, sticky="w")
-        ttk.Spinbox(biz, from_=1, to=100000, width=7, textvariable=runs).grid(row=0, column=1, padx=6)
+        ttk.Spinbox(biz, from_=1, to=100000, width=7, textvariable=runs).grid(row=0, column=1, padx=6, sticky="w")
         ttk.Label(biz, text="times a month").grid(row=0, column=2, sticky="w")
-        ttk.Label(biz, text="An hour of this person's time costs").grid(row=1, column=0, sticky="w", pady=(6, 0))
-        ttk.Spinbox(biz, from_=0, to=10000, width=7, textvariable=hourly).grid(row=1, column=1, padx=6, pady=(6, 0))
-        ttk.Entry(biz, width=4, textvariable=currency).grid(row=1, column=2, sticky="w", pady=(6, 0))
+        ttk.Label(biz, text="Done by").grid(row=1, column=0, sticky="w", pady=(6, 0))
+        if employee:
+            position = tk.StringVar(value=self.seat["position"])
+            ttk.Label(biz, text=f"{self.seat['position']} (your position)").grid(row=1, column=1, columnspan=2,
+                                                                               sticky="w", padx=6, pady=(6, 0))
+            ttk.Label(biz, style="Muted.TLabel", text="Reports here show hours. Your manager's copy adds what the "
+                      "time is worth.").grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
+        else:
+            o = self.org
+            member = o.check_seat(org.recording_seat(path))[1]
+            start = member["position"] if member else saved.get("position")
+            position = tk.StringVar(value=start if start in o.position_names() else o.default_position)
+            ttk.Combobox(biz, textvariable=position, values=o.position_names(), state="readonly", width=26).grid(
+                row=1, column=1, columnspan=2, sticky="w", padx=6, pady=(6, 0))
+            rate = ttk.Label(biz, style="Muted.TLabel")
+            rate.grid(row=1, column=3, sticky="w", pady=(6, 0))
+            show = lambda *_: rate.config(text=f"{o.currency}{o.rate(position.get()) or 0:g} an hour")
+            position.trace_add("write", show)
+            show()
+            ttk.Label(biz, style="Muted.TLabel", text=(f"Recorded by {member['name']}. " if member else "") +
+                      "Positions and rates: " + ("Admin panel." if o.team else "Team and rates.")).grid(
+                row=2, column=0, columnspan=4, sticky="w", pady=(4, 0))
 
         kit = ttk.LabelFrame(f, text="Tools the business already has (the plan shows what they can do with them)",
                              padding=10)
@@ -563,15 +699,20 @@ class App:
             try:
                 options = {"mode": mode.get(), "max_cost_usd": float(cap.get()), "screenshots": shots.get(),
                            "web_search": web.get(), "runs_per_month": int(float(runs.get())),
-                           "hourly_cost": float(hourly.get()), "currency": currency.get().strip() or "$",
+                           "position": position.get(),
                            "tools": [name for name, var in picks.items() if var.get()],
                            "other_tools": other.get().strip()}
-                if options["runs_per_month"] < 1 or options["hourly_cost"] < 0 or options["max_cost_usd"] <= 0:
+                if options["runs_per_month"] < 1 or options["max_cost_usd"] <= 0:
                     raise ValueError
             except ValueError:
-                messagebox.showerror("FlowSME", "Use positive numbers for the runs, the hourly cost and the "
-                                                "spending limit.", parent=win)
+                messagebox.showerror("FlowSME", "Use positive numbers for the runs and the spending limit.",
+                                     parent=win)
                 return
+            if employee:  # no rate on this computer: hours only
+                options.update(hourly_cost=0, show_money=False)
+            else:
+                options.update(hourly_cost=self.org.rate(position.get()) or 0, currency=self.org.currency,
+                               show_money=True)
             win.destroy()
             self._save_state(report_options=options)
             (path / "analysis").mkdir(exist_ok=True)
@@ -660,56 +801,103 @@ class App:
                                                             f"{t['level']} ({t['score']:.0f})", fmt_minutes(minutes)))
         tree.selection_set(str(tasks[0]["id"]))
         tree.grid(row=1, column=0, sticky="we", pady=(8, 0))
-        ttk.Label(f, style="Muted.TLabel", wraplength=int(520 * scale), justify="left", text=(
-            "Writes an n8n workflow to import, a Postman collection to test each connection, and SQL and "
-            "Playwright starters, with BUILD.md listing what a person must fill in. Nothing runs until you "
-            "review it.")).grid(row=2, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(f, style="Muted.TLabel", wraplength=int(560 * scale), justify="left", text=(
+            "Writes the automation for n8n, Node-RED, Windmill, Make, Power Automate and Azure Logic Apps, a "
+            "Postman collection to test each connection, and SQL and Playwright starters, with BUILD.md listing "
+            "what a person must fill in. Nothing runs until you review it.")).grid(row=2, column=0, sticky="w",
+                                                                                   pady=(8, 0))
+        from .deploy import TARGETS
 
-        n8n = ttk.LabelFrame(f, text="n8n", padding=10)
-        n8n.grid(row=3, column=0, sticky="we", pady=(10, 0))
-        deploy = tk.BooleanVar(value=self.state.get("deploy_n8n", False))
-        url = tk.StringVar(value=saved_key("N8N_URL") or "http://localhost:5678")
-        key = tk.StringVar()
-        ttk.Checkbutton(n8n, text="Also create the workflow in my n8n (switched off until I activate it)",
-                        variable=deploy).grid(row=0, column=0, columnspan=2, sticky="w")
-        fields = [ttk.Label(n8n, text="n8n address"), ttk.Entry(n8n, textvariable=url, width=36),
-                  ttk.Label(n8n, text="n8n API key"), ttk.Entry(n8n, textvariable=key, show="•", width=36)]
-        for n, widget in enumerate(fields):
-            widget.grid(row=1 + n // 2, column=n % 2, sticky="w", pady=(6, 0), padx=(0, 8))
-        ttk.Label(n8n, style="Muted.TLabel", text="A key is saved; leave the box empty to keep it." if
-                  saved_key("N8N_API_KEY") else "In n8n: Settings > n8n API > Create an API key.").grid(
-            row=3, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        box = ttk.LabelFrame(f, text="Also create it in my workflow tool (switched off until I turn it on)",
+                             padding=10)
+        box.grid(row=3, column=0, sticky="we", pady=(10, 0))
+        ids = [None, *TARGETS]
+        names = ["No: just write the files"] + [t.name + ("" if t.tested else "  (beta)") for t in TARGETS.values()]
+        last = self.state.get("deploy_target", "n8n" if self.state.get("deploy_n8n") else None)
+        choice = tk.StringVar(value=names[ids.index(last)] if last in ids else names[0])
+        ttk.Combobox(box, textvariable=choice, values=names, state="readonly", width=32).grid(row=0, column=0,
+                                                                                            sticky="w")
+        test_btn = ttk.Button(box, text="Test connection")
+        test_btn.grid(row=0, column=1, sticky="w", padx=8)
+        fields = ttk.Frame(box)
+        fields.grid(row=1, column=0, columnspan=2, sticky="we")
+        about = ttk.Label(box, style="Muted.TLabel", wraplength=int(540 * scale), justify="left")
+        about.grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        entries: dict[str, tk.StringVar] = {}
 
-        def follow(*_) -> None:
-            for widget in fields:
-                widget.state(["!disabled"] if deploy.get() else ["disabled"])
-        deploy.trace_add("write", follow)
-        follow()
+        def target():
+            return TARGETS.get(ids[names.index(choice.get())])
+
+        def show(*_) -> None:
+            for widget in fields.winfo_children():
+                widget.destroy()
+            entries.clear()
+            t = target()
+            test_btn.state(["!disabled"] if t else ["disabled"])
+            if not t:
+                about.config(text="Import the file for your tool by hand: BUILD.md says how for each one.")
+                return
+            for n, s in enumerate(t.settings):
+                entries[s.env] = tk.StringVar(value="" if s.secret else saved_key(s.env) or s.default)
+                ttk.Label(fields, text=s.label).grid(row=n, column=0, sticky="w", pady=(6, 0))
+                ttk.Entry(fields, textvariable=entries[s.env], width=34, show="•" if s.secret else "").grid(
+                    row=n, column=1, sticky="w", padx=8, pady=(6, 0))
+                hint = "saved; leave empty to keep it" if s.secret and s.keep and saved_key(s.env) else s.hint
+                ttk.Label(fields, text=hint, style="Muted.TLabel").grid(row=n, column=2, sticky="w", pady=(6, 0))
+            about.config(text=t.help + ("" if t.tested else " Beta: built from the vendor's API documentation and "
+                                                             "not yet tried on a live account."))
+        choice.trace_add("write", show)
+        show()
+
+        def settings_for(t) -> dict | None:
+            v = {s.env: entries[s.env].get().strip() or (saved_key(s.env) if s.keep else "") or s.default
+                 for s in t.settings}
+            missing = [s.label for s in t.settings if not s.optional and not v[s.env]]
+            if missing:
+                messagebox.showerror("FlowSME", f"Enter the {', '.join(missing).lower()} for {t.name}, or choose "
+                                                "'No: just write the files'.", parent=win)
+                return None
+            return v
+
+        def test() -> None:
+            t = target()
+            v = settings_for(t) if t else None
+            if not v:
+                return
+            win.config(cursor="watch")
+            win.update()
+            try:
+                messagebox.showinfo("FlowSME", t.check(v), parent=win)
+            except SystemExit as exc:
+                messagebox.showerror("FlowSME", str(exc), parent=win)
+            finally:
+                win.config(cursor="")
+        test_btn.configure(command=test)
 
         def go() -> None:
-            if deploy.get():
-                if key.get().strip():
-                    store_key("N8N_API_KEY", key.get().strip())
-                if not url.get().strip() or not saved_key("N8N_API_KEY"):
-                    messagebox.showerror("FlowSME", "Enter the n8n address and an API key, or untick the n8n box.",
-                                         parent=win)
-                    return
-                store_key("N8N_URL", url.get().strip())
+            t = target()
+            v = settings_for(t) if t else None
+            if t and v is None:
+                return
+            for s in (t.settings if t else []):
+                typed = entries[s.env].get().strip()
+                if typed and s.keep:
+                    store_key(s.env, typed)
             task_id = int(tree.selection()[0])
             win.destroy()
-            self._save_state(deploy_n8n=deploy.get())
+            self._save_state(deploy_target=t.id if t else None)
             self._busy(True)
-            print(f"Building task {task_id}" + (" and creating it in n8n" if deploy.get() else "") + "...")
-            threading.Thread(target=self._work, args=("built", path, self._build_job, task_id, deploy.get()),
+            print(f"Building task {task_id}" + (f" and creating it in {t.name}" if t else "") + "...")
+            threading.Thread(target=self._work, args=("built", path, self._build_job, task_id, t and t.id, v),
                              daemon=True).start()
 
         self._buttons(win, f, 4, "Build", go)
 
     @staticmethod
-    def _build_job(path: Path, task_id: int, deploy: bool) -> None:
+    def _build_job(path: Path, task_id: int, target: str | None, settings: dict | None) -> None:
         from .build import build_task
 
-        build_task(path, task_id, deploy=deploy, log=print)
+        build_task(path, task_id, deploy=target, log=print, settings=settings)
 
     @staticmethod
     def _built_dir(path: Path) -> Path:
@@ -842,7 +1030,9 @@ class App:
             tree.heading(col, text=text, anchor="w")
             tree.column(col, width=int(width * scale), anchor="w")
         for n, p in enumerate(options, 1):
-            tree.insert("", "end", iid=str(p), values=(f"Person {n}", self._items(p), _title(p),
+            by = self._by(p)
+            person = by if by and by != "me" and "(" not in by else f"Person {n}"
+            tree.insert("", "end", iid=str(p), values=(person, self._items(p), _title(p),
                                                       (load_meta(p).get("started") or "")[:16].replace("T", " ")))
         tree.grid(row=2, column=0, sticky="we")
         edit = ttk.Frame(f)
@@ -926,15 +1116,18 @@ class App:
         else:
             tasks = sorted((t for t in report["tasks"] if not t.get("misc")), key=lambda t: -t["score"])
             phases = {i["id"]: i["phase"] for i in ((report["meta"].get("priorities") or {}).get("items") or [])}
-            cur = self.cfg.analysis.currency
+            options = _read_json(path / "analysis" / "options.json") or {}
+            money_shown = self.mode != "employee" and options.get("show_money", True)
+            cur = options.get("currency") or (self.org.currency if self.org else "$")
+            money = lambda value: f" ({cur}{value:,})" if money_shown else ""
             saved = sum((t.get("estimate") or {}).get("minutes_saved_per_run", 0) for t in tasks)
             hours = sum((t.get("estimate") or {}).get("hours_saved_per_month", 0) for t in tasks)
-            money = sum((t.get("estimate") or {}).get("cost_saved_per_month", 0) for t in tasks)
+            total = sum((t.get("estimate") or {}).get("cost_saved_per_month", 0) for t in tasks)
             cost = (report["meta"].get("ai_usage") or {}).get("cost_usd")
             secs = meta.get("duration_seconds") or 0
             self.summary.config(text=(
                 f"{fmt_minutes(secs / 60)} recorded, {len(tasks)} task{'s' if len(tasks) != 1 else ''}. About "
-                f"{fmt_minutes(saved)} could be saved per run: {hours:.1f} hours ({cur}{money:,}) a month."
+                f"{fmt_minutes(saved)} could be saved per run: {hours:.1f} hours{money(total)} a month."
                 + (f" AI cost of the report: about ${cost:.2f}." if cost else " Made with built-in rules.")
                 + " Double-click a task to open the report."))
             for t in tasks:
@@ -942,7 +1135,7 @@ class App:
                 self.results.insert("", "end", values=(
                     t["id"], t["name"], f"{t['level']} ({t['score']:.0f})",
                     fmt_minutes(est.get("minutes_saved_per_run", 0)),
-                    f"{est.get('hours_saved_per_month', 0)} h ({cur}{est.get('cost_saved_per_month', 0):,})",
+                    f"{est.get('hours_saved_per_month', 0)} h{money(est.get('cost_saved_per_month', 0))}",
                     phases.get(t["id"], "-")))
         turns = (_read_json(path / "analysis" / "narration.json") or {}).get("turns") if path else None
         if turns:
@@ -964,7 +1157,12 @@ class App:
         if not file:
             return
         try:
-            path = import_recording(Path(file), self.cfg.sessions_dir)
+            if self.mode == "manager":
+                from .admin_ui import import_checked
+
+                path = import_checked(self.org, Path(file), self.cfg.sessions_dir)
+            else:
+                path = import_recording(Path(file), self.cfg.sessions_dir)
         except (zipfile.BadZipFile, ValueError, OSError) as exc:
             messagebox.showerror("FlowSME", f"Couldn't import it: {exc}", parent=self.root)
             return
@@ -1031,6 +1229,9 @@ class App:
         path = self._selected()
         if not path:
             return
+        if self.mode == "employee":
+            self._send_to_manager(path)
+            return
         parts = ["the screenshots taken while you recorded"]
         if (path / "narration.wav").exists():
             parts.append("your narration")
@@ -1048,6 +1249,34 @@ class App:
         print(f"Saved {dest}")
         subprocess.Popen(["explorer", f"/select,{dest}"])
 
+    def _send_to_manager(self, path: Path) -> None:
+        seat = self.seat
+        if org.recording_seat(path) is None:
+            org.stamp(path, seat)  # recorded before joining: it is still this person's work
+        parts = ["the screenshots taken while you recorded"]
+        if (path / "narration.wav").exists():
+            parts.append("your narration")
+        if (path / "analysis" / "report.html").exists():
+            parts.append("your report")
+        inbox = Path(seat["folder"]) / "inbox" if seat.get("folder") else None
+        where = "the team folder" if inbox and inbox.parent.exists() else "a zip file on your Desktop to email"
+        if not messagebox.askokcancel("Send to my manager", f"This sends '{_title(path)}' to {where}. It contains "
+                                      f"{', '.join(parts)}.\n\nSend it?", parent=self.root):
+            return
+        slug = re.sub(r"[^a-z0-9]+", "-", seat["name"].lower()).strip("-") or "me"
+        if inbox and inbox.parent.exists():
+            inbox.mkdir(exist_ok=True)
+            dest = inbox / f"{slug}-{path.name}.zip"
+            shutil.make_archive(str(dest.with_suffix("")), "zip", root_dir=path.parent, base_dir=path.name)
+            print(f"Sent to your manager: {dest}")
+            messagebox.showinfo("FlowSME", "Sent. Your manager will find it in the Admin panel's Inbox.",
+                                parent=self.root)
+        else:
+            dest = _desktop() / f"FlowSME-{slug}-{path.name}.zip"
+            shutil.make_archive(str(dest.with_suffix("")), "zip", root_dir=path.parent, base_dir=path.name)
+            print(f"Saved {dest}: email it to your manager.")
+            subprocess.Popen(["explorer", f"/select,{dest}"])
+
     # ---- settings and first run -------------------------------------------------------------------
 
     def settings(self) -> None:
@@ -1058,8 +1287,33 @@ class App:
     def _welcome(self) -> None:
         if messagebox.askokcancel("Welcome to FlowSME", WELCOME, parent=self.root):
             self._save_state(accepted=True)
+            if self.mode == "solo":
+                self._choose_use()
         else:
             self.root.destroy()
+
+    def _choose_use(self) -> None:
+        """Just me, managing a team, or joining one with a seat file."""
+        win, f = self._dialog("How will you use FlowSME?")
+        ttk.Label(f, text="How will you use FlowSME?", style="Heading.TLabel").grid(row=0, column=0, sticky="w")
+        use = tk.StringVar(value="solo")
+        for n, (value, text, note) in enumerate((
+                ("solo", "Just me", "Record and analyse my own work. I set the positions and rates myself."),
+                ("manager", "I manage a team", "Give people seats, set positions and what an hour of each costs, "
+                                               "and make the reports with money in them."),
+                ("employee", "My manager sent me a seat file", "Join my team: I record, my manager sees the "
+                                                               "results.")), 1):
+            ttk.Radiobutton(f, text=text, value=value, variable=use).grid(row=2 * n - 1, column=0, sticky="w",
+                                                                          pady=(8, 0))
+            ttk.Label(f, text=note, style="Muted.TLabel").grid(row=2 * n, column=0, sticky="w", padx=(22, 0))
+
+        def go() -> None:
+            win.destroy()
+            if use.get() == "manager":
+                self.admin("team")
+            elif use.get() == "employee":
+                self.join_team()
+        self._buttons(win, f, 7, "Continue", go)
 
     def _load_state(self) -> dict:
         with contextlib.suppress(OSError, ValueError):

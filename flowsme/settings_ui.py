@@ -8,6 +8,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
+from . import org
 from .config import save_config
 
 # What choosing an AI option sets. Anything the person then edits on the tab wins.
@@ -165,16 +166,27 @@ def open_settings(app) -> None:
     business = ttk.Frame(tabs, padding=12)
     tabs.add(business, text="Business")
     an = cfg.analysis
-    runs, hourly, currency = (tk.StringVar(value=str(an.runs_per_month)), tk.StringVar(value=str(an.hourly_cost)),
-                              tk.StringVar(value=an.currency))
+    runs = tk.StringVar(value=str(an.runs_per_month))
     tools = tk.StringVar(value="; ".join(cfg.customer.tools))
     folder = tk.StringVar(value=str(cfg.sessions_dir))
     for n, (label, var, w) in enumerate((("Default: times a process runs a month", runs, 10),
-                                         ("Default: cost of an hour of work", hourly, 10),
-                                         ("Currency", currency, 6),
                                          ("Tools the business already has (separate with ;)", tools, 44))):
-        ttk.Label(business, text=label).grid(row=n, column=0, sticky="w", **pad)
-        ttk.Entry(business, textvariable=var, width=w).grid(row=n, column=1, sticky="w", **pad)
+        ttk.Label(business, text=label).grid(row=2 * n, column=0, sticky="w", **pad)
+        ttk.Entry(business, textvariable=var, width=w).grid(row=2 * n, column=1, sticky="w", **pad)
+    seat = org.my_seat(app.home)
+    team = None if seat else org.Org(app.home)
+    position = tk.StringVar(value=seat["position"] if seat else team.default_position)
+    ttk.Label(business, text="My position").grid(row=1, column=0, sticky="w", **pad)
+    if seat:
+        ttk.Label(business, text=f"{seat['position']} (set by your manager, {seat['team_name']})").grid(
+            row=1, column=1, sticky="w", **pad)
+    else:
+        place = ttk.Frame(business)
+        place.grid(row=1, column=1, sticky="w", **pad)
+        ttk.Combobox(place, textvariable=position, values=team.position_names(), state="readonly", width=28).pack(
+            side="left")
+        ttk.Button(place, text="Positions and rates...", command=lambda: (win.destroy(), app.admin("positions"))
+                   ).pack(side="left", padx=6)
     ttk.Label(business, style="Muted.TLabel", text="Each report can still change these in its Report options.").grid(
         row=4, column=0, columnspan=2, sticky="w")
     ttk.Separator(business).grid(row=5, column=0, columnspan=2, sticky="we", pady=10)
@@ -189,9 +201,9 @@ def open_settings(app) -> None:
 
     def save() -> None:
         try:
-            numbers = {"cap": float(cap.get() or 0), "runs": int(float(runs.get())), "hourly": float(hourly.get()),
+            numbers = {"cap": float(cap.get() or 0), "runs": int(float(runs.get())),
                        "width": int(width.get()), "quality": int(quality.get()), "gap": float(gap.get())}
-            if numbers["cap"] < 0 or numbers["runs"] < 1 or numbers["hourly"] < 0 or not 1 <= numbers["quality"] <= 95 \
+            if numbers["cap"] < 0 or numbers["runs"] < 1 or not 1 <= numbers["quality"] <= 95 \
                     or numbers["width"] < 320 or numbers["gap"] < 5:
                 raise ValueError
         except ValueError:
@@ -224,8 +236,10 @@ def open_settings(app) -> None:
         r.pause_hotkey, r.stop_hotkey = pause_key.get().strip().lower(), stop_key.get().strip().lower()
         r.screenshot_max_width, r.screenshot_quality = numbers["width"], numbers["quality"]
         cfg.analysis.idle_gap_seconds = numbers["gap"]
-        cfg.analysis.runs_per_month, cfg.analysis.hourly_cost = numbers["runs"], numbers["hourly"]
-        cfg.analysis.currency = currency.get().strip() or "$"
+        cfg.analysis.runs_per_month = numbers["runs"]
+        if team and position.get() != team.default_position:
+            team.data["default_position"] = position.get()
+            team.save()
         cfg.customer.tools = [t.strip() for t in tools.get().split(";") if t.strip()]
         cfg.sessions_dir = Path(folder.get().strip() or cfg.sessions_dir)
         if typed.get() and not rec.capture_typed_text and not messagebox.askyesno(
