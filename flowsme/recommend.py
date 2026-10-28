@@ -7,7 +7,7 @@ from pathlib import Path
 from .config import AnalysisConfig
 from .integration import label
 from .llm import LLM
-from .models import Task, base_app
+from .models import Task, base_app, plural
 from .schemas import RECOMMENDATION
 from .search import catalog_matches, search_web, task_tags
 from .workflow import handoffs, step_lines
@@ -227,7 +227,7 @@ def _rule_recommendation(task: Task, catalog: list[dict]) -> dict:
         recs.append({
             "title": f"Stop re-keying data from {src} into {dst}", "approach": "api_integration",
             "steps_covered": steps_where(lambda s: s.copies or s.pastes), "tools": catalog_names[:3],
-            "how": (f"{count} values were copied by hand from {src} to {dst} in this recording. Read them from the "
+            "how": (f"{plural(count, 'value')} {'was' if count == 1 else 'were'} copied by hand from {src} to {dst} in this recording. Read them from the "
                     f"source directly (API, export, or document extraction for PDFs) and write them into {dst} "
                     "automatically (API or bulk import; desktop automation only if it has neither)."),
             "effort": "days", "time_saved_pct": 60})

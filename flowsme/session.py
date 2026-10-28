@@ -71,14 +71,21 @@ def import_recording(zip_path: Path, sessions_dir: Path) -> Path:
         while dest.exists():
             dest, n = Path(sessions_dir) / f"{name}-{n}", n + 1
         root = dest.resolve()
-        for member in archive.infolist():
+        planned = []
+        for member in archive.infolist():  # every path is checked before anything is written
             if member.is_dir() or (top and not member.filename.startswith(top + "/")):
                 continue
             rel = member.filename[len(top) + 1:] if top else member.filename
             target = (dest / rel).resolve()
             if root not in target.parents:  # a path like ../../x would land outside the folder
                 raise ValueError(f"Unsafe path in the zip: {member.filename}")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with archive.open(member) as src, open(target, "wb") as out:
-                shutil.copyfileobj(src, out)
+            planned.append((member, target))
+        try:
+            for member, target in planned:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(member) as src, open(target, "wb") as out:
+                    shutil.copyfileobj(src, out)
+        except BaseException:
+            shutil.rmtree(dest, ignore_errors=True)  # no half-imported recording left behind
+            raise
     return dest

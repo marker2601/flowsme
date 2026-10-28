@@ -7,8 +7,10 @@ import contextlib
 import io
 import json
 import re
+import sys
 import threading
 import time
+import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -64,15 +66,44 @@ class Jobs:
         self.store, self.data = store, data
         self.pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="flowsme-job")
         self.lock = threading.Lock()
+        store.sweep()
         for org in store.orgs():  # pick up what was waiting when the server stopped
             for record in store.records(org["id"]):
-                if record["status"] in ("queued", "analysing"):
+                if record.get("status") in ("queued", "analysing"):
                     self.submit(record)
 
     def submit(self, record: dict) -> None:
         record.update(status="queued", error=None)
         self.store.save_record(record)
-        self.pool.submit(self._analyse, record["org"], record["id"])
+        self.pool.submit(self._run, record["org"], record["id"])
+
+    def claim(self, record: dict) -> None:
+        """Queue a re-run unless one is already queued or running (checked and set under one lock)."""
+        with self.lock:
+            now_on_disk = self.store.record(record["org"], record["id"])
+            if now_on_disk["status"] in ("queued", "analysing"):
+                raise ValueError("It is already being analysed.")
+            record.update(status="queued", error=None)
+            self.store.save_record(record)
+        self.pool.submit(self._run, record["org"], record["id"])
+
+    def _run(self, org_id: str, rec_id: str) -> None:
+        """Whatever happens, the recording ends ready or failed, and the server log says why."""
+        try:
+            self._analyse(org_id, rec_id)
+        except BaseException as exc:  # noqa: BLE001
+            traceback.print_exc(file=sys.stderr)
+            for _ in range(30):  # a file held by antivirus or a backup: keep trying for a while
+                try:
+                    record = self.store.record(org_id, rec_id)
+                    if record["status"] in ("queued", "analysing"):
+                        record.update(status="failed", error=_public(exc))
+                        self.store.save_record(record)
+                    return
+                except KeyError:
+                    return  # deleted meanwhile
+                except (OSError, ValueError):
+                    time.sleep(1)
 
     def _analyse(self, org_id: str, rec_id: str) -> None:
         from ..analyze import analyze_session
@@ -99,9 +130,13 @@ class Jobs:
             options = record["options"]
             member = next((m for m in org["members"] if m["seat"] == record["seat"]), None)
             position = record.get("position") or (member or {}).get("position") or org["default_position"]
+            if store.rate(org, position) is None:  # the position was removed since: the person's, else the default
+                position = next((p for p in ((member or {}).get("position"), org["default_position"])
+                                 if store.rate(org, p) is not None), org["positions"][0]["name"])
             an = cfg.analysis
             an.runs_per_month = max(1, int(options.get("runs_per_month") or an.runs_per_month))
             an.position, an.currency, an.show_money = position, org["currency"], True
+            an.show_ai_usage = False  # what the analysis cost FlowSME is not the customer's business
             an.hourly_cost = store.rate(org, position) or 0.0
             tools = [str(t)[:80] for t in options.get("tools") or []][:40]
             cfg.customer.tools = tools + [t.strip()[:80] for t in str(options.get("other_tools") or "").split(";")
@@ -125,9 +160,17 @@ class Jobs:
             analyze_session(session, cfg, log=log, hours_copy=True)
             record.update(status="ready", position=position)
         except BaseException as exc:  # noqa: BLE001 - SystemExit included; the record says what went wrong
-            record.update(status="failed", error=str(exc)[:300] or exc.__class__.__name__)
+            if not isinstance(exc, (SystemExit, ValueError)):
+                traceback.print_exc(file=sys.stderr)
+            record.update(status="failed", error=_public(exc))
         with self.lock:
             store.save_record(record)
+
+
+def _public(exc: BaseException) -> str:
+    """An error message fit for the customer: no server folders in it."""
+    text = re.sub(r"([A-Za-z]:)?[\\/][^\s'\"]*[\\/]", "", str(exc))
+    return text[:300] or exc.__class__.__name__
 
 
 # ---- what the client may see -----------------------------------------------------------------------
@@ -150,7 +193,7 @@ def summary(store: Store, record: dict, money: bool) -> dict:
                 "hours_saved_per_month": est.get("hours_saved_per_month", 0),
                 "money_saved_per_month": est.get("cost_saved_per_month", 0) if money else None,
                 "phase": f"with task {t['same_as']}" if t.get("same_as") else phases.get(t["id"], "-"),
-                "can_build": bool(t.get("integration")) and not t.get("same_as"),
+                "can_build": bool((t.get("integration") or {}).get("data_flows")) and not t.get("same_as"),
                 "has_sop": bool((t.get("improvement") or {}).get("sop"))})
         if money:
             out["currency"] = (_json(session / "analysis" / "options.json") or {}).get("currency", "$")
@@ -163,11 +206,11 @@ def report_html(store: Store, record: dict, money: bool) -> str:
     """The report, with its screenshots inlined so it opens anywhere; without money unless allowed."""
     session = store.session_dir(record)
     page = (session / "analysis" / ("report.html" if money else "report-hours.html")).read_text(encoding="utf-8")
-    root = session.resolve()
+    shots = (session / "shots").resolve()
 
-    def inline(match: re.Match) -> str:
+    def inline(match: re.Match) -> str:  # only this recording's screenshots, whatever the page text says
         shot = (session / match.group(1)).resolve()
-        if root not in shot.parents or not shot.is_file():
+        if shots not in shot.parents or shot.suffix.lower() not in (".png", ".jpg", ".jpeg") or not shot.is_file():
             return 'src=""'
         kind = "png" if shot.suffix.lower() == ".png" else "jpeg"
         return f'src="data:image/{kind};base64,{base64.b64encode(shot.read_bytes()).decode()}"'

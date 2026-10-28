@@ -57,7 +57,7 @@ def _rework(task: Task, flows: list[dict], context: list | None = None) -> list[
                                                  for r in seen)]
             if extra:
                 seen.append({"run": run_no, "kind": "extra_steps",
-                             "text": f"Run {run_no} needed {len(extra)} extra step(s): "
+                             "text": f"Run {run_no} needed {len(extra)} extra step{'' if len(extra) == 1 else 's'}: "
                                      + "; ".join(s.description for s in extra[:3]) + "."})
     # A value whose fingerprint usually matches its source but not in some run: likely the wrong item.
     for row in flows:
@@ -65,16 +65,20 @@ def _rework(task: Task, flows: list[dict], context: list | None = None) -> list[
             seen.append({"run": run_no, "kind": "mismatch",
                          "text": f"In run {run_no}, {label(row['to'])} did not match {label(row['confirmed_source'])} "
                                  "for that item (the fingerprints differ): a likely wrong-item or duplicate entry."})
-    # The same cell or field written more than once: something had to be corrected.
-    apps, writes = set(task.apps), defaultdict(list)
-    for s in context or task.steps:
-        if (s.app in apps and s.target and not s.excluded and not _navigation(s)
-                and (s.pastes or s.chars_typed or "ctrl+x" in s.shortcuts)):
-            writes[(s.app, s.title, s.target)].append(s)
-    for (app, _, target), hits in writes.items():
-        if len(hits) > 1 and not re.fullmatch(r"(text editor|document|edit cell)", target, re.I):
-            seen.append({"run": None, "kind": "overwrite",
-                         "text": f"'{target}' in {app} was written {len(hits)} times: a value had to be corrected."})
+    # The same cell or field written more than once within one run (one item): something had to be corrected.
+    # Each item fills the form once, so writes are counted per run and only over this task's own steps.
+    for run_no, run in enumerate(runs, 1):
+        writes = defaultdict(list)
+        for s in run:
+            if (s.target and not s.excluded and not _navigation(s)
+                    and (s.pastes or s.chars_typed or "ctrl+x" in s.shortcuts)):
+                writes[(s.app, s.title, s.target)].append(s)
+        for (app, _, target), hits in writes.items():
+            if len(hits) > 1 and not re.fullmatch(r"(text editor|document|edit cell)", target, re.I):
+                where = f" in run {run_no}" if len(runs) > 1 else ""
+                seen.append({"run": run_no if len(runs) > 1 else None, "kind": "overwrite",
+                             "text": f"'{target}' in {app} was written {len(hits)} times{where}: a value had to be "
+                                     "corrected."})
     return seen
 
 

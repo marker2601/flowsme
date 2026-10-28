@@ -1,23 +1,35 @@
-# Workflow analysis: 20261024-161537-ap-invoice-final
+# Workflow analysis: Ap invoice final
 
-Recorded 2026-10-24 16:15 · 4.0 min of activity · 54 steps · 2 applications · 3 tasks · analysed with muse-spark-1.3 for screenshots and muse-spark-1.3 for text
+Recorded 2026-10-24 16:15 · 4.0 min of activity · 54 steps · 2 applications · 1 task · analysed with muse-spark-1.3 for screenshots and muse-spark-1.3 for text
 
 ## Summary
 
 - **Recorded work:** 4.0 min
-- **Time automation could save:** about 3.6 min per run (89% of the recorded time)
-- **If this process runs 20 times a month:** about 1.2 hours a month, roughly $36 at $30 an hour
-- **Biggest opportunity:** Transfer supplier invoice data to tracker (medium potential). The same 10-step routine ran 3 times.
+- **Time automation could save:** about 3.6 min per recording like this one (89% of the recorded time)
+- **If the recorded work is done 20 times a month:** about 1.2 hours a month, roughly $36 at $30 an hour
+- **Biggest opportunity:** Record supplier invoice in tracker (medium potential). The same 10-step routine ran 3 times.
 
-> Savings are estimates based on this one recording. Set `runs_per_month` and `hourly_cost` in `config.toml` to match how often the process really runs.
+> Savings are estimates based on this one recording. Set how often the process runs (and, in the app's Admin panel, what an hour of each position costs) to match the real business.
 
 ## Opportunities
 
-| # | Task | Time | Runs | Applications | Automation potential | Est. saving per run |
+| # | Task | Time | Repeats | Applications | Automation potential | Est. saving per recording |
 |---|---|---|---|---|---|---|
-| 1 | Transfer supplier invoice data to tracker | 2.1 min | 3 | Notepad, Excel | Medium (50/100) | 1.8 min |
-| 3 | Transfer supplier invoices to tracker | 1.2 min | 1 | Notepad, Excel | Medium (41/100) | 1.1 min |
-| 2 | Transfer invoice data to tracker | 46 s | 1 | Excel, Notepad | Medium (40/100) | 42 s |
+| 1 | Record supplier invoice in tracker | 2.1 min | 3 | Notepad, Excel | Medium (50/100) | 1.8 min |
+| 3 | Transfer supplier invoices to tracker | 1.2 min | 1 | Notepad, Excel | same process as task 1 | 1.1 min |
+| 2 | Update tracker with invoice data | 46 s | 1 | Excel, Notepad | same process as task 1 | 42 s |
+
+## What to automate first
+
+Impact (hours saved a month) against effort (days to build). Quick wins come first: high impact for under 5 days of work. High impact here means at least 1.2 hours a month.
+
+<svg viewBox="0 0 640 360" width="100%" style="max-width:640px" role="img" aria-label="Impact against effort, one bubble per task" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,Segoe UI,sans-serif" font-size="11"><rect x="58.0" y="20.0" width="308.2" height="148.0" fill="#1e8e3e" fill-opacity="0.07"/><text x="66.0" y="36.0" fill="#1e8e3e" font-weight="600">Quick wins</text><rect x="366.2" y="20.0" width="253.8" height="148.0" fill="#2f5bd3" fill-opacity="0.07"/><text x="374.2" y="36.0" fill="#2f5bd3" font-weight="600">Major projects</text><rect x="58.0" y="168.0" width="308.2" height="148.0" fill="#b06d00" fill-opacity="0.07"/><text x="66.0" y="184.0" fill="#b06d00" font-weight="600">Fill-ins</text><rect x="366.2" y="168.0" width="253.8" height="148.0" fill="#9aa0a6" fill-opacity="0.07"/><text x="374.2" y="184.0" fill="#9aa0a6" font-weight="600">Not worth it yet</text><line x1="366.2" x2="366.2" y1="20" y2="316" stroke="#9aa0a6" stroke-dasharray="4 4"/><line x1="58" x2="620" y1="168.0" y2="168.0" stroke="#9aa0a6" stroke-dasharray="4 4"/><text x="85.2" y="332" text-anchor="middle" fill="#5f6368">0.5</text><text x="169.8" y="332" text-anchor="middle" fill="#5f6368">1</text><text x="254.4" y="332" text-anchor="middle" fill="#5f6368">2</text><text x="366.2" y="332" text-anchor="middle" fill="#5f6368">5</text><text x="450.8" y="332" text-anchor="middle" fill="#5f6368">10</text><text x="535.4" y="332" text-anchor="middle" fill="#5f6368">20</text><text x="339" y="352" text-anchor="middle" fill="#5f6368">effort: days to build (log scale)</text><text x="52" y="320.0" text-anchor="end" fill="#5f6368">0</text><text x="52" y="172.0" text-anchor="end" fill="#5f6368">1</text><text x="52" y="24.0" text-anchor="end" fill="#5f6368">2</text><text transform="translate(14 168) rotate(-90)" text-anchor="middle" fill="#5f6368">impact: hours saved a month</text><circle cx="377.9" cy="168.0" r="7.2" fill="#9aa0a6" fill-opacity="0.85"><title>1. Record supplier invoice in tracker: 1.2 h a month ($36), about 5.5 days to build</title></circle><text x="377.9" y="172.0" text-anchor="middle" fill="#fff" font-weight="700">1</text></svg>
+
+| Phase | # | Task | Saves a month | Effort | Pays back | Why this effort |
+|---|---|---|---|---|---|---|
+| **Hold** (Not worth it yet) | 1 | Record supplier invoice in tracker | 1.2 h ($36) | 5.5 days | 36.7 months | recommended approach: about 3 days; Notepad has no known API: screen automation, +2 days; 1 open question to settle first, +0.5 days |
+
+<sub>Effort starts from the recommendation's estimate (hours 0.5, days 3, weeks 15) and adds 2 days per system without a known API and half a day per open question. Payback: the hours to build it (days × 8) against the hours saved each month. Planning estimates: confirm with whoever builds it.</sub>
 
 ## Workflow map
 
@@ -26,10 +38,10 @@ Tasks in the order they happened. Double-bordered boxes are routines that repeat
 ```mermaid
 flowchart TD
   S0([Start])
-  T1[["1. Transfer supplier invoice data to tracker<br/>2.1 min · Notepad, Excel<br/>×3 runs"]]
+  T1[["1. Record supplier invoice in tracker<br/>2.1 min · Notepad, Excel<br/>×3 runs"]]
   S0 --> T1
   T1 -->|"repeat ×3"| T1
-  T2["2. Transfer invoice data to tracker<br/>46 s · Excel, Notepad"]
+  T2["2. Update tracker with invoice data<br/>46 s · Excel, Notepad"]
   T1 --> T2
   T3["3. Transfer supplier invoices to tracker<br/>1.2 min · Notepad, Excel"]
   T2 --> T3
@@ -62,14 +74,15 @@ flowchart LR
 
 ## Task details
 
-### 1. Transfer supplier invoice data to tracker
+### 1. Record supplier invoice in tracker
 
-**Automation potential: Medium (50/100)** · 2.1 min in total · 3 runs of about 42 s · Notepad, Excel
+**Automation potential: Medium (50/100)** · 2.1 min in total · 3 repeats of about 42 s · Notepad, Excel
 
-The task creates a new entry in the Excel invoice tracker to record a supplier invoice for monitoring. The user copies the invoice number, vendor name, total, and due date from the invoice file in the text editor and pastes or enters them into the corresponding tracker columns.
+The task records supplier invoice details in the invoice tracker to support accounts payable monitoring. The user copies the invoice number, vendor name, and invoice total from the invoice file and pastes them into the tracker, then enters the due date and the column E value.
 
-**Inputs:** Supplier invoice file in text editor; Excel invoice tracker  
-**Outputs:** Updated Excel invoice tracker with new invoice entry  
+**Inputs:** Supplier invoice file in text editor; Invoice tracker spreadsheet  
+**Outputs:** Updated invoice tracker with new invoice entry  
+**Decision points:** Determine the correct due date to enter for the invoice; Determine the appropriate value to enter in column E  
 
 **Why it stands out:**
 
@@ -77,22 +90,119 @@ The task creates a new entry in the Excel invoice tracker to record a supplier i
 - 8 values copied by hand from one application to another
 - 15 switches between applications
 
-**Estimated saving:** about 1.8 min per run (86% of this task), about 0.6 hours or $18 a month.
+**Estimated saving:** about 1.8 min per recording like this one (86% of this task; about 36 s for each of the 3 repeats), about 0.6 hours or $18 a month.
 
 <img src="../shots/000002.jpg" alt="Step 1" width="31%"> <img src="../shots/000004.jpg" alt="Step 5" width="31%"> <img src="../shots/000007.jpg" alt="Step 10" width="31%">
 
-**Steps (one run):**
+**Steps (one repeat):**
 
-1. [Notepad] Selects the supplier invoice file in the text editor
-2. [Notepad] Copies the invoice number from the supplier invoice
-3. [Excel] Pastes the invoice number into the invoice tracker
-4. [Notepad] Copies the vendor name from the supplier invoice
-5. [Excel] Pastes the vendor name from the invoice file into the tracker
-6. [Notepad] Copies the invoice total from the invoice file for entry
-7. [Excel] Selects the amount column in the tracker for the invoice total
+1. [Notepad] Selects the supplier invoice file in the text editor.
+2. [Notepad] Copies the invoice number from the invoice file.
+3. [Excel] Pastes the invoice number into the invoice tracker.
+4. [Notepad] Copies the vendor name from the invoice file.
+5. [Excel] Pastes the vendor name from the invoice file into the tracker.
+6. [Notepad] Copies the invoice total from the invoice file.
+7. [Excel] Selects the next cell in the tracker to continue the entry.
 8. [Excel] Paste in "B2", then press Esc in Excel
-9. [Excel] Enters the due date from the invoice into column D of the tracker
-10. [Excel] Enters a value in column E of the tracker
+9. [Excel] Enters the due date into the tracker for the supplier invoice.
+10. [Excel] Enters a value in column E of the invoice tracker.
+
+**Standard operating procedure:** [sop-task1.html](sop-task1.html) (a draft with a screenshot per step, the rules and checks; for the process owner to review and approve)
+
+#### Recommendations
+
+_From the AI analysis._
+
+1. **Batch parse INV txt files and append to AP Tracker in one write**: _Desktop automation (RPA) · effort: days · about 70% of this task's time · steps 1-8, 10_
+
+   Monitor folder for INV-*.txt. For each file use Power Automate Desktop Read text from file + Parse text with regex to extract invoice number, vendor name and total. Use Microsoft 365 Excel connector (Microsoft Graph Excel API) Add a row into table on AP Tracker on SharePoint/OneDrive to write columns A/B/C and set Column E = parsed source value in the same call; loop all files with zero window switching.
+
+   *Why:* Theory of Constraints on Write in Excel bottleneck (0.62 min/item) + ECRS Automate; removes 4 copy-pastes, 5 switches per item and B2 double-write / Paste+Esc waste evidenced in runs 1-3.
+
+   Tools: Power Automate Desktop, Microsoft 365 Excel connector, Microsoft Graph Excel API
+
+2. **Eliminate Column E re-typing with copy + duplicate check**: _Process change · effort: hours · about 10% of this task's time · steps 10_
+
+   Change SOP: never re-type Column E, always copy from source or use =C2 formula. Add COUNTIF duplicate check on invoice-number Column A and require validation of parsed values before batch submit; exceptions go to manual queue for a person.
+
+   *Why:* ECRS Eliminate + poka-yoke; recording proves Column E already exists in Notepad file yet was typed, and run 3 fingerprint mismatch plus run 1 B2 corrected write show defect risk.
+
+   Tools: Excel
+
+3. **Replace free-typed due date and Column D with rules and validation**: _Built-in feature · effort: hours · about 8% of this task's time · steps 9-10_
+
+   Replace free typing with Excel Data Validation: due date via date-picker plus formula InvoiceDate+Terms where business confirms terms, otherwise lookup. Convert Column D 10-char free type to dropdown/formula/lookup once rule is confirmed; lock automation-written columns A-C/E.
+
+   *Why:* ECRS Simplify + poka-yoke; open question on Column D source means it must stay manual until rule confirmed, free typing is over-processing and error-prone.
+
+   Tools: Excel, Excel Data Validation
+
+4. **Add batch validation and Power BI control for AP Tracker**: _Built-in feature · effort: days · about 5% of this task's time · steps 1-10_
+
+   Keep AP Tracker as Excel Table on SharePoint; build Power BI report on row count, missing due dates, duplicate invoice numbers and total variance. Schedule daily Power Automate reminder for due/overdue invoices and review defects weekly.
+
+   *Why:* Control plan + ECRS Rearrange (validate every item first, then submit in one batch); catches wrong-item entries like run 3 and supports accounts payable monitoring purpose.
+
+   Tools: Power BI, Microsoft 365
+
+**Assumptions to confirm:**
+
+- INV-*.txt files have consistent labels or delimiters for invoice number, vendor name and total so regex or split parsing will work; to be confirmed on sample files
+- Excel AP Tracker column mapping is stable (A=invoice number, B=vendor, C=total, D=due date/manual 10-char value, E=copy of source value) and file lives on SharePoint/OneDrive or fixed path accessible to Power Automate
+- Column E is intended to equal a value already in the Notepad file and is not independent judgement; to be confirmed
+- Due date and Column D 10-char typed value derivation is not invented - requires business/IT to confirm if fixed rule (e.g., invoice date + terms), lookup, or human judgement; stays manual until confirmed
+- No Notepad API is assumed - ask vendor/IT to confirm; automation uses direct .txt file read plus Power Automate Desktop, not screen scraping where possible
+- AP Tracker is an Excel Table with no concurrent-lock conflict and invoice numbers are expected to be unique
+
+**Quick wins:**
+
+- Stop re-typing Column E immediately - copy-paste or =C2 formula until automation live; eliminates proven over-processing and run 3 mismatch
+- Keep Notepad and Excel side-by-side and use next empty row Table (Ctrl+T) to avoid Select next cell + B2 double-write and Esc churn
+- Add COUNTIF + conditional formatting on invoice-number Column A for instant duplicate/wrong-row poka-yoke
+- Batch the work: validate all 3+ invoices first, then enter in one Excel session instead of one-item-at-a-time switching
+
+**Check before automating:**
+
+- Fragile parsing if INV-*.txt layout varies by supplier - needs regex testing and exception folder, otherwise wrong vendor/total
+- Wrong-row overwrite risk from B2/paste pattern and duplicate invoice numbers - must add duplicate lookup before Add row
+- Automating Column D or due date before business confirms rule would encode wrong judgement - keep manual with validation until confirmed
+- Excel file lock / concurrent edits on shared AP Tracker - use SharePoint Table + single batch write and Power BI monitoring, not parallel RPA writers
+
+**Existing tools and guides found online:**
+
+- [How to Convert Notepad to Excel with Columns (5 Methods)](https://www.exceldemy.com/convert-notepad-to-excel-with-columns/): May 14, 2024 · In Windows, text files are usually accessed using Notepad, a dedicated text editor application owned by Microsoft. Let’s explore how to convert f
+- [How to Convert Notepad to Excel with Columns \| Excel Insider](https://excelinsider.com/excel-pro-tips/import-text-file/convert-notepad-to-excel-with-columns/): 1 day ago · Learn how to convert Notepad to Excel with columns using copy-paste, Text Import Wizard, delimiters, fixed width, or Power Query features.
+- [Excel VBA: Automating pasting data from notepad files to excel](https://stackoverflow.com/questions/71912302/excel-vba-automating-pasting-data-from-notepad-files-to-excel): Apr 18, 2022 · As shown below I need to automate opening/saving/closing excel after pasting data from .txt files. A screenshot of the files is attached below. T
+- [How to Convert a Text File to Excel Automatically (3 Ways)](https://www.exceldemy.com/convert-text-file-to-excel-automatically/): Jun 18, 2024 · The article shows 3 ways of how to convert text file to excel automatically. Text Import Wizard, Get Data Wizard etc. were used in it.
+- [How to Automate Supplier Invoice Tracking - ones.com](https://ones.com/blog/how-to-automate-supplier-invoice-tracking/): Learn how to automate supplier invoice tracking with a central register, clear statuses, approval owners, and automated reminders to prevent delays and errors.
+- [Invoice Tracker: Free Template & Automate Tracker Alternative](https://expense.mekari.com/en/blog/invoice-tracker): An invoice tracker is a tool used to record, monitor, and manage invoices from receipt to payment. It can be as simple as a spreadsheet or as advanced as dedica
+
+**Tools that usually fit these applications:**
+
+- [Microsoft Power Automate](https://www.microsoft.com/power-platform/products/power-automate): Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors
+- [UiPath](https://www.uipath.com): Enterprise RPA for desktop and legacy apps without APIs (SAP GUI, Citrix, mainframe screens)
+- [Excel Power Query and Office Scripts](https://learn.microsoft.com/office/dev/scripts/overview/excel): Repeatable imports, clean-up and transformations inside Excel
+- [Python with pandas / openpyxl](https://pandas.pydata.org): Scripts that read, merge and write spreadsheets and CSV files
+
+**Automation draft** (power_automate, saved to `automations/task1.txt`)
+
+Power Automate batch flow that reads all INV-*.txt files, parses 3 fields with regex, duplicate-checks and appends to AP Tracker Table in one Excel write per invoice, leaving due date/Column D for validated manual entry.
+
+```text
+TRIGGER: Power Automate cloud flow - Scheduled (daily) OR When files added to SharePoint folder / Desktop flow - monitor folder C:\Invoices\INV-*.txt
+ACTION 1: List files in folder (Get files in folder) -> %Files%
+ACTION 2: Excel - Open AP Tracker from SharePoint/OneDrive (Launch Excel / Excel Online Business - Get tables)
+LOOP 3: For each %File% in %Files%:
+  3.1: Read text from file %File% -> %Text%
+  3.2: Parse text - Text actions: Extract with regex InvoiceNo: `INV-\d+`, Vendor: `Vendor:\s*(.+)`, Total: `Total:?\s*([0-9.,]+)` -> %InvNo%, %Vendor%, %Total%
+  3.3: Validate - If %InvNo% is empty OR %Vendor% is empty OR %Total% not numeric -> Move %File% to \Exceptions\ and Continue
+  3.4: Excel - Check duplicate: Lookup %InvNo% in AP Tracker Column A (Find / Filter). If found -> log duplicate and Continue
+  3.5: Excel - Add a row into table AP_Tracker: ColumnA=%InvNo%, ColumnB=%Vendor%, ColumnC=%Total%, ColumnE=%Total% (copy, do NOT re-type), leave ColumnD/DueDate blank for rule/manual step
+  3.6: Move %File% to \Processed\%InvNo%.txt and log to run history
+END LOOP
+ACTION 4: Save and Close Excel, send Teams/Email summary: processed count, exceptions, duplicates
+MANUAL GATE 5: Operator fills Due Date and Column D only for new rows via dropdown/date validation, then marks Reviewed
+```
 
 #### Data flow: field to field
 
@@ -136,8 +246,107 @@ Each option has a status: *documented* (official documentation, access still nee
    - _How: Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table (documented)_
 4. **Decide**: Where does Excel · AP Tracker · column D come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?
    - _How: Business decision before building (open)_
+5. **Human check**: Determine the correct due date to enter for the invoice
+   - _How: Keep a person here, or define the rule (open)_
+6. **Human check**: Determine the appropriate value to enter in column E
+   - _How: Keep a person here, or define the rule (open)_
 
 **To build it**, once the questions above are answered, run `python -m flowsme build 20261024-161537-ap-invoice-final --task 1`. It writes an n8n workflow to import, a Postman collection to test each connection, and SQL and Playwright starters.
+
+#### To-be process
+
+What the work looks like after the change, and who does each part: automation (blue) or a person (orange). People handle only the exceptions the checks flag.
+
+| | As-is | To-be with your tools | To-be with suggested tools |
+|---|---|---|---|
+| Hands-on minutes per item | 0.7 | 0.1 | 0.1 |
+| Values typed or pasted by hand per item | 6 | 1 | 1 |
+| Steps a person does per item | 10 | 2 | 2 |
+
+```mermaid
+flowchart TD
+  S1["Start on a schedule or by hand: the recording shows no clear trigger.<br/><i>n8n Schedule Trigger</i>"]
+  S2["Read Text editor, PopupHost from INV-#.txt.<br/><i>Screen automation (Power Automate Desktop / UiPath) unless the vend...</i>"]
+  S3[/"Person: Enter the values whose source the recording doesn't show: Excel · A..."/]
+  S4{"Checks pass?"}
+  S5[/"Person: Review only the items the checks flag, fix or approve them.<br/><i>exception queue</i>"/]
+  S6["Write into AP Tracker.<br/><i>Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a S...</i>"]
+  S7["Log each run (time, result, exceptions) for the KPI report.<br/><i>run log</i>"]
+  S1 --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 -->|yes| S6
+  S6 --> S7
+  S4 -->|no| S5
+  S5 --> S6
+  classDef person fill:#f9eeda,stroke:#b06d00,color:#1d1d1f
+  classDef auto fill:#e7f1fb,stroke:#2f5bd3,color:#1d1d1f
+  class S3,S5 person
+  class S1,S2,S4,S6,S7 auto
+```
+
+| # | Who | What | How |
+|---|---|---|---|
+| 1 | Automation | Start on a schedule or by hand: the recording shows no clear trigger. | n8n Schedule Trigger |
+| 2 | Automation | Read Text editor, PopupHost from INV-#.txt. | Screen automation (Power Automate Desktop / UiPath) unless the vendor offers an API |
+| 3 | Person | Enter the values whose source the recording doesn't show: Excel · AP Tracker · column D (until a rule or lookup replaces them). | - |
+| 4 | Automation | Check every item before writing it (0 validation rules, plus duplicates and mismatches between fields). | checks in the workflow |
+| 5 | Person | Review only the items the checks flag, fix or approve them. | exception queue |
+| 6 | Automation | Write into AP Tracker. | Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table |
+| 7 | Automation | Log each run (time, result, exceptions) for the KPI report. | run log |
+
+#### Business rules
+
+Every rule the process follows, in one place: what the recording proves, what you said, and what is recommended or still to confirm. Confirm the open ones with the process owner before building.
+
+| ID | Type | Rule | Field | Evidence | Status |
+|---|---|---|---|---|---|
+| BR-1 | mapping | column A = Text editor from Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column A | copied in 2 of 3 runs | confirmed by the recording |
+| BR-2 | mapping | column B = Text editor from Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column B | copied in 2 of 3 runs | confirmed by the recording |
+| BR-3 | unknown | Where column D comes from is not recorded | Excel · AP Tracker · column D | typed by hand in 3 of 3 runs | ask the process owner |
+| BR-4 | mapping | column E = Text editor from Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column E | typed, and the fingerprints match in 3 of 3 runs | confirmed by the recording |
+| BR-5 | mapping | column B = PopupHost from Notepad · PopupHost · PopupHost | Excel · AP Tracker · column B | copied in 1 of 3 runs | confirmed by the recording |
+| BR-6 | mapping | column C = Text editor from Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column C | copied in 2 of 3 runs | confirmed by the recording |
+| BR-7 | decision | Determine the correct due date to enter for the invoice | - | a judgement call seen in the recording | write down the rule |
+| BR-8 | decision | Determine the appropriate value to enter in column E | - | a judgement call seen in the recording | write down the rule |
+
+#### User stories and acceptance tests
+
+For whoever builds the automation: each criterion is a test to pass before go-live. `flowsme build` also writes them as `acceptance.feature` (Gherkin) and `user_stories.md`.
+
+**US-1 Start by itself: trigger.** As the person who does this work today, I want the automation to start by itself (start on a schedule or by hand: the recording shows no clear trigger), so that nobody has to remember to run it.
+
+- Given a new item is ready, when the trigger fires, then the automation starts and picks up the item.
+
+**US-2 Read the source: Notepad.** As the person who does this work today, I want the automation to read Text editor, PopupHost from INV-#.txt, so that nobody has to open each item by hand.
+
+- Given a new item arrives, when the automation runs, then it does this: read Text editor, PopupHost from INV-#.txt.
+
+**US-3 Enter values without a known source.** As the person who does this work today, I want to enter only the values whose source isn't recorded, so that the rest is automated while those rules are settled.
+
+- Given the source of Excel · AP Tracker · column D is not yet known, when an item is processed, then the item waits for a person to enter that value.
+
+**US-4 Check before writing.** As the person who does this work today, I want every item checked before it is written, so that mistakes are caught before they reach the records.
+
+- Given an item that is already recorded, when it arrives again, then it is not written a second time and goes to review as a possible duplicate.
+
+**US-5 Review only the exceptions.** As the person who does this work today, I want to see only the items that fail a check, with the reason, so that I review exceptions instead of every item.
+
+- Given an item fails a check, when I open the review queue, then I see the item, the failed rule and its source, and can fix and approve it or reject it.
+- Given I approve a fixed item, when the automation continues, then it is written like any other item.
+
+**US-6 Write to Excel.** As the person who does this work today, I want the automation to write into AP Tracker, so that nobody re-keys these values.
+
+- Given an item passed its checks, when the automation writes it, then Excel · AP Tracker · column A = Text editor from Notepad · INV-#.txt · Text editor (BR-1).
+- Given an item passed its checks, when the automation writes it, then Excel · AP Tracker · column B = Text editor from Notepad · INV-#.txt · Text editor (BR-2).
+- Given an item passed its checks, when the automation writes it, then Excel · AP Tracker · column E = Text editor from Notepad · INV-#.txt · Text editor (BR-4).
+- Given an item passed its checks, when the automation writes it, then Excel · AP Tracker · column B = PopupHost from Notepad · PopupHost · PopupHost (BR-5).
+- Given an item passed its checks, when the automation writes it, then Excel · AP Tracker · column C = Text editor from Notepad · INV-#.txt · Text editor (BR-6).
+
+**US-7 Log every run.** As the process owner, I want every run logged with time, result and exceptions, so that I can see the time saved and the error rate, and prove the benefit.
+
+- Given a normal item, when the automation processes it, then it needs no hands-on work and the remaining manual part takes under 0.1 min.
+- Given a run finishes, when I open the KPI report, then I see items processed, exceptions, and minutes per item against the old process.
 
 #### Process improvement (Lean Six Sigma, DMAIC)
 
@@ -150,6 +359,16 @@ Each option has a status: *documented* (official documentation, access still nee
 | Notepad | Notepad · INV-#.txt · Text editor<br>Notepad · PopupHost · PopupHost | Trigger: Start on a schedule or by hand: the recording shows no clear trigger.<br>Extract: Notepad<br>Write: Excel | Excel · AP Tracker | Who uses these outputs? (not visible in the recording: ask) |
 
 **Measure.** 0.7 min of hands-on work per item, 3 items in this recording, 6 manual entries per item.
+
+Run-to-run variation over 3 items: mean 42 s, standard deviation 24 s (coefficient of variation 58%), fastest 24 s (item 3), slowest 69 s (item 1).
+
+<svg viewBox="0 0 640 220" width="100%" style="max-width:640px" role="img" aria-label="Seconds per item, Record supplier invoice in tracker" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,Segoe UI,sans-serif" font-size="11"><line x1="56" x2="624" y1="30.4" y2="30.4" stroke="#c5221f" stroke-width="1.2" stroke-dasharray="5 4"/><text x="50" y="34.4" text-anchor="end" fill="#c5221f">UCL 101s</text><line x1="56" x2="624" y1="122.2" y2="122.2" stroke="#5f6368" stroke-width="1.2"/><text x="50" y="126.2" text-anchor="end" fill="#5f6368">mean 42s</text><polyline points="56.0,79.6 340.0,138.3 624.0,148.6" fill="none" stroke="#2f5bd3" stroke-width="2"/><circle cx="56.0" cy="79.6" r="4" fill="#2f5bd3"><title>Run 1: 69 s</title></circle><text x="56.0" y="208" text-anchor="middle" fill="#5f6368">1</text><circle cx="340.0" cy="138.3" r="4" fill="#2f5bd3"><title>Run 2: 31 s</title></circle><text x="340.0" y="208" text-anchor="middle" fill="#5f6368">2</text><circle cx="624.0" cy="148.6" r="4" fill="#2f5bd3"><title>Run 3: 24 s</title></circle><text x="624.0" y="208" text-anchor="middle" fill="#5f6368">3</text><text x="340" y="219" text-anchor="middle" fill="#5f6368">run</text></svg>
+
+<sub>Individuals control chart: limits at the mean ± 2.66 × the average change between items. All items are inside, so the process is stable and its time is predictable.</sub>
+
+Steps that vary most between items:
+
+- Step 10: Enters a value in column E of the invoice tracker. (24 s on average, ± 19 s)
 
 | Time per item | Minutes | Share |
 |---|---|---|
@@ -172,8 +391,8 @@ Error exposure: 6 manual entries per item now, 1 after automation, about 60 item
 |---|---|---|
 | Transportation waste | 4 values per item carried between applications by copy-paste | 0.13 |
 | Motion waste | 5 window switches and 2 navigation steps per item | 0.04 |
-| Over-processing waste | 1 value(s) typed by hand that the fingerprints prove already exist elsewhere (column E = Notepad · INV-#.txt · Text editor) | 0.5 |
-| Defects and rework | In run 3, Excel · AP Tracker · column E did not match Notepad · INV-#.txt · Text editor for that item (the fingerprints differ): a likely wrong-item or duplicate entry. 'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected. | - |
+| Over-processing waste | 1 value typed by hand that the fingerprints prove already exist elsewhere (column E = Notepad · INV-#.txt · Text editor) | 0.5 |
+| Defects and rework | In run 3, Excel · AP Tracker · column E did not match Notepad · INV-#.txt · Text editor for that item (the fingerprints differ): a likely wrong-item or duplicate entry. 'B2' in Excel was written 2 times in run 1: a value had to be corrected. | - |
 | Unused talent | 96% of this person's time on this task is moving and re-typing data | - |
 
 Bottleneck (Theory of Constraints): **Write · Excel** at 0.62 min per item. Improve this stage first: speeding up any other stage doesn't shorten the whole.
@@ -214,7 +433,7 @@ If the vendor provides an API key for **Notepad API**, use it instead of browser
 | Excel · AP Tracker · column B | prevent | Pass the value from Notepad · PopupHost · PopupHost directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step  |
 | Excel · AP Tracker · column C | prevent | Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step  |
 | Excel · AP Tracker · column E | detect | Before saving, check that the fields of one row belong to the same item (e.g. invoice number and reference); stop and ask a person if they don't. | In run 3, Excel · AP Tracker · column E did not match Notepad · INV-#.txt · Text editor for that item (the fingerprints differ): a likely wrong-item or duplicate entry. |
-| corrections | detect | Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys). | 'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected. |
+| corrections | detect | Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys). | 'B2' in Excel was written 2 times in run 1: a value had to be corrected. |
 | every run | control | Reconcile counts: items received = rows written = records submitted. Investigate any gap. | standard control for multi-system hand-offs |
 | every run | control | Log each item with its result (done / exception / failed) and review exceptions daily. | needed to measure error rate after go-live |
 
@@ -226,652 +445,14 @@ Measure after go-live, in the final report (Power BI, Looker Studio or Excel, fe
 - First-pass yield: items done with no correction (%)
 - Errors caught by checks, by type
 - Duplicates blocked
-
-**Recommendations** _(AI analysis)_
-
-1. **Batch-read INV text files and append to AP Tracker via Excel API**: _API integration · effort: days · about 70% of this task's time · steps 1-8_
-
-   Use Power Automate Desktop File actions to list INV-*.txt in one folder and parse invoice number, vendor, total and due date with regex/Text actions. Append each new invoice as one row to AP Tracker hosted on SharePoint/OneDrive using Excel Online (Business) Add a row or Microsoft Graph Update range. Run batched once per day with skip-if-invoice-number-exists check; no Notepad UI automation.
-
-   *Why:* Theory of Constraints + ECRS automate: fixes the 0.62 min Write bottleneck and eliminates 4 copy-pastes and 5 switches per item. Evidence: 8 Notepad->Excel hand copies, 15 switches, B2 corrected 4x.
-
-   Tools: Power Automate Desktop, Excel Online (Business), Microsoft Graph Excel API
-
-2. **Eliminate column E re-typing and add duplicate poka-yoke**: _Built-in feature · effort: hours · about 10% of this task's time · steps 3, 10_
-
-   Remove manual entry of column E. If it is truly a duplicate of a Notepad field, replace with formula (=C2 or =source) or delete column. Add Conditional Formatting + COUNTIF on column A to block duplicate invoice numbers and Data Validation to lock column types before automation go-live.
-
-   *Why:* ECRS eliminate + poka-yoke: recording proves column E was typed but already existed in Notepad, and run 3 fingerprint mismatch plus A4/B4/C4/B5 rewrites show defect risk from re-typing.
-
-   Tools: Excel
-
-3. **Replace free-typed due date in column D with rule + validation**: _Process change · effort: hours · about 8% of this task's time · steps 9_
-
-   Ask AP owner: is due date copied from invoice or calculated (e.g., invoice date + 30)? Document rule. Until then set column D to Date-only validation with calendar picker, and if calculated implement =EDATE(InvoiceDate,1) or XLOOKUP to terms table. Do not automate free-typed dates.
-
-   *Why:* ECRS simplify: column D was 10-char hand typing with unknown origin per open questions; free typing invites late-payment defects. Turns judgement into rule/lookup/dropdown.
-
-   Tools: Excel
-
-4. **Validate first, submit in batch with exception queue and control measure**: _Process change · effort: days · about 7% of this task's time · steps 1-10_
-
-   Change from one-item-at-a-time (3 runs) to validate-all-then-submit: stage parsed rows in a Staging sheet, show parse failures/missing totals/dates, person approves exceptions only, then one-click append. Track added vs skipped vs errors in Power BI or Excel table for control plan.
-
-   *Why:* ECRS rearrange + control plan: reduces motion waste (5 switches/item) and prevents B2/A4 rework from propagating; measures defect rate after go-live using customer M365/Power BI tools they already own.
-
-   Tools: Power Automate, Excel, Power BI
-
-**Assumptions to confirm:**
-
-- INV-#.txt files have consistent labels/separators for invoice number, vendor name, total and due date that can be parsed with regex - not proven in recording
-- AP Tracker can be moved to OneDrive/SharePoint so Microsoft Graph Excel API / Excel Online (Business) connector can write it - local-only file would block API
-- Column mapping to confirm: col A=invoice number, col B=vendor, col C=total, col D=due date, col E=to confirm - recording shows conflicting writes to B2 and multiple writes to A4/B4/C4/B5
-- Where column D (10-char typed due date) comes from is unknown - not assumed to be invoice date + terms or copy from file; business owner must confirm rule
-- Where column E comes from is unknown beyond fingerprint match to Notepad text in 2 runs and mismatch in run 3 - must confirm if duplicate, status, or lookup
-- No Notepad API is assumed - status is unknown per evidence; ask vendor/IT if text editor exposes any API, otherwise use direct file read
-- User/service account has read access to invoice folder and write access to tracker and volume stays low-medium batch suitable for flow
-
-**Quick wins:**
-
-- Immediately stop re-typing column E - copy or leave blank until rule confirmed; it already exists in Notepad and caused run 3 defect
-- Add Excel Data Validation: column D = Date only, column A = Unique/no duplicates, column C = Decimal; add Conditional Formatting to highlight duplicate invoice numbers
-- Open Notepad and Excel side-by-side and process all 3+ invoices in one batch instead of 1-by-1 switching to cut 15 switches
-- Freeze header row and add filter on invoice number to avoid overwriting B2/A4/B4/C4 during paste
-
-**Check before automating:**
-
-- INV txt format varies (different labels, missing due date/total) causing parse failures - needs staging review and regex tuning on 10+ samples
-- Tracker must move from local file to SharePoint/OneDrive for Graph/connector writes; concurrent edits can cause sync conflicts or range overwrites (B2/A4 issue)
-- Column mapping ambiguous (flows show Notepad->A,B,C and PopupHost->B plus Esc in B2) - wrong-column write could corrupt tracker if not confirmed
-- Automating column D/E without confirming business rules risks wrong due dates, duplicate payments, or hiding run-3 type wrong-item errors
-
-**Existing tools and guides found online:**
-
-- [File actions reference - Power Automate](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file): 
-- [Excel actions reference - Power Automate](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/excel): 
-- [Excel Online (Business)](https://learn.microsoft.com/en-us/connectors/excelonlinebusiness/): 
-- [Update range - Microsoft Graph v1.0](https://learn.microsoft.com/en-us/graph/api/range-update?view=graph-rest-1.0): 
-- [Invoice processing prebuilt AI model](https://learn.microsoft.com/en-us/ai-builder/prebuilt-invoice-processing): 
-
-**Tools that usually fit these applications:**
-
-- [Microsoft Power Automate](https://www.microsoft.com/power-platform/products/power-automate): Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors
-- [UiPath](https://www.uipath.com): Enterprise RPA for desktop and legacy apps without APIs (SAP GUI, Citrix, mainframe screens)
-- [Excel Power Query and Office Scripts](https://learn.microsoft.com/office/dev/scripts/overview/excel): Repeatable imports, clean-up and transformations inside Excel
-- [Python with pandas / openpyxl](https://pandas.pydata.org): Scripts that read, merge and write spreadsheets and CSV files
-
-**Automation draft** (python, saved to `automations/task1.py`)
-
-Python equivalent of top Power Automate recommendation: batch-parse INV-*.txt files and append new rows to AP Tracker, skipping duplicates. In production run same logic as Power Automate Desktop File reads + Excel Update range via Graph.
-
-```python
-import re, pathlib
-import openpyxl
-
-INV_DIR = pathlib.Path(r"C:\AP\Invoices")
-TRACKER = pathlib.Path(r"C:\AP\AP Tracker.xlsx") # move to OneDrive/SharePoint for Graph API in production
-
-# Adjust patterns after inspecting 5-10 real INV files
-PATTERNS = {
-    "inv_no": re.compile(r"Invoice\s*(No|Number|#)\s*[:#]?\s*(\S+)", re.I),
-    "vendor": re.compile(r"Vendor\s*[:]?\s*(.+)", re.I),
-    "total": re.compile(r"Total\s*[:]?\s*\$?\s*([0-9,]+\.\d{2})", re.I),
-    "due": re.compile(r"Due\s*Date\s*[:]?\s*(\d{4}-\d{2}-\d{2}|\d{2}/\d{2}/\d{4})", re.I),
-}
-
-def parse_txt(p):
-    t = p.read_text(encoding="utf-8", errors="ignore")
-    def get(k):
-        m = PATTERNS[k].search(t)
-        return m.group(m.lastindex).strip() if m else ""
-    total = get("total").replace(",","")
-    return [get("inv_no"), get("vendor"), total, get("due")]
-
-wb = openpyxl.load_workbook(TRACKER)
-ws = wb["AP Tracker"]
-# Assumes header in row 1: A=InvoiceNo, B=Vendor, C=Total, D=DueDate, E=Reserved - CONFIRM before run
-existing = {c.value for c in ws["A"][1:] if c.value}
-
-added = 0
-for f in sorted(INV_DIR.glob("INV-*.txt")):
-    inv_no, vendor, total, due = parse_txt(f)
-    if not inv_no or inv_no in existing:
-        print(f"SKIP {f.name}: missing or duplicate {inv_no}")
-        continue
-    ws.append([inv_no, vendor, float(total) if total else "", due, ""])
-    existing.add(inv_no)
-    added += 1
-
-wb.save(TRACKER)
-print(f"Added {added} rows")
-```
 
 ### 3. Transfer supplier invoices to tracker
 
-**Automation potential: Medium (41/100)** · 1.2 min in total · 1 run · Notepad, Excel
+**The same process as task 1** (the same fields filled in the same applications), recorded outside its main run: 1.2 min, 19 steps in Notepad, Excel. Its data flow, automation design, checks and SOP are described once, under task 1, and the roadmap counts this time there.
 
-The task consolidates supplier invoice information into the central invoice tracker for monitoring. The user copies the invoice number and vendor name from each invoice file and pastes them into successive tracker rows, completing additional columns as needed.
+### 2. Update tracker with invoice data
 
-**Inputs:** Supplier invoice files; Invoice tracker spreadsheet  
-**Outputs:** Updated invoice tracker with new entries  
-**Decision points:** Verifying the correct invoice file and tracker row before pasting  
-
-**Why it stands out:**
-
-- 7 values copied by hand from one application to another
-- 13 switches between applications
-
-**Estimated saving:** about 1.1 min per run (92% of this task), about 0.4 hours or $11 a month.
-
-<img src="../shots/000037.jpg" alt="Step 1" width="31%"> <img src="../shots/000045.jpg" alt="Step 10" width="31%"> <img src="../shots/000049.jpg" alt="Step 19" width="31%">
-
-**Steps:**
-
-1. [Notepad] Copies the invoice number from the supplier invoice file.
-2. [Excel] Pastes the invoice number into the invoice tracker.
-3. [Notepad] Copies the vendor name from the supplier invoice file.
-4. [Excel] Pastes the vendor name into the invoice tracker.
-5. [Notepad] Copies the vendor name from the supplier invoice file.
-6. [Excel] Pastes the vendor name into the tracker and moves to the next cell.
-7. [Excel] Paste in "C4", then press Esc in Excel
-8. [Notepad] Opens the next supplier invoice file in the text editor.
-9. [Notepad] Copies the invoice number from the supplier invoice.
-10. [Excel] Pastes the invoice number into the next row of the tracker.
-11. [Notepad] Copies the vendor name from the supplier invoice.
-12. [Excel] Pastes the invoice number from the invoice file into the tracker
-13. [Notepad] Copies the vendor name from the invoice file for entry
-14. [Excel] Enters the vendor name into the vendor column of tracker
-15. [Excel] Paste in "C5", then press Esc in Excel
-16. [Excel] Enters a value in column D of the tracker
-17. [Excel] Enters a value in column E of the tracker
-18. [Notepad] Copies the vendor name from the invoice file
-19. [Excel] Pastes the vendor name into the tracker
-
-#### Data flow: field to field
-
-Taken from the recording: every value that was copied or typed, where from and where to.
-
-| Step | From | To | How | Seen in runs |
-|---|---|---|---|---|
-| 2, 10 | Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column A | copy-paste | 1 of 1 |
-| 4, 12, 19 | Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column B | copy-paste | 1 of 1 |
-| 7, 15 | Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column C | copy-paste | 1 of 1 |
-| 16 | typed by hand | Excel · AP Tracker · column D | typed (10 characters) | 1 of 1 |
-| 17 | typed by hand; **same value as Notepad · INV-#.txt · Text editor** (fingerprint match, 1 of 1 runs) | Excel · AP Tracker · column E | typed (8 characters) | 1 of 1 |
-
-**Decide before automating:**
-
-- Where does **Excel · AP Tracker · column D** come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?
-
-#### How the systems can connect
-
-Each option has a status: *documented* (official documentation, access still needed), *found online, confirm* (a web search hit), *unknown* (no evidence: ask the vendor or IT), or a fallback.
-
-| System | Role | Options |
-|---|---|---|
-| Notepad | source | API: Notepad API *(unknown, ask the vendor or IT)*<br>RPA: [Power Automate Desktop or UiPath](https://learn.microsoft.com/power-automate/desktop-flows/introduction) *(works without an API)* |
-| Excel | target | API: [Microsoft Graph Excel API](https://learn.microsoft.com/graph/api/resources/excel) *(documented)*<br>n8n: [n8n Microsoft Excel 365 node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftexcel/) *(documented)*<br>SQL: [Keep the tracker in a database table instead](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/) *(option)*<br>File: [Read and write the file directly (n8n Read/Write Files)](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.readwritefile/) *(documented)* |
-
-#### Proposed automation sequence
-
-1. **Trigger**: Start on a schedule or by hand: the recording shows no clear trigger.
-   - _How: n8n Schedule Trigger (option)_
-2. **Extract** · Notepad: Read Text editor from INV-#.txt.
-   - _How: Screen automation (Power Automate Desktop / UiPath) unless the vendor offers an API (unknown, ask the vendor or IT)_
-3. **Write** · Excel: Write into AP Tracker.
-   - column A ← Text editor (Notepad)
-   - column B ← Text editor (Notepad)
-   - column C ← Text editor (Notepad)
-   - column D ← typed by hand (10 characters): open question
-   - column E ← Text editor (Notepad): typed by hand, but the fingerprints prove it is the same value (1 of 1 runs)
-   - _How: Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table (documented)_
-4. **Decide**: Where does Excel · AP Tracker · column D come from? It was typed by hand (10 characters). A fixed rule, a lookup, or a person's judgement?
-   - _How: Business decision before building (open)_
-5. **Human check**: Verifying the correct invoice file and tracker row before pasting
-   - _How: Keep a person here, or define the rule (open)_
-
-**To build it**, once the questions above are answered, run `python -m flowsme build 20261024-161537-ap-invoice-final --task 3`. It writes an n8n workflow to import, a Postman collection to test each connection, and SQL and Playwright starters.
-
-#### Process improvement (Lean Six Sigma, DMAIC)
-
-**Define.** What must go right (critical to quality):
-
-- Each item done within the agreed time (now about 1.2 min of hands-on work)
-
-| Suppliers | Inputs | Process | Outputs | Customers |
-|---|---|---|---|---|
-| Notepad | Notepad · INV-#.txt · Text editor | Trigger: Start on a schedule or by hand: the recording shows no clear trigger.<br>Extract: Notepad<br>Write: Excel | Excel · AP Tracker | Who uses these outputs? (not visible in the recording: ask) |
-
-**Measure.** 1.2 min of hands-on work per item, 1 items in this recording, 5 manual entries per item.
-
-| Time per item | Minutes | Share |
-|---|---|---|
-| waste (non-value-adding) | 1.14 | 96% |
-| value-adding? (judgement, confirm) | 0.05 | 4% |
-
-Process cycle efficiency: **4%** (value-adding time ÷ total).
-
-Error exposure: 5 manual entries per item now, 1 after automation, about 20 items a month.
-
-| Human error rate (source) | Errors a month now | After automation | DPMO | Sigma level |
-|---|---|---|---|---|
-| 0.14% per entry: [Nahm et al. 2008: source to database, clinical trials](https://doi.org/10.1371/journal.pone.0003049) | 0.1 | 0.0 | 1,430 | 4.0 |
-| 0.29% per entry: [Garza et al. 2025: meta-analysis of 93 studies, single data entry](https://doi.org/10.1016/j.ijmedinf.2024.105749) | 0.3 | 0.1 | 2,900 | 4.0 |
-| 3.70% per entry: [Mays & Mathias 2019: manual transcription of numeric results](https://pmc.ncbi.nlm.nih.gov/articles/PMC6351970/) | 3.7 | 0.7 | 37,000 | 3.0 |
-
-**Analyze.** Waste found in the recording:
-
-| Waste | Evidence | Min per item |
-|---|---|---|
-| Transportation waste | 3 values per item carried between applications by copy-paste | 0.8 |
-| Motion waste | 13 window switches and 3 navigation steps per item | 0.12 |
-| Over-processing waste | 1 value(s) typed by hand that the fingerprints prove already exist elsewhere (column E = Notepad · INV-#.txt · Text editor) | 0.22 |
-| Defects and rework | 'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected. | - |
-| Unused talent | 96% of this person's time on this task is moving and re-typing data | - |
-
-Bottleneck (Theory of Constraints): **Write · Excel** at 0.94 min per item. Improve this stage first: speeding up any other stage doesn't shorten the whole.
-
-**Improve.** First remove waste (ECRS), then automate what's left:
-
-- **Eliminate:** Stop re-typing values that already exist: column E in Excel.
-- **Simplify:** Turn free typing into rules, lookups or drop-downs: column D (Excel).
-- **Automate:** Then automate what is left, as in the tool plan below.
-
-Tool plan. Your tools: Microsoft 365, Power Automate, Power BI. Runs the workflow: Power Automate (cloud flows).
-
-| Stage | Now (min/item) | With your tools | With suggested tools |
-|---|---|---|---|
-| 2. Extract · Notepad | 0.25 | stays manual: 0.25 | Desktop automation (Power Automate Desktop): 0.05 |
-| 3. Write · Excel | 0.94 | Spreadsheet API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.09 | Spreadsheet API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.09 |
-| **Total** | **1.2** | **0.3** | **0.1** |
-
-Per month (20 items): 0.4 h now, 0.1 h with your tools, 0.0 h with the additions.
-
-Adding tools, biggest gain first:
-
-- **Power Automate Desktop** saves another 0.2 min per item (0.1 h a month). Cost: free on Windows for attended runs; unattended runs need a licence.
-
-If the vendor provides an API key for **Notepad API**, use it instead of browser automation: it is more reliable and won't break when the page changes.
-
-<sub>Minutes after automation assume each method removes this share of a stage's time (people still review exceptions): api 95%, database 95%, ai extraction 85%, pdf rules 70%, api wrapper 90%, browser 85%, rpa 80%. These are planning estimates; measure after the pilot.</sub>
-
-**Control.** Validation checklist: error-proofing first, then detection. Why that order: When values flowed electronically instead of being transcribed, transcription errors fell from 6.1% to zero. ([Poon et al. 2010](https://pubmed.ncbi.nlm.nih.gov/20445181/)) Checking entries by eye was not significantly better than no checking; double entry was far better. ([Barchard & Pace 2011](https://doi.org/10.1016/j.chb.2011.04.004)) Built-in validation alarms prevented only a small fraction of errors. ([Goldberg et al. 2008](https://pmc.ncbi.nlm.nih.gov/articles/PMC2656002/)) A second, independent entry of the same data caught 88% of errors. ([Kawado et al. 2003](https://pubmed.ncbi.nlm.nih.gov/14500053/))
-
-| Where | Type | Check | Evidence |
-|---|---|---|---|
-| Excel · AP Tracker · column A | prevent | Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 2, 10 |
-| Excel · AP Tracker · column B | prevent | Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 4, 12, 19 |
-| Excel · AP Tracker · column C | prevent | Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 7, 15 |
-| Excel · AP Tracker · column D | prevent | Replace free typing with a rule, a lookup or a drop-down. | typed by hand (10 characters) at step 16 |
-| Excel · AP Tracker · column E | prevent | Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-typing it; after writing, compare the two automatically. | typed by hand at step 17; the fingerprints show it is the same value as Notepad · INV-#.txt · Text editor (1 of 1 runs) |
-| corrections | detect | Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys). | 'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected. |
-| every run | control | Reconcile counts: items received = rows written = records submitted. Investigate any gap. | standard control for multi-system hand-offs |
-| every run | control | Log each item with its result (done / exception / failed) and review exceptions daily. | needed to measure error rate after go-live |
-
-Measure after go-live, in the final report (Power BI, Looker Studio or Excel, fed by the run log from `flowsme build`; suggested: Power BI):
-
-- Items processed per day
-- Hands-on minutes per item (target: 0.1 or less)
-- Exceptions sent to a person (%)
-- First-pass yield: items done with no correction (%)
-- Errors caught by checks, by type
-- Duplicates blocked
-
-**Recommendations** _(AI analysis)_
-
-1. **Auto-read INV-*.txt files and append rows to AP Tracker with Power Automate Desktop**: _Desktop automation (RPA) · effort: days · about 75% of this task's time · steps 1-15, 18-19_
-
-   In Power Automate Desktop loop the invoice folder for INV-*.txt with Get files in folder. For each file use Read text from file plus Parse text with regex to extract invoice number and vendor name. Use Launch Excel once then Write to Excel worksheet to append one row per file to the AP Tracker Table columns A-C and map column E from same vendor variable, leaving D blank.
-
-   *Why:* Theory of Constraints fixes the 0.94 min/item Write in Excel bottleneck and ECRS automates transportation/motion waste evidenced by 7 hand copies and 13 switches
-
-   Tools: Power Automate Desktop, Excel
-
-2. **Eliminate retyping with Excel Table plus validation for columns D/E**: _Built-in feature · effort: hours · about 10% of this task's time · steps 7, 15-17, 19_
-
-   Convert tracker to a formal Excel Table with headers InvoiceNo, Vendor, Vendor2, D, E. Set column E to formula =[@Vendor] or mapping instead of typing. Add Data Validation list plus XLOOKUP for column D once its source is documented and lock columns A-C/E.
-
-   *Why:* ECRS eliminate retyping proven duplicate column E and ECRS simplify free typing in D plus poka-yoke to make B2 4x and A4/B4/C4/B5 corrections impossible
-
-   Tools: Excel
-
-3. **Keep column D manual until its source rule is confirmed**: _Process change · effort: hours · about 5% of this task's time · steps 16-17_
-
-   Keep column D manual for now. Ask AP owner to document whether the 10-character typed value is a fixed rule, lookup, or judgement and log 20 examples. PAD flow highlights D blank for human fill until rule is proven, then convert to lookup.
-
-   *Why:* Honest automation - never invent source of typed value; avoids defect risk from automating judgement per control plan
-
-   Tools: Excel
-
-**Assumptions to confirm:**
-
-- Supplier invoice files are plain .txt files named INV-*.txt in a single folder with consistent labels for invoice number and vendor name
-- AP Tracker is a standard .xlsx file accessible to Power Automate Desktop and can be converted to an Excel Table
-- Column E value proven equal to Notepad text can be mapped directly without retyping
-- Where column D 10-character typed value comes from is unknown - no lookup rule or judgement documented in recording
-- Notepad has no usable API status unknown - automation assumes file-level reading not Notepad API, confirm with IT if needed
-
-**Quick wins:**
-
-- Stop re-typing column E - copy/map from invoice file, it already exists there
-- Convert AP Tracker range to Excel Table with headers so next empty row is automatic
-- Add Excel Data Validation dropdowns/XLOOKUP for columns D and E to prevent B2/A4/B4 corrections
-- Process invoices in batch folder order without reopening/switching Notepad per field
-
-**Check before automating:**
-
-- TXT label variation breaks regex parsing - need exception folder and log for unmatched files
-- Concurrent Excel edits overwrite rows if tracker not on OneDrive/SharePoint with Table locking
-- Automating column D before its rule is known would create wrong postings
-- Duplicate runs could double-append same INV file without processed-file check
-
-**Existing tools and guides found online:**
-
-- [File actions reference - Power Automate](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file): 
-- [Excel actions reference - Power Automate](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/excel): 
-- [Excel Online (Business)](https://learn.microsoft.com/ms-my/connectors/excelonlinebusiness/): 
-
-**Tools that usually fit these applications:**
-
-- [Microsoft Power Automate](https://www.microsoft.com/power-platform/products/power-automate): Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors
-- [Excel Power Query and Office Scripts](https://learn.microsoft.com/office/dev/scripts/overview/excel): Repeatable imports, clean-up and transformations inside Excel
-- [Python with pandas / openpyxl](https://pandas.pydata.org): Scripts that read, merge and write spreadsheets and CSV files
-
-**Automation draft** (power_automate, saved to `automations/task3.txt`)
-
-Power Automate Desktop flow that loops INV-*.txt files, parses invoice number and vendor, and appends columns A-C+E to AP Tracker leaving unknown column D for human.
-
-```text
-DESKTOP FLOW: AP_Tracker_Append
-1. SET FolderPath = "C:\AP\Invoices" AND TrackerPath = "C:\AP\AP Tracker.xlsx"
-2. ACTION File.GetFilesInFolder Folder: FolderPath FileFilter: "INV-*.txt" -> FileList
-3. ACTION Excel.LaunchExcelAndOpenDocument DocumentPath: TrackerPath Visible: FALSE -> ExcelInstance
-4. LOOP ForEach CurrentFile IN FileList
-5.   ACTION File.ReadTextFromFile File: CurrentFile -> FileText
-6.   ACTION Text.ParseText Text: FileText Regex: "Invoice\s*(No|Number|#)\s*[:#]\s*(\S+)" -> InvoiceNo (FirstMatch Group2)
-7.   ACTION Text.ParseText Text: FileText Regex: "Vendor\s*[:]\s*(.+)" -> VendorName (Trim FirstMatch Group1)
-8.   ACTION Excel.GetFirstFreeRowOnColumn Instance: ExcelInstance Column: "A" -> NextRow
-9.   ACTION Excel.WriteToExcel Worksheet: "Tracker" Row: NextRow Column: 1 Value: %InvoiceNo%
-10.  ACTION Excel.WriteToExcel Row: NextRow Column: 2 Value: %VendorName%
-11.  ACTION Excel.WriteToExcel Row: NextRow Column: 3 Value: %VendorName%
-12.  ACTION Excel.WriteToExcel Row: NextRow Column: 5 Value: %VendorName% // ECRS eliminate retype, map not type
-13.  // LEAVE Column D blank for human fill until rule documented
-14. END LOOP
-15. ACTION Excel.SaveExcel Instance: ExcelInstance
-16. ACTION Excel.CloseExcel Instance: ExcelInstance
-```
-
-### 2. Transfer invoice data to tracker
-
-**Automation potential: Medium (40/100)** · 46 s in total · 1 run · Excel, Notepad
-
-Updates the invoice tracker with vendor and invoice details from supplier files. The user copies vendor names and invoice numbers from invoice files in the text editor and pastes them into the corresponding fields in the Excel tracker.
-
-**Inputs:** Supplier invoice files in text format; Excel invoice tracker spreadsheet  
-**Outputs:** Updated invoice tracker with vendor names and invoice numbers  
-**Decision points:** Selecting the correct tracker row for each invoice file; Verifying that copied vendor and invoice data is complete and accurate  
-
-**Why it stands out:**
-
-- 2 values copied by hand from one application to another
-- 5 switches between applications
-
-**Estimated saving:** about 42 s per run (88% of this task), about 0.2 hours or $7 a month.
-
-<img src="../shots/000008.jpg" alt="Step 1" width="31%"> <img src="../shots/000012.jpg" alt="Step 5" width="31%"> <img src="../shots/000015.jpg" alt="Step 8" width="31%">
-
-**Steps:**
-
-1. [Excel] Cuts the vendor cell content in the tracker and moves to next field
-2. [Excel] Paste in "C2", then press Esc in Excel
-3. [Notepad] Copies the vendor name from the first supplier invoice file.
-4. [Excel] Pastes the vendor name into the tracker spreadsheet.
-5. [Notepad] Opens the second supplier invoice file in the editor.
-6. [Notepad] Copies the invoice number from the second supplier invoice file.
-7. [Excel] Pastes the invoice number from the invoice file into the tracker.
-8. [Notepad] Selects the vendor name in the invoice file for copying.
-
-#### Data flow: field to field
-
-Taken from the recording: every value that was copied or typed, where from and where to.
-
-| Step | From | To | How | Seen in runs |
-|---|---|---|---|---|
-| 2 | Excel · AP Tracker · column B (originally Notepad · INV-#.txt · Text editor) | Excel · AP Tracker · column C | copy-paste | 1 of 1 |
-| 4 | Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column B | copy-paste | 1 of 1 |
-| 7 | Notepad · INV-#.txt · Text editor | Excel · AP Tracker · column A | copy-paste | 1 of 1 |
-
-#### How the systems can connect
-
-Each option has a status: *documented* (official documentation, access still needed), *found online, confirm* (a web search hit), *unknown* (no evidence: ask the vendor or IT), or a fallback.
-
-| System | Role | Options |
-|---|---|---|
-| Excel | source and target | API: [Microsoft Graph Excel API](https://learn.microsoft.com/graph/api/resources/excel) *(documented)*<br>n8n: [n8n Microsoft Excel 365 node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.microsoftexcel/) *(documented)*<br>SQL: [Keep the tracker in a database table instead](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/) *(option)*<br>File: [Read and write the file directly (n8n Read/Write Files)](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.readwritefile/) *(documented)* |
-| Notepad | source | API: Notepad API *(unknown, ask the vendor or IT)*<br>RPA: [Power Automate Desktop or UiPath](https://learn.microsoft.com/power-automate/desktop-flows/introduction) *(works without an API)* |
-
-#### Proposed automation sequence
-
-1. **Trigger**: Start on a schedule or by hand: the recording shows no clear trigger.
-   - _How: n8n Schedule Trigger (option)_
-2. **Extract** · Notepad: Read Text editor from INV-#.txt.
-   - _How: Screen automation (Power Automate Desktop / UiPath) unless the vendor offers an API (unknown, ask the vendor or IT)_
-3. **Write** · Excel: Write into AP Tracker.
-   - column C ← Text editor (Notepad)
-   - column B ← Text editor (Notepad)
-   - column A ← Text editor (Notepad)
-   - _How: Microsoft Graph Excel API (workbook in OneDrive/SharePoint), or a SQL table (documented)_
-4. **Finish** · Notepad: Then in Notepad: Text editor.
-   - _How: Screen automation (Power Automate Desktop / UiPath) unless the vendor offers an API (unknown, ask the vendor or IT)_
-5. **Human check**: Selecting the correct tracker row for each invoice file
-   - _How: Keep a person here, or define the rule (open)_
-6. **Human check**: Verifying that copied vendor and invoice data is complete and accurate
-   - _How: Keep a person here, or define the rule (open)_
-
-**To build it**, once the questions above are answered, run `python -m flowsme build 20261024-161537-ap-invoice-final --task 2`. It writes an n8n workflow to import, a Postman collection to test each connection, and SQL and Playwright starters.
-
-#### Process improvement (Lean Six Sigma, DMAIC)
-
-**Define.** What must go right (critical to quality):
-
-- Each item done within the agreed time (now about 0.8 min of hands-on work)
-
-| Suppliers | Inputs | Process | Outputs | Customers |
-|---|---|---|---|---|
-| Notepad | Notepad · INV-#.txt · Text editor | Trigger: Start on a schedule or by hand: the recording shows no clear trigger.<br>Extract: Notepad<br>Write: Excel<br>Finish: Notepad | Excel · AP Tracker | Who uses these outputs? (not visible in the recording: ask) |
-
-**Measure.** 0.8 min of hands-on work per item, 1 items in this recording, 3 manual entries per item.
-
-| Time per item | Minutes | Share |
-|---|---|---|
-| waste (non-value-adding) | 0.77 | 100% |
-
-Process cycle efficiency: **0%** (value-adding time ÷ total).
-
-Error exposure: 3 manual entries per item now, 0 after automation, about 20 items a month.
-
-| Human error rate (source) | Errors a month now | After automation | DPMO | Sigma level |
-|---|---|---|---|---|
-| 0.14% per entry: [Nahm et al. 2008: source to database, clinical trials](https://doi.org/10.1371/journal.pone.0003049) | 0.1 | 0.0 | 1,430 | 4.0 |
-| 0.29% per entry: [Garza et al. 2025: meta-analysis of 93 studies, single data entry](https://doi.org/10.1016/j.ijmedinf.2024.105749) | 0.2 | 0.0 | 2,900 | 4.0 |
-| 3.70% per entry: [Mays & Mathias 2019: manual transcription of numeric results](https://pmc.ncbi.nlm.nih.gov/articles/PMC6351970/) | 2.2 | 0.0 | 37,000 | 3.0 |
-
-**Analyze.** Waste found in the recording:
-
-| Waste | Evidence | Min per item |
-|---|---|---|
-| Transportation waste | 3 values per item carried between applications by copy-paste | 0.42 |
-| Motion waste | 5 window switches and 2 navigation steps per item | 0.35 |
-| Over-processing waste | 1 value(s) copied into one file only to be copied out again (column B in Excel) | - |
-| Defects and rework | 'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected. | - |
-| Unused talent | 100% of this person's time on this task is moving and re-typing data | - |
-
-Bottleneck (Theory of Constraints): **Extract · Notepad** at 0.41 min per item. Improve this stage first: speeding up any other stage doesn't shorten the whole.
-
-**Improve.** First remove waste (ECRS), then automate what's left:
-
-- **Eliminate:** Stop copying values into an in-between file that is then copied out again (Excel). Keep it only if someone needs it as a record, and then let the automation write it.
-- **Automate:** Then automate what is left, as in the tool plan below.
-
-Tool plan. Your tools: Microsoft 365, Power Automate, Power BI. Runs the workflow: Power Automate (cloud flows).
-
-| Stage | Now (min/item) | With your tools | With suggested tools |
-|---|---|---|---|
-| 2. Extract · Notepad | 0.41 | stays manual: 0.41 | Desktop automation (Power Automate Desktop): 0.08 |
-| 3. Write · Excel | 0.37 | Spreadsheet API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.02 | Spreadsheet API (Microsoft 365 (Outlook and Excel through Microsoft Graph), Power Automate (cloud flows)): 0.02 |
-| 4. Finish · Notepad | 0.00 | stays manual: 0.00 | Desktop automation (Power Automate Desktop): 0.00 |
-| **Total** | **0.8** | **0.4** | **0.1** |
-
-Per month (20 items): 0.3 h now, 0.1 h with your tools, 0.0 h with the additions.
-
-Adding tools, biggest gain first:
-
-- **Power Automate Desktop** saves another 0.3 min per item (0.1 h a month). Cost: free on Windows for attended runs; unattended runs need a licence.
-
-If the vendor provides an API key for **Notepad API**, use it instead of browser automation: it is more reliable and won't break when the page changes.
-
-If the vendor provides an API key for **Notepad API**, use it instead of browser automation: it is more reliable and won't break when the page changes.
-
-<sub>Minutes after automation assume each method removes this share of a stage's time (people still review exceptions): api 95%, database 95%, ai extraction 85%, pdf rules 70%, api wrapper 90%, browser 85%, rpa 80%. These are planning estimates; measure after the pilot.</sub>
-
-**Control.** Validation checklist: error-proofing first, then detection. Why that order: When values flowed electronically instead of being transcribed, transcription errors fell from 6.1% to zero. ([Poon et al. 2010](https://pubmed.ncbi.nlm.nih.gov/20445181/)) Checking entries by eye was not significantly better than no checking; double entry was far better. ([Barchard & Pace 2011](https://doi.org/10.1016/j.chb.2011.04.004)) Built-in validation alarms prevented only a small fraction of errors. ([Goldberg et al. 2008](https://pmc.ncbi.nlm.nih.gov/articles/PMC2656002/)) A second, independent entry of the same data caught 88% of errors. ([Kawado et al. 2003](https://pubmed.ncbi.nlm.nih.gov/14500053/))
-
-| Where | Type | Check | Evidence |
-|---|---|---|---|
-| Excel · AP Tracker · column C | prevent | Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 2 |
-| Excel · AP Tracker · column B | prevent | Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 4 |
-| Excel · AP Tracker · column A | prevent | Pass the value from Notepad · INV-#.txt · Text editor directly instead of re-keying it; after writing, compare the two automatically. | copied by hand at step 7 |
-| corrections | detect | Values had to be corrected after entry. Check each value against its source before writing, and log corrections so their causes can be found (5 Whys). | 'B2' in Excel was written 4 times: a value had to be corrected. 'A4' in Excel was written 2 times: a value had to be corrected. 'B4' in Excel was written 2 times: a value had to be corrected. 'C4' in Excel was written 2 times: a value had to be corrected. 'B5' in Excel was written 2 times: a value had to be corrected. |
-| every run | control | Reconcile counts: items received = rows written = records submitted. Investigate any gap. | standard control for multi-system hand-offs |
-| every run | control | Log each item with its result (done / exception / failed) and review exceptions daily. | needed to measure error rate after go-live |
-
-Measure after go-live, in the final report (Power BI, Looker Studio or Excel, fed by the run log from `flowsme build`; suggested: Power BI):
-
-- Items processed per day
-- Hands-on minutes per item (target: 0.1 or less)
-- Exceptions sent to a person (%)
-- First-pass yield: items done with no correction (%)
-- Errors caught by checks, by type
-- Duplicates blocked
-
-**Recommendations** _(AI analysis)_
-
-1. **Auto-read supplier INV-*.txt files and write directly to AP Tracker**: _Desktop automation (RPA) · effort: days · about 80% of this task's time · steps 3-7_
-
-   In Power Automate Desktop create a flow that loops Files in folder INV-*.txt. Use Read text from file then Parse text with the vendor and invoice-number patterns. Use Excel Launch and Write to Excel worksheet AP Tracker columns A and B in one write, no intermediate cut-paste. Run attended on the same PC that does the task today.
-
-   *Why:* Theory of Constraints fix the bottleneck first plus ECRS automate. Bottleneck is Extract in Notepad 0.41 min and 3 values carried by hand Notepad to Excel. Direct file read eliminates copy-paste and 5 switches.
-
-   Tools: Power Automate Desktop, Excel
-
-2. **Eliminate Excel B to C staging copy**: _Process change · effort: hours · about 15% of this task's time · steps 1-2_
-
-   Remove steps 1-2 as standard work. Agree that column B is the system entry, column C only if needed for audit. If audit needs it, let automation copy B to C, never by hand. Update one-page SOP to enter vendor once then invoice number once.
-
-   *Why:* ECRS eliminate before automating. Recording shows over-processing of 1 value copied into Excel only to be copied out again from column B to C.
-
-   Tools: Excel
-
-3. **Harden tracker with Table and validation to stop rework**: _Built-in feature · effort: hours · about 20% of this task's time · steps 4, 7_
-
-   Convert tracker range to Excel Table with headers Vendor and Invoice Number. Add Data Validation: invoice number TextLength >3 and duplicate check with COUNTIF, and lock other columns. Add Conditional Formatting to highlight duplicates for poka-yoke.
-
-   *Why:* Poka-yoke to prevent defects. Evidence is B2 written 4 times and A4 B4 C4 B5 written 2 times, plus 0% process cycle efficiency with 100% time moving data.
-
-   Tools: Excel, Office Scripts
-
-4. **Move tracker to SharePoint and write via connector or Graph**: _API integration · effort: days · about 50% of this task's time · steps 4, 7_
-
-   Move AP Tracker to SharePoint or OneDrive. Replace Desktop Excel writes with cloud flow using Excel Online Business connector Add a row into a table. Keep Desktop flow only for reading local .txt files, or switch to scheduled cloud flow if files move to SharePoint. Enables logging and Power BI reporting.
-
-   *Why:* Prefer built-in API over RPA for Write Excel step. Uses documented Microsoft Graph Excel API and Excel Online connector instead of UI paste, enabling control plan measurement.
-
-   Tools: Power Automate, Excel Online (Business), SharePoint
-
-**Assumptions to confirm:**
-
-- Supplier invoice files are plain .txt files in a known folder with consistent labels for vendor name and invoice number
-- AP Tracker Excel file path and sheet name and target columns A and B are stable and file is not password locked
-- No usable Notepad API exists, file read is via filesystem, confirm with IT if suppliers can send CSV or structured export instead
-- Copying Excel column B to column C is staging with no separate business need unless retention requires it
-
-**Quick wins:**
-
-- Stop cut-paste of Excel column B to C staging, write vendor and invoice number once directly
-- Put AP Tracker on OneDrive or SharePoint and convert range to Excel Table with Data Validation on vendor and invoice number to prevent typos
-- Keep Notepad invoice folder and Excel side-by-side and process in batches to cut window switches until automated
-
-**Check before automating:**
-
-- TXT label variation across suppliers causes parse misses, need fallback review queue and duplicate check on invoice number
-- Excel file locked or open by another user causes write failure, need OneDrive co-authoring and retry logic
-- Automating bad staging logic preserves waste, must confirm column C is not required downstream before removing it
-
-**Existing tools and guides found online:**
-
-- [File actions reference - Power Automate](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/file): 
-- [Excel actions reference - Power Automate](https://learn.microsoft.com/en-us/power-automate/desktop-flows/actions-reference/excel): 
-- [Excel Online (Business)](https://learn.microsoft.com/en-us/connectors/excelonlinebusiness/): 
-- [Working with Excel in Microsoft Graph](https://learn.microsoft.com/en-us/graph/api/resources/excel?view=graph-rest-1.0): 
-
-**Tools that usually fit these applications:**
-
-- [Microsoft Power Automate](https://www.microsoft.com/power-platform/products/power-automate): Desktop flows (RPA) plus cloud flows for Outlook, Excel, SharePoint, Teams and many other connectors
-- [Excel Power Query and Office Scripts](https://learn.microsoft.com/office/dev/scripts/overview/excel): Repeatable imports, clean-up and transformations inside Excel
-- [Python with pandas / openpyxl](https://pandas.pydata.org): Scripts that read, merge and write spreadsheets and CSV files
-
-**Automation draft** (python, saved to `automations/task2.py`)
-
-Python script implementing top recommendation: read all INV-*.txt files, extract vendor and invoice number by regex, de-duplicate on invoice number, and append directly to AP Tracker columns A and B with no intermediate copy.
-
-```python
-import glob
-import re
-from pathlib import Path
-import openpyxl
-
-# Folder containing supplier files like INV-001.txt, INV-002.txt
-INVOICE_GLOB = r"C:\Invoices\INV-*.txt"
-TRACKER_PATH = r"C:\Invoices\AP Tracker.xlsx"
-SHEET_NAME = "AP Tracker"
-
-vendor_pat = re.compile(r"(?im)^\s*vendor\s*[:\-]\s*(.+?)\s*$")
-inv_pat = re.compile(r"(?im)^\s*(invoice\s*(no|number|#)|inv\s*[#:]?)\s*[:\-#]?\s*([A-Z0-9\-]+)\s*$")
-
-def parse_invoice_txt(path):
-    text = Path(path).read_text(encoding="utf-8", errors="ignore")
-    vendor = vendor_pat.search(text)
-    inv = inv_pat.search(text)
-    vendor_val = vendor.group(1).strip() if vendor else ""
-    inv_val = inv.group(3).strip() if inv else ""
-    # fallback: first non-empty line as vendor if label missing
-    if not vendor_val:
-        lines = [l.strip() for l in text.splitlines() if l.strip()]
-        if lines:
-            vendor_val = lines[0]
-    return vendor_val, inv_val
-
-rows = []
-for f in glob.glob(INVOICE_GLOB):
-    v, inv = parse_invoice_txt(f)
-    if v or inv:
-        rows.append((v, inv, Path(f).name))
-
-wb = openpyxl.load_workbook(TRACKER_PATH)
-ws = wb[SHEET_NAME]
-# Assume row 1 header, columns A=Vendor, B=Invoice Number. Append after last used row.
-for vendor_val, inv_val, _src in rows:
-    # skip if invoice already in column B to make reruns idempotent
-    exists = False
-    for r in ws.iter_rows(min_row=2, max_col=2, values_only=True):
-        if r[1] and str(r[1]).strip() == inv_val and inv_val != "":
-            exists = True
-            break
-    if not exists:
-        ws.append([vendor_val, inv_val])
-wb.save(TRACKER_PATH)
-print(f"Appended {len(rows)} rows to {TRACKER_PATH}")
-```
+**The same process as task 1** (the same fields filled in the same applications), recorded outside its main run: 46 s, 8 steps in Excel, Notepad. Its data flow, automation design, checks and SOP are described once, under task 1, and the roadmap counts this time there.
 
 ## Methods used
 
@@ -921,4 +502,5 @@ print(f"Appended {len(rows)} rows to {TRACKER_PATH}")
 - **Automation potential** is a 0-100 signal score built from repetition, copy-paste between applications, typing, window switching and time spent.
 - **Savings** use the AI model's estimate of the automatable share when one was available, otherwise 60%, 35% or 10% for high, medium or low potential.
 - **Automation drafts** are starting points. Review and test them on sample data before using them on real work.
+- **AI used for this report:** 18 AI calls (3 answered from cache), 49,511 input / 25,446 output tokens, 3 web searches: about $0.18 (screenshots $0.12, text $0.04, web search $0.02)
 - **Privacy:** Typed text was not stored, only counted. Excluded apps and windows were not captured.

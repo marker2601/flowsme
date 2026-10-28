@@ -98,7 +98,7 @@ def analyze_session(session_dir: Path, cfg: Config, log=print, hours_copy: bool 
             engine += " (steps described from window and UI-element names, not screenshots)"
         if llm.failed_roles or llm.over_budget:
             engine += "; heuristics filled in where a model failed or the spending cap was reached"
-    if cfg.llm.provider != "offline":
+    if cfg.llm.provider != "offline" and cfg.analysis.show_ai_usage:
         log(f"AI usage: {llm.cost_summary()}")
         engine += f". AI usage: {llm.cost_summary()}"
         meta = {**meta, "ai_usage": llm.usage}

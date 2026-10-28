@@ -9,16 +9,43 @@ import json
 import os
 import shutil
 import tempfile
+import threading
+import time
+from collections import defaultdict, deque
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, Response
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from .. import __version__
 from .jobs import Jobs, build_zip, report_html, sop_html, summary
 from .store import Store
 
 MAX_UPLOAD = 1024 ** 3  # 1 GB per recording
+UPLOADS = ("/api/v1/recordings", "/api/v1/videos")
+BAD_KEYS_PER_MINUTE = 20  # from one address; more get "try again later" without being checked
+WAITING_PER_SEAT = 3      # reports queued or being made at once for one person
+
+
+class BadKeys:
+    """Remembers recent failed sign-ins per address, so guessing or flooding with keys is slowed down."""
+
+    def __init__(self):
+        self.seen: dict[str, deque] = defaultdict(deque)
+        self.lock = threading.Lock()
+
+    def blocked(self, ip: str) -> bool:
+        with self.lock:
+            q = self.seen[ip]
+            while q and q[0] < time.monotonic() - 60:
+                q.popleft()
+            return len(q) >= BAD_KEYS_PER_MINUTE
+
+    def add(self, ip: str) -> None:
+        with self.lock:
+            self.seen[ip].append(time.monotonic())
+            if len(self.seen) > 10_000:  # forget the oldest addresses rather than grow forever
+                self.seen.pop(next(iter(self.seen)))
 
 
 def create_app(data: Path, workers: int = 2) -> FastAPI:
@@ -27,11 +54,40 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
     jobs = Jobs(store, data, workers)
     app = FastAPI(title="FlowSME", version=__version__, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.store, app.state.jobs = store, jobs
+    bad_keys = BadKeys()
 
-    def caller(authorization: str = Header("")) -> tuple[dict, dict]:
+    def address(request: Request) -> str:
+        return request.client.host if request.client else "?"
+
+    @app.middleware("http")
+    async def guard(request: Request, call_next):
+        """Before any body is read: too many bad keys from this address, or an upload that is unsigned, of
+        unknown size or too big, is refused here, so nobody can fill the server's disk without a seat."""
+        if request.url.path != "/api/v1/health" and bad_keys.blocked(address(request)):
+            # a valid key still gets in: everyone behind one proxy shares its address
+            key = request.headers.get("authorization", "").removeprefix("Bearer").strip()
+            if not (key and store.who(key)):
+                return JSONResponse({"detail": "Too many wrong seat keys. Try again in a minute."}, 429)
+        if request.method == "POST" and request.url.path in UPLOADS:
+            length = request.headers.get("content-length", "")
+            if not length.isdigit():
+                return JSONResponse({"detail": "Send the file with its size."}, 411)
+            if int(length) > MAX_UPLOAD + 1024 ** 2:
+                return JSONResponse({"detail": "This file is over 1 GB."}, 413)
+            key = request.headers.get("authorization", "").removeprefix("Bearer").strip()
+            found = store.who(key) if key else None
+            if not found:
+                bad_keys.add(address(request))
+                return JSONResponse({"detail": "Sign in with your FlowSME seat key."}, 401)
+            if found[1]["status"] != "active":
+                return JSONResponse({"detail": "Your seat was revoked. Ask your manager for a new one."}, 403)
+        return await call_next(request)
+
+    def caller(request: Request, authorization: str = Header("")) -> tuple[dict, dict]:
         key = authorization.removeprefix("Bearer").strip()
         found = store.who(key) if key else None
         if not found:
+            bad_keys.add(address(request))
             raise HTTPException(401, "Sign in with your FlowSME seat key.")
         org, member = found
         if member["status"] != "active":
@@ -55,6 +111,20 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
 
     def names(org: dict) -> dict:
         return {m["seat"]: m["name"] for m in org["members"]}
+
+    admission = threading.Lock()  # parallel requests can't all slip past the limits
+
+    def allowance(org: dict, m: dict) -> None:
+        """Each report costs AI money: a few waiting per person, and a daily allowance per organisation."""
+        with admission:
+            waiting = sum(1 for r in store.records(org["id"])
+                          if r.get("seat") == m["seat"] and r.get("status") in ("queued", "analysing"))
+            if waiting >= WAITING_PER_SEAT:
+                raise HTTPException(429, f"You have {waiting} reports being made. Wait until one is ready.")
+            try:
+                store.use_report(org)
+            except ValueError as exc:
+                raise HTTPException(429, str(exc)) from None
 
     def listing(org: dict, record: dict, manager_view: bool) -> dict:
         row = {k: record.get(k) for k in ("id", "title", "started", "seconds", "uploaded", "status", "error")}
@@ -93,6 +163,7 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
         position = opts.pop("position", None)
         if m["role"] != "manager" or position not in [p["name"] for p in org["positions"]]:
             position = m["position"]  # employees always report as their own position
+        allowance(org, m)
         fd, tmp = tempfile.mkstemp(suffix=".zip")
         try:
             size = 0
@@ -105,6 +176,7 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
             try:
                 record = store.add_recording(org, m, Path(tmp), opts)
             except ValueError as exc:
+                store.use_report(org, refund=True)  # a rejected file doesn't count
                 raise HTTPException(400, str(exc)) from None
         finally:
             Path(tmp).unlink(missing_ok=True)
@@ -127,7 +199,9 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
         position = opts.pop("position", None)
         if m["role"] != "manager" or position not in [p["name"] for p in org["positions"]]:
             position = m["position"]
-        fd, tmp = tempfile.mkstemp(suffix=Path(file.filename or "video.mp4").suffix)
+        allowance(org, m)
+        suffix = Path(file.filename or "video.mp4").suffix.lower()
+        fd, tmp = tempfile.mkstemp(suffix=suffix if suffix.isascii() and len(suffix) <= 6 else ".bin")
         try:
             size = 0
             with os.fdopen(fd, "wb") as out:
@@ -139,6 +213,7 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
             try:
                 record = store.add_video(org, m, Path(tmp), file.filename or "video.mp4", opts)
             except ValueError as exc:
+                store.use_report(org, refund=True)
                 raise HTTPException(400, str(exc)) from None
         finally:
             Path(tmp).unlink(missing_ok=True)
@@ -188,11 +263,16 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
         record = visible(who, rec_id)
         if record["status"] in ("queued", "analysing"):
             raise HTTPException(409, "It is already being analysed.")
+        allowance(org, m)
         opts = {k: body[k] for k in ("runs_per_month", "tools", "other_tools") if k in body}
         record["options"].update(opts)
         if m["role"] == "manager" and body.get("position") in [p["name"] for p in org["positions"]]:
             record["position"] = body["position"]
-        jobs.submit(record)
+        try:
+            jobs.claim(record)
+        except ValueError as exc:
+            store.use_report(org, refund=True)
+            raise HTTPException(409, str(exc)) from None
         return listing(org, record, m["role"] == "manager")
 
     @app.delete("/api/v1/recordings/{rec_id}")
@@ -200,7 +280,10 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
         record = visible(who, rec_id)
         if record["status"] in ("queued", "analysing"):
             raise HTTPException(409, "Wait until the analysis has finished.")
-        store.delete_recording(record)
+        try:
+            store.delete_recording(record)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
         return {"deleted": rec_id}
 
     # ---- the manager's Admin panel ----------------------------------------------------------------
@@ -221,7 +304,7 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
         org = who[0]
         try:
             member, key = store.add_member(org, str(body.get("name", "")), str(body.get("position", "")),
-                                           str(body.get("email", "")))
+                                           str(body.get("email", "")))  # employees only: managers come from FlowSME
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from None
         return {"seat": member["seat"], "key": key, "admin": admin_view(store.org(org["id"]))}
@@ -242,10 +325,7 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
             elif action == "restore":
                 store.set_status(org, seat, True)
             elif action == "position":
-                if body.get("position") not in [p["name"] for p in org["positions"]]:
-                    raise ValueError("Choose one of the positions.")
-                member["position"] = body["position"]
-                store.save_org(org)
+                store.set_member_position(org, seat, str(body.get("position")))
             elif action == "new_key":
                 key = store.new_key(org, seat)
             else:
@@ -257,9 +337,11 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
     @app.put("/api/v1/admin/positions")
     def positions(body: dict, who: tuple[dict, dict] = Depends(manager)) -> dict:
         org = who[0]
+        positions = body.get("positions")
+        if not isinstance(positions, list) or not all(isinstance(p, dict) for p in positions):
+            raise HTTPException(400, "Send the positions as a list of names and hourly costs.")
         try:
-            store.set_positions(org, list(body.get("positions") or []), str(body.get("currency", "$")),
-                                str(body.get("default_position", "")))
+            store.set_positions(org, positions, str(body.get("currency", "$")), str(body.get("default_position", "")))
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from None
         return admin_view(store.org(org["id"]))
@@ -271,6 +353,9 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
         from ..measure import compare as run_compare
 
         before, after = visible(who, str(body.get("before"))), visible(who, str(body.get("after")))
+        for key in ("before_items", "after_items"):
+            if body.get(key) is not None and not (isinstance(body[key], int) and 0 < body[key] < 10_000):
+                raise HTTPException(400, "Items must be whole numbers.")
         if before["status"] != "ready" or after["status"] != "ready":
             raise HTTPException(409, "Both reports must be ready.")
         try:
@@ -284,6 +369,10 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
     def team(body: dict, who: tuple[dict, dict] = Depends(manager)) -> str:
         from ..team import team_view
 
+        items = body.get("items")
+        if items is not None and not (isinstance(items, list) and all(isinstance(n, int) and 0 < n < 10_000
+                                                                        for n in items)):
+            raise HTTPException(400, "Items must be whole numbers, one per recording.")
         records = [visible(who, str(r)) for r in body.get("recordings") or []]
         if len(records) < 2 or any(r["status"] != "ready" for r in records):
             raise HTTPException(400, "Choose two or more recordings whose reports are ready.")

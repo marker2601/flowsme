@@ -552,7 +552,10 @@ def values(target: Target) -> dict:
     v = {s.env: saved_key(s.env) or os.environ.get(s.env, "") for s in target.settings}
     missing = [s.label for s in target.settings if not s.optional and not v[s.env] and not s.default]
     if missing:
-        raise SystemExit(f"{target.name}: enter {', '.join(missing)} first (Build automation > Create it in).")
+        names = ", ".join(f"{s.label} ({s.env})" for s in target.settings
+                          if not s.optional and not v[s.env] and not s.default)
+        raise SystemExit(f"{target.name}: enter {names} first, in the app's Build automation > Create it in, "
+                         "or as environment variables for the command line.")
     for s in target.settings:
         v[s.env] = v[s.env] or s.default
     return v

@@ -24,6 +24,7 @@ from flowsme import __version__  # noqa: E402
 
 BUILD, DIST = ROOT / "build", ROOT / "dist"
 ICON = ROOT / "flowsme" / "assets" / "flowsme.ico"
+MARKED = ROOT / "flowsme" / "assets" / "marked.min.js"
 # Loaded at run time, so PyInstaller can't see them: input hooks and UI Automation.
 RECORDER_HIDDEN = ["--collect-submodules", "pynput", "--collect-all", "uiautomation", "--collect-all", "sv_ttk"]
 CLIENT_MODULES = {"flowsme", "flowsme.config", "flowsme.recorder", "flowsme.session", "flowsme.connect",
@@ -50,6 +51,7 @@ def build_app() -> Path:
     subprocess.run([
         sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--windowed", "--name", "FlowSME",
         "--icon", str(ICON), "--add-data", f"{ICON}{os.pathsep}.", *RECORDER_HIDDEN, "--collect-submodules", "ddgs",
+        "--add-data", f"{MARKED}{os.pathsep}flowsme/assets",  # the report pages' Markdown renderer
         "--exclude-module", "flowsme.server", "--exclude-module", "flowsme.client",
         "--distpath", str(DIST), "--workpath", str(BUILD / "pyinstaller"), "--specpath", str(BUILD),
         str(ROOT / "packaging" / "flowsme_app.py"),

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from .config import AnalysisConfig
-from .models import Task
+from .models import Task, plural
 from .workflow import handoffs
 
 # Share of a task's time assumed automatable when the AI model gave no estimate of its own.
@@ -40,7 +40,7 @@ def score_task(f: dict) -> tuple[int, str, list[str]]:
     if f["runs"] >= 3:
         reasons.append(f"The same {f['steps_per_run']}-step routine ran {f['runs']} times")
     if f["cross_app_transfers"]:
-        reasons.append(f"{f['cross_app_transfers']} values copied by hand from one application to another")
+        reasons.append(f"{plural(f['cross_app_transfers'], 'value')} copied by hand from one application to another")
     elif f["pastes"] >= 3:
         reasons.append(f"{f['pastes']} copy-paste actions")
     if f["chars_typed"] >= 100:

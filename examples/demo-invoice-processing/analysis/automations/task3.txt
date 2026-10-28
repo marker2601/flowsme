@@ -1,6 +1,11 @@
-TRIGGER: Recurrence - Frequency: Week, Interval: 1, On: Friday, At: 08:00 UTC (Run a cloud flow on a schedule)
-ACTION 1: Excel Online (Business) - Get file metadata - Library: Shared Documents, File: /AP/AP Tracker.xlsx
-ACTION 2: Office Scripts - Run script 'GetSummaryTableAsHTML' on AP Tracker.xlsx, Worksheet: 'Summary' (script reads UsedRange/Table, returns htmlTable + totalDue + overdueCount + weekEnding)
-ACTION 3: Outlook - Send an email (V2) - To: [AP-Manager-DL - confirm address], Subject: concat('Weekly AP Summary - w/e ', outputs('Run_script')?['body/weekEnding']), Body: <p>Hi [Name],</p><p>Weekly AP status for w/e @{weekEnding}:</p>@{htmlTable}<p>Total due: @{totalDue}, Overdue: @{overdueCount}</p><p>Full tracker attached.</p>, Attachments: Name: AP Tracker.xlsx, ContentBytes: @{body('Get_file_content')}
-  - Set Importance: Normal, Is HTML: Yes
-ACTION 4 (control): SharePoint - Create item in 'AP Sends Log' with timestamp, recipient, subject, status
+TRIGGER: Recurrence - Every Friday 15:00 UTC (Weekly AP summary)
+ACTION 1: Excel Online (Business) - Run script [Refresh_AP_Summary] on /Shared Documents/AP Tracker.xlsx
+  - Script: await workbook.refreshAllDataConnections(); await workbook.getWorksheet('Summary').calculate(); return range A1:E20 values + totals
+ACTION 2: Compose - Build Subject: concat('Weekly AP Summary - WE ', utcNow('yyyy-MM-dd'))
+ACTION 3: Compose - Build HTML Body with outputs from Script (Total Due, Overdue, Paid, Top vendors) + link to file
+ACTION 4: Outlook - Send an email (V2)
+  - To: ap-manager@[domain] (from fixed contact)
+  - Subject: outputs Subject
+  - Body: outputs HTML Body
+  - Attachment: Link to SharePoint file (not duplicate .xlsx attachment)
+ACTION 5: SharePoint - Error branch: If Run script fails -> Send alert to owner and DO NOT send summary

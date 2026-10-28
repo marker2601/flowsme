@@ -1,0 +1,5 @@
+# Tests: python -m pytest tests (offline: no AI, no web)
+-r requirements.txt
+-r requirements-server.txt
+pytest>=8
+httpx>=0.27

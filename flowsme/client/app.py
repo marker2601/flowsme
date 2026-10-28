@@ -48,7 +48,7 @@ While recording it saves:
 
 It skips password managers, sign-in pages, private browsing and Windows security prompts. Pause (Ctrl+Alt+P) before anything private.
 
-Recordings stay on this computer until you send one for a report. Then it goes, encrypted, to the FlowSME server, which analyses it and keeps it for your team. Nothing goes anywhere else.
+Recordings stay on this computer until you send one for a report. Then it goes, encrypted, to your team's FlowSME service, which keeps it for your team until it is deleted. To read it, the service sends its screenshots and narration to Meta's AI models. It is not shared with anyone else.
 
 If you record other people's work, ask them first."""
 
@@ -131,6 +131,7 @@ class ClientApp:
         self.cfg = self._config()
         self.state_path = self.home / "app.json"
         self.state = self._load_state()
+        self._clear_cache(max_age_days=7)
         self.events: queue.Queue = queue.Queue()
         sys.stdout = sys.stderr = _Pipe(self.events)
         root.report_callback_exception = lambda kind, exc, tb: print(f"Error: {exc}")
@@ -333,6 +334,7 @@ class ClientApp:
                                                   parent=self.root):
             return
         account.forget(self.home)
+        self._clear_cache()
         self.cloud, self.me, self.server_recs, self.summaries = None, {}, {}, {}
         self.who.config(text="Not signed in", foreground="")
         self.admin_btn.pack_forget()
@@ -482,7 +484,7 @@ class ClientApp:
             total = sum(t["money_saved_per_month"] or 0 for t in tasks)
             secs = rec.get("seconds") or 0
             text = (f"{fmt_minutes(secs / 60)} recorded, {len(tasks)} task{'s' if len(tasks) != 1 else ''}. About "
-                    f"{fmt_minutes(saved)} could be saved per run: {hours:.1f} hours{money(total)} a month."
+                    f"{fmt_minutes(saved)} could be saved each time this work is done: {hours:.1f} hours{money(total)} a month."
                     + (f" Done by: {rec['position']}." if rec.get("position") else "")
                     + " Double-click a task to open the report.")
             for t in tasks:
@@ -694,6 +696,21 @@ class ClientApp:
         self._pick = f"srv:{rec['id']}"  # a video has no folder here: select its row once it is listed
         self.refresh()
 
+    def _clear_cache(self, max_age_days: float = 0) -> None:
+        """Opened reports are copies of what the server keeps, screenshots included: don't let them pile up."""
+        cache = self.home / "cache"
+        if not cache.exists():
+            return
+        cutoff = time.time() - max_age_days * 86400
+        for page in cache.rglob("*.html"):
+            with contextlib.suppress(OSError):
+                if not max_age_days or page.stat().st_mtime < cutoff:
+                    page.unlink()
+        for folder in sorted(cache.rglob("*"), reverse=True):
+            with contextlib.suppress(OSError):
+                if folder.is_dir():
+                    folder.rmdir()  # only empty ones
+
     def _fetch_page(self, what: str, fetch) -> None:
         _, rec = self._selection()
         if not rec or not self.cloud:
@@ -732,7 +749,7 @@ class ClientApp:
         tree = ttk.Treeview(f, columns=("task", "potential", "saved"), show="headings", height=min(len(tasks), 5),
                             selectmode="browse")
         for col, label, width in (("task", "Task", 420), ("potential", "Potential", 110),
-                                  ("saved", "Saves per run", 110)):
+                                  ("saved", "Saves each time", 110)):
             tree.heading(col, text=label, anchor="w")
             tree.column(col, width=int(width * scale), anchor="w")
         for t in tasks:
@@ -1210,8 +1227,9 @@ def main() -> None:
         ok, text = self_test()
         out = Path(os.environ.get("TEMP", ".")) / "FlowSME-Recorder-self-test.txt"
         out.write_text(text, encoding="utf-8")
-        ctypes.windll.user32.MessageBoxW(None, f"{text}\n\nSaved to {out}", "FlowSME", 0x40 if ok else 0x10)
-        return
+        if "--quiet" not in sys.argv:  # --quiet: no message box, for scripts; the exit code says it all
+            ctypes.windll.user32.MessageBoxW(None, f"{text}\n\nSaved to {out}", "FlowSME", 0x40 if ok else 0x10)
+        raise SystemExit(0 if ok else 1)
     with contextlib.suppress(Exception):
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("FlowSME.Client")
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "Local\\FlowSME.Client")

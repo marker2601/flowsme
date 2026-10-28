@@ -5,6 +5,7 @@ reachable there). It only sends a workflow it is given: the workflows themselves
 server (deploy.py), so none of that logic ships with the client app."""
 from __future__ import annotations
 
+import ipaddress
 import json
 import re
 import shutil
@@ -184,12 +185,38 @@ def logic_app_check(v: dict) -> str:
     return f"Azure answered: resource group {group.get('name', '?')} in {group.get('location', '?')}."
 
 
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A redirect would carry the Authorization header to wherever it points: refuse it instead."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise urllib.error.HTTPError(req.full_url, code, f"Redirected to {newurl}; not followed", headers, fp)
+
+
+_open = urllib.request.build_opener(_NoRedirect).open
+
+
+def _local(host: str | None) -> bool:
+    """This computer or the customer's own network, where a self-hosted n8n or Node-RED often has no https."""
+    if not host:
+        return False
+    if host == "localhost" or host.endswith((".local", ".lan", ".internal", ".home.arpa")) or "." not in host:
+        return True
+    try:
+        return ipaddress.ip_address(host).is_private
+    except ValueError:
+        return False
+
+
 def _call(service: str, method: str, url: str, headers: dict | None = None, body=None, timeout: int = 30):
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "https" and not (parts.scheme == "http" and _local(parts.hostname)):
+        raise SystemExit(f"Use an https:// address for {service}: over plain http its key would travel unencrypted.")
     data = None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
     request = urllib.request.Request(url, data=data, method=method, headers={
         "Accept": "application/json", **({"Content-Type": "application/json"} if data else {}), **(headers or {})})
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as resp:
+        with _open(request, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")[:300]

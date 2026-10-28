@@ -1,8 +1,8 @@
-DESKTOP FLOW: AP_Workspace_Launcher
-1. Launch Outlook (if not running) -> Wait for 'Inbox' window
-2. UI Automation: Click View > Filter > Unread [fallback: Send Keys Alt+V,F,U] -> Verify filter label = 'Unread'
-3. Open Document: FilePath = %AP_Tracker_Path% (e.g. SharePoint synced path) ReadOnly=false
-4. Excel Action: Activate Worksheet 'October' -> GoTo Cell A1 -> Freeze Panes check
-5. Launch Chrome: URL = %Vendor_Portal_Payments_URL% (saved 22-char address from step 7) -> Wait for selector: text='Payments'
-6. Arrange Windows: Outlook Left, Excel Center, Chrome Right + Focus Excel!October!A1
-7. On Error: Screenshot + Log to %Desktop%\AP_Launcher_Log.txt and stop with message
+TRIGGER: Power Automate cloud flow - Recurrence daily 08:00 + Outlook trigger 'When a new email arrives (V3)' with Folder=Inbox, Filter=isRead eq false
+ACTION 1: Get emails - Microsoft Graph mail API via Outlook connector 'Get emails' with $filter=isRead eq false and receivedDateTime ge startOfMonth(October)
+ACTION 2: Filter array - Subject/From contains [invoice, bill, statement, remittance, vendor names] - keep AP candidates only
+ACTION 3: Excel Online - 'List rows present in a table' on AP tracker (OneDrive/SharePoint) Table=October_AP - select Vendor, InvoiceNo, Amount, DueDate, Status
+ACTION 4: Compose - Build HTML digest table: Unread AP emails (received, sender, subject, hasAttachment) LEFT JOIN October rows where Status <> Paid
+ACTION 5: Create review task - 'Create a task' in Planner/To Do + send Teams/Outlook digest with deep link to October worksheet and Vendor Portal Payments URL
+ACTION 6 (control): Mark processed only - Do NOT auto-mark inbox as read; set Flag or Category='AP-Review-Oct' via 'Update email' for poka-yoke
+MEASURE: Log run time, count emails scanned vs AP candidates to Power BI dataset for control plan

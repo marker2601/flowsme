@@ -15,7 +15,7 @@ import re
 
 from .integration import label, source_of
 from .knowledge import ERROR_RATES, METHODS, sigma_level
-from .models import Task
+from .models import Task, plural
 
 BVA_WORDS = re.compile(r"submit|send|save|approve|confirm|post|sign|file|move|processed", re.I)
 
@@ -70,7 +70,7 @@ def analyse(task: Task, plan: dict, tools: dict, checks: dict, items_per_month: 
                            "steps": steps_hit, "minutes_per_item": round(minutes, 2)})
 
     moved = [r for r in flows if r["how"] == "copy-paste"]
-    waste("transportation", f"{len(moved)} values per item carried between applications by copy-paste"
+    waste("transportation", f"{plural(len(moved), 'value')} per item carried between applications by copy-paste"
           if moved else "", [s["step"] for s in steps if s["waste"] == "transportation"])
     switches = features.get("app_switches", 0) / max(task.runs, 1)
     waste("motion", f"{switches:.0f} window switches and "
@@ -82,22 +82,22 @@ def analyse(task: Task, plan: dict, tools: dict, checks: dict, items_per_month: 
     over = []
     proven = [r for r in twice if r.get("confirmed_source")]
     if proven:
-        over.append(f"{len(proven)} value(s) typed by hand that the fingerprints prove already exist elsewhere ("
+        over.append(f"{plural(len(proven), 'value')} typed by hand that the fingerprints prove already exist elsewhere ("
                     + ", ".join(f"{r['to']['field']} = {label(r['confirmed_source'])}" for r in proven) + ")")
     if len(twice) > len(proven):
-        over.append(f"{len(twice) - len(proven)} typed value(s) that probably exist elsewhere (same field name: "
+        over.append(f"{plural(len(twice) - len(proven), 'typed value')} that probably exist elsewhere (same field name: "
                     + ", ".join(r["to"]["field"] for r in twice if not r.get("confirmed_source")) + ")")
     if by_rule:
-        over.append(f"{len(by_rule)} value(s) worked out by hand with a rule described in the narration ("
+        over.append(f"{plural(len(by_rule), 'value')} worked out by hand with a rule described in the narration ("
                     + ", ".join(f"{r['to']['field']}: {r['narrated']['rule'] or r['narrated']['answer']}"
                                 for r in by_rule) + ")")
     if hops:
-        over.append(f"{len(hops)} value(s) copied into one file only to be copied out again ("
+        over.append(f"{plural(len(hops), 'value')} copied into one file only to be copied out again ("
                     + ", ".join(f"{r['from']['field']} in {r['from']['system']}" for r in hops) + ")")
     waste("over_processing", "; ".join(over), [s["step"] for s in steps if s["waste"] == "over_processing"])
     waste("defects", " ".join(r["text"] for r in rework), [])
     slow = [s for s in steps if s["seconds"] * scale >= 45]
-    waste("waiting", f"{len(slow)} step(s) of 45 seconds or more (waiting for pages or reading)" if slow else "",
+    waste("waiting", f"{plural(len(slow), 'step')} of 45 seconds or more (waiting for pages or reading)" if slow else "",
           [s["step"] for s in slow])
     nva_share = time_by.get("NVA", 0) / total
     if nva_share >= 0.5:
