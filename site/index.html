@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -120,254 +120,107 @@
   ]
 }
 </script>
-
 <script>
-  // Apply a saved light/dark choice before the page paints.
+  // Before the page paints: switch on the enhanced styles, and apply a saved light/dark choice.
+  document.documentElement.className = "js";
   try { var t = localStorage.getItem("flowsme-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
 </script>
-<style>
-  :root {
-    color-scheme:light;
-    --bg:#f4f5f8; --card:#ffffff; --fg:#1b1d22; --muted:#585e69; --line:#e4e6eb; --soft:#f7f8fa;
-    --accent:#3355d1; --accent-hover:#2944b0; --accent-soft:#e8edfc; --on-accent:#ffffff;
-    --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 8px rgba(16,24,40,.04);
-    --high:#b42318; --high-bg:#fee4e2; --low:#067647; --low-bg:#dcfae6;
-    --band:#1b1d22; --band-fg:#f4f5f8; --band-muted:#c4c9d2; --band-accent:#a9bcff;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme:dark;
-      --bg:#111317; --card:#1a1d23; --fg:#e7e9ee; --muted:#a3aab5; --line:#2a2e36; --soft:#20242b;
-      --accent:#8ea8ff; --accent-hover:#b0c2ff; --accent-soft:#232c48; --on-accent:#0f1530;
-      --shadow:none;
-      --high:#fda29b; --high-bg:#4a1f1c; --low:#75e0a7; --low-bg:#123b27;
-      --band:#1a1d23; --band-fg:#e7e9ee; --band-muted:#a3aab5; --band-accent:#8ea8ff;
-    }
-  }
-  :root[data-theme="dark"] {
-    color-scheme:dark;
-    --bg:#111317; --card:#1a1d23; --fg:#e7e9ee; --muted:#a3aab5; --line:#2a2e36; --soft:#20242b;
-    --accent:#8ea8ff; --accent-hover:#b0c2ff; --accent-soft:#232c48; --on-accent:#0f1530;
-    --shadow:none;
-    --high:#fda29b; --high-bg:#4a1f1c; --low:#75e0a7; --low-bg:#123b27;
-    --band:#1a1d23; --band-fg:#e7e9ee; --band-muted:#a3aab5; --band-accent:#8ea8ff;
-  }
-
-  * { box-sizing:border-box; }
-  html { scroll-behavior:smooth; scroll-padding-top:72px; -webkit-text-size-adjust:100%; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } * { transition:none !important; } }
-  body { margin:0; background:var(--bg); color:var(--fg); overflow-wrap:break-word;
-         font:17px/1.6 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",Arial,sans-serif; }
-  h1, h2, h3 { font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",Arial,sans-serif;
-               line-height:1.2; letter-spacing:-.01em; }
-  h2 { font-size:clamp(1.6rem, 3.6vw, 2.2rem); margin:0 0 12px; }
-  h3 { font-size:1.15rem; margin:0 0 6px; }
-  p { margin:0 0 12px; }
-  a { color:var(--accent); text-underline-offset:2px; }
-  a:hover { color:var(--accent-hover); }
-  :focus-visible { outline:3px solid var(--accent); outline-offset:2px; border-radius:6px; }
-  code, pre { font-family:"Cascadia Code",ui-monospace,Consolas,"SFMono-Regular",Menlo,monospace; }
-  .wrap { max-width:1120px; margin:0 auto; padding:0 16px; }
-  @media (min-width:700px) { .wrap { padding:0 28px; } }
-  .skip { position:absolute; left:16px; top:-60px; background:var(--card); color:var(--fg); padding:10px 14px;
-          border-radius:8px; z-index:100; border:1px solid var(--line); }
-  .skip:focus { top:12px; }
-  .muted { color:var(--muted); }
-  .lead { font-size:1.12rem; color:var(--muted); max-width:62ch; }
-  .eyebrow { display:inline-block; font-size:.82rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
-             color:var(--accent); margin-bottom:10px; }
-
-  /* ---- header ---- */
-  .bar { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line);
-         box-shadow:var(--shadow); }
-  .bar .wrap { display:flex; align-items:center; gap:14px; height:60px; }
-  .brand { display:flex; align-items:center; gap:9px; font-weight:700; font-size:1.05rem; color:var(--fg);
-           text-decoration:none; white-space:nowrap; }
-  .brand:hover { color:var(--fg); }
-  .logo { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#3355d1,#7a5af8);
-          display:grid; place-items:center; color:#fff; font-size:15px; font-weight:700; flex:none; }
-  .bar nav { display:flex; gap:4px; margin-left:auto; }
-  .bar nav a { color:var(--fg); text-decoration:none; font-size:.93rem; padding:6px 10px; border-radius:8px; }
-  .bar nav a:hover { background:var(--soft); color:var(--accent); }
-  .bar .actions { display:flex; align-items:center; gap:8px; }
-  @media (max-width:899px) { .bar nav { display:none; } .bar .actions { margin-left:auto; } }
-
-  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px;
-         padding:10px 18px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--fg);
-         font:inherit; font-size:.98rem; font-weight:600; text-decoration:none; cursor:pointer; text-align:center; }
-  .btn:hover { border-color:var(--accent); color:var(--accent); }
-  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
-  .btn.primary:hover { background:var(--accent-hover); border-color:var(--accent-hover); color:var(--on-accent); }
-  .btn.small { min-height:38px; padding:6px 12px; font-size:.9rem; }
-  .icon-btn { width:40px; min-height:38px; padding:0; font-size:1.05rem; }
-  @media (max-width:420px) { .bar .btn.small.primary .long { display:none; } }
-  @media (min-width:421px) { .bar .btn.small.primary .short { display:none; } }
-
-  /* ---- hero ---- */
-  .hero { padding:56px 0 48px; background:linear-gradient(180deg, var(--accent-soft) 0%, var(--bg) 100%); }
-  .hero .wrap { display:grid; gap:40px; align-items:center; }
-  @media (min-width:960px) { .hero .wrap { grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); } .hero { padding:80px 0 72px; } }
-  .hero h1 { font-size:clamp(2.05rem, 5.4vw, 3.3rem); margin:0 0 18px; letter-spacing:-.02em; }
-  .ctas { display:flex; flex-wrap:wrap; gap:12px; margin:26px 0 14px; }
-  @media (max-width:480px) { .ctas .btn { flex:1 1 100%; } }
-  .hero .note { font-size:.93rem; color:var(--muted); margin:0; }
-
-  .preview { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 40px rgba(16,24,40,.10);
-             overflow:hidden; }
-  :root[data-theme="dark"] .preview { box-shadow:none; }
-  .preview .top { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line);
-                  font-size:.85rem; color:var(--muted); }
-  .preview .top .logo { width:22px; height:22px; font-size:12px; border-radius:6px; }
-  .preview .top b { color:var(--fg); }
-  .preview .body { padding:16px; }
-  .preview h3 { font-size:1.08rem; margin:0 0 12px; }
-  .kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:14px; }
-  .kpi { background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
-  .kpi small { display:block; font-size:.74rem; color:var(--muted); line-height:1.3; }
-  .kpi b { font-size:1.15rem; }
-  .tasks { list-style:none; margin:0; padding:0; font-size:.9rem; }
-  .tasks li { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:9px 0;
-              border-top:1px solid var(--line); }
-  .tasks li span { min-width:0; }
-  .tasks li small { display:block; color:var(--muted); font-size:.8rem; }
-  .badge { display:inline-block; padding:1px 9px; border-radius:999px; font-size:.75rem; font-weight:600; white-space:nowrap; }
-  .b-high { color:var(--high); background:var(--high-bg); } .b-low { color:var(--low); background:var(--low-bg); }
-  .preview .foot { padding:12px 16px; border-top:1px solid var(--line); background:var(--soft); font-size:.9rem;
-                   display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-  .preview .foot span { color:var(--muted); }
-
-  /* ---- proof strip ---- */
-  .proof { background:var(--band); color:var(--band-fg); padding:30px 0; }
-  .proof p.caption { margin:0 0 16px; color:var(--band-muted); font-size:.92rem; }
-  .proof ul { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 24px; }
-  @media (min-width:860px) { .proof ul { grid-template-columns:repeat(4,minmax(0,1fr)); } }
-  .proof b { display:block; font-size:clamp(1.45rem, 3.2vw, 1.9rem); line-height:1.2; color:var(--band-accent); }
-  .proof span { font-size:.92rem; color:var(--band-muted); }
-
-  /* ---- sections ---- */
-  section.block { padding:72px 0; }
-  section.block.alt { background:var(--card); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
-  .head { max-width:720px; margin-bottom:34px; }
-  .grid { display:grid; gap:18px; }
-  @media (min-width:720px) { .grid.two { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-  @media (min-width:900px) { .grid.three { grid-template-columns:repeat(3,minmax(0,1fr)); } }
-  @media (min-width:720px) and (max-width:899px) { .grid.three { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; box-shadow:var(--shadow); min-width:0; }
-  .alt .card { background:var(--soft); box-shadow:none; }
-  .card p:last-child { margin-bottom:0; }
-  .card p, .card li { color:var(--muted); }
-  .card h3 { color:var(--fg); }
-
-  .steps { counter-reset:step; }
-  .step .num { width:38px; height:38px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
-               display:grid; place-items:center; font-weight:700; margin-bottom:14px; }
-
-  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 12px; padding:0; list-style:none; }
-  .chips li { font-size:.82rem; font-weight:600; padding:3px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent); }
-  pre.gherkin { margin:12px 0 0; padding:12px 14px; border-radius:10px; background:var(--bg); border:1px solid var(--line);
-                font-size:.8rem; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--fg); }
-  .alt pre.gherkin { background:var(--card); }
-  pre.gherkin .k { color:var(--accent); font-weight:600; }
-  .caption-small { font-size:.8rem; color:var(--muted); margin-top:6px; }
-  .card .more { display:inline-block; margin-top:10px; font-weight:600; }
-
-  ul.ticks { list-style:none; margin:0; padding:0; }
-  ul.ticks li { position:relative; padding-left:28px; margin:0 0 10px; }
-  ul.ticks li::before { content:""; position:absolute; left:2px; top:.5em; width:14px; height:8px;
-                        border-left:2.5px solid var(--accent); border-bottom:2.5px solid var(--accent); transform:rotate(-45deg); }
-  .role { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-  .role .tag { font-size:.78rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 10px;
-               border-radius:999px; background:var(--accent-soft); color:var(--accent); }
-  .callout { margin-top:18px; padding:14px 18px; border-left:4px solid var(--accent); background:var(--accent-soft);
-             border-radius:0 12px 12px 0; }
-  .callout p { margin:0; color:var(--fg); }
-
-  .privacy .card h3 { display:flex; gap:10px; align-items:flex-start; }
-  .privacy .card h3 svg { flex:none; margin-top:2px; }
-  .fineprint { margin-top:22px; font-size:.93rem; color:var(--muted); max-width:78ch; }
-
-  .meta-models .card .model { font-size:.8rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
-
-  /* ---- FAQ ---- */
-  .faq { max-width:820px; }
-  .faq details { background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:10px; }
-  .faq summary { cursor:pointer; list-style:none; padding:16px 48px 16px 18px; font-weight:600; position:relative; }
-  .faq summary::-webkit-details-marker { display:none; }
-  .faq summary::after { content:"+"; position:absolute; right:18px; top:50%; transform:translateY(-50%);
-                        font-size:1.4rem; font-weight:400; color:var(--muted); line-height:1; }
-  .faq details[open] summary::after { content:"\2212"; }
-  .faq details p { margin:0; padding:0 18px 16px; color:var(--muted); }
-
-  /* ---- final CTA and footer ---- */
-  .final { padding:72px 0; text-align:center; background:linear-gradient(180deg, var(--bg) 0%, var(--accent-soft) 100%); }
-  .final .lead { margin:0 auto; }
-  .final .ctas { justify-content:center; }
-  footer { background:var(--card); border-top:1px solid var(--line); padding:28px 0 36px; font-size:.9rem; color:var(--muted); }
-  footer .wrap { display:flex; flex-wrap:wrap; gap:14px 28px; justify-content:space-between; }
-  footer nav { display:flex; flex-wrap:wrap; gap:6px 18px; }
-  footer p { margin:0; max-width:60ch; }
-</style>
+<link rel="stylesheet" href="assets/site.css?v=2">
+<script src="assets/site.js?v=2" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 
-<header class="bar">
-  <div class="wrap">
-    <a class="brand" href="#top" aria-label="FlowSME home"><span class="logo" aria-hidden="true">F</span>FlowSME</a>
-    <nav aria-label="Sections">
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="#top" aria-label="FlowSME, back to top"><span class="logo" aria-hidden="true">F</span>FlowSME</a>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
       <a href="#how">How it works</a>
-      <a href="#get">What you get</a>
+      <a href="#sample">Sample report</a>
+      <a href="#calculator">Calculator</a>
       <a href="#teams">Teams</a>
       <a href="#privacy">Privacy</a>
-      <a href="#consultants">Consultants</a>
       <a href="#faq">FAQ</a>
+      <a class="btn primary nav-cta" href="mailto:hello@flowsme.example?subject=Free%20FlowSME%20report%20on%20one%20process&amp;body=The%20process%3A%0AHow%20often%20it%20runs%3A%0AThe%20apps%20it%20uses%3A%0A">Get a free report on one process</a>
     </nav>
-    <div class="actions">
-      <button class="btn small icon-btn" id="theme" type="button" aria-label="Switch between light and dark" title="Light or dark">◐</button>
-      <a class="btn small primary" href="mailto:hello@flowsme.example?subject=Free%20FlowSME%20report%20on%20one%20process&amp;body=The%20process%3A%0AHow%20often%20it%20runs%3A%0AThe%20apps%20it%20uses%3A%0A"><span class="long">Get a free report</span><span class="short">Free report</span></a>
+    <div class="header-actions">
+      <button class="btn icon-btn ghost" id="theme" type="button" aria-label="Switch between light and dark" title="Light or dark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+      </button>
+      <a class="btn sm primary cta-header" href="mailto:hello@flowsme.example?subject=Free%20FlowSME%20report%20on%20one%20process&amp;body=The%20process%3A%0AHow%20often%20it%20runs%3A%0AThe%20apps%20it%20uses%3A%0A">Get a free report</a>
+      <button class="btn icon-btn menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span class="bars" aria-hidden="true"></span></button>
     </div>
   </div>
 </header>
 
 <main id="main">
+
+  <!-- ============================================================ hero -->
   <section class="hero" id="top" aria-labelledby="hero-title">
-    <div class="wrap">
+    <div class="container">
       <div>
-        <span class="eyebrow">Process discovery for Windows office work</span>
-        <h1 id="hero-title">Record the work once. See what to automate, what it saves, and get the flow.</h1>
-        <p class="lead">Record a repetitive task on Windows, or upload a screen video you already have. FlowSME maps the
-          workflow step by step, estimates the hours automation would save, writes the SOP and builds the flow in n8n,
-          Make or the workflow tool you already use.</p>
+        <p class="pill"><b>New</b> Upload a screen video you already have</p>
+        <h1 id="hero-title">Record the work once. <span class="grad">See what to automate, what it saves, and get the flow.</span></h1>
+        <p class="lead">Record a repetitive task on Windows, or upload a screen video. FlowSME maps the workflow step by
+          step, estimates the hours automation would save, writes the SOP and builds the flow in n8n, Make or the
+          workflow tool you already use.</p>
         <div class="ctas">
           <a class="btn primary" href="mailto:hello@flowsme.example?subject=Free%20FlowSME%20report%20on%20one%20process&amp;body=The%20process%3A%0AHow%20often%20it%20runs%3A%0AThe%20apps%20it%20uses%3A%0A">Get a free report on one process</a>
-          <a class="btn" href="sample-report.html">See a sample report</a>
+          <a class="btn" href="#sample">See a sample report
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 4v12M5 11l5 5 5-5"/></svg></a>
         </div>
-        <p class="note">Works from a FlowSME recording or a video from Teams, Loom, Snipping Tool or OBS.</p>
-      </div>
-
-      <figure class="preview" aria-label="Preview of a FlowSME report, made with synthetic data" style="margin:0">
-        <div class="top"><span class="logo" aria-hidden="true">F</span><span><b>Workflow report</b> · sample with synthetic data</span></div>
-        <div class="body">
-          <h3>Invoice processing</h3>
-          <div class="kpis">
-            <div class="kpi"><small>Recorded work</small><b>19 min</b></div>
-            <div class="kpi"><small>Could save per run</small><b>14 min</b></div>
-            <div class="kpi"><small>At 20 runs a month</small><b>4.8 h</b></div>
-          </div>
-          <ul class="tasks">
-            <li><span>Process vendor invoice for payment<small>23-step routine, ran 8 times</small></span><span class="badge b-high">High</span></li>
-            <li><span>Send weekly AP summary email<small>Excel, Outlook</small></span><span class="badge b-low">Low</span></li>
-            <li><span>Prepare AP review workspace<small>Outlook, File Explorer, Excel</small></span><span class="badge b-low">Low</span></li>
+        <div class="works-with">
+          <span>Builds flows for</span>
+          <ul aria-label="Workflow tools">
+            <li>n8n</li><li>Make</li><li>Power Automate</li><li>Node-RED</li><li>Logic Apps</li><li>Windmill</li>
           </ul>
         </div>
-        <figcaption class="foot"><span>Automation potential per task</span><a href="sample-report.html">Open the full sample</a></figcaption>
-      </figure>
+      </div>
+
+      <div>
+        <div class="window demo" id="demo" data-phase="done">
+          <div class="window-bar">
+            <span class="logo" aria-hidden="true">F</span>
+            <span class="title">Invoice processing <span>· sample</span></span>
+            <span class="status">Report ready</span>
+            <button class="btn icon-btn pause" type="button" aria-pressed="false" aria-label="Pause the animation">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h3v12H4zM9 2h3v12H9z" fill="currentColor"/></svg>
+            </button>
+          </div>
+          <div class="demo-body">
+            <ol class="feed" aria-label="Steps found in the recording">
+              <li><span class="app-chip app-chrome"><i></i>Chrome</span><span class="txt">Selects the invoice file from the file dialog.</span><span class="t">1:46</span></li>
+              <li><span class="app-chip app-chrome"><i></i>Chrome</span><span class="txt">Confirms attachment of the invoice file to the payment request.</span><span class="t">1:52</span></li>
+              <li><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="txt">Submits the new payment request in the vendor portal.</span><span class="t">1:56</span></li>
+              <li><span class="app-chip app-outlook"><i></i>Outlook</span><span class="txt">Opens the Move menu to relocate the invoice email in Outlook.</span><span class="t">1:59</span></li>
+              <li><span class="app-chip app-outlook"><i></i>Outlook</span><span class="txt">Selects the Processed folder to file the invoice email.</span><span class="t">2:06</span></li>
+            </ol>
+            <div class="demo-foot" aria-hidden="true">
+              <span class="count">Step 23 of 23</span>
+              <span class="progress"></span>
+              <span class="clock">2:06</span>
+            </div>
+            <div class="result">
+              <div class="top"><span>Biggest opportunity</span><span class="badge b-high">High · 71/100</span></div>
+              <h3>Process vendor invoice for payment</h3>
+              <dl>
+                <div><dt>Routine repeated</dt><dd>8 times</dd></div>
+                <div><dt>Time it took</dt><dd>16 min</dd></div>
+                <div><dt>Could save</dt><dd>13 min</dd></div>
+              </dl>
+              <a class="more" href="#sample">Explore this report</a>
+            </div>
+          </div>
+        </div>
+        <p class="demo-caption">One run of the sample invoice routine, step by step. Synthetic data.</p>
+      </div>
     </div>
   </section>
 
+  <!-- ============================================================ proof -->
   <section class="proof" aria-labelledby="proof-title">
-    <div class="wrap">
-      <p class="caption" id="proof-title">From our own test on a narrated invoice video. Not a customer result.</p>
+    <div class="container">
+      <p class="caption" id="proof-title"><b>From our own test</b>A narrated invoice video. Not a customer result.</p>
       <ul>
         <li><b>5.6 min</b><span>narrated invoice video, read end to end</span></li>
         <li><b>47 of 50</b><span>screen changes found</span></li>
@@ -377,197 +230,582 @@
     </div>
   </section>
 
-  <section class="block" id="how" aria-labelledby="how-title">
-    <div class="wrap">
-      <div class="head">
+  <!-- ============================================================ how it works -->
+  <section class="section" id="how" aria-labelledby="how-title">
+    <div class="container">
+      <div class="section-head center" data-reveal>
         <span class="eyebrow">How it works</span>
-        <h2 id="how-title">Three steps from a recording to a working flow</h2>
+        <h2 id="how-title">From one recording to a working flow</h2>
+        <p class="lead">No workshops and no process interviews. Do the work once, the way you always do it.</p>
       </div>
-      <ol class="grid three steps" style="list-style:none;margin:0;padding:0">
-        <li class="card step">
+      <ol class="grid cols-3 steps">
+        <li class="card step" data-reveal>
           <div class="num" aria-hidden="true">1</div>
           <h3>Record the task, or upload a video</h3>
-          <p>Click Record and do the work as usual. Tick Narrate to say why as you go: "the due date is the invoice date
-            plus 30 days". Already have a screen video? Upload it instead, up to 60 minutes.</p>
+          <p>Click Record and work as usual. Tick Narrate to say why as you go: "the due date is the invoice date plus
+            30 days". Already have a screen video? Upload it instead, up to 60 minutes.</p>
         </li>
-        <li class="card step">
+        <li class="card step" data-reveal data-delay="1">
           <div class="num" aria-hidden="true">2</div>
           <h3>FlowSME maps what happened</h3>
-          <p>It reads every screen change: the app, the field or cell, and whether you typed, copied or pasted. It splits
-            the work into tasks, finds the routines you repeat and follows each value from one app to the next.</p>
+          <p>It reads every screen change: the app, the field or cell, and whether you typed, copied or pasted. It
+            splits the work into tasks, finds the routines you repeat and follows each value from one app to the next.</p>
         </li>
-        <li class="card step">
+        <li class="card step" data-reveal data-delay="2">
           <div class="num" aria-hidden="true">3</div>
           <h3>Get the report, the SOP and the flow</h3>
-          <p>Each task gets an automation potential score, minutes saved per run, hours and money saved a month, and a
-            payback time. Pick a task and FlowSME writes the flow for your workflow tool.</p>
+          <p>Each task gets an automation potential score, minutes saved, hours and money saved a month, and a payback
+            time. Pick a task and FlowSME writes the flow for your workflow tool.</p>
         </li>
       </ol>
     </div>
   </section>
 
-  <section class="block alt" id="get" aria-labelledby="get-title">
-    <div class="wrap">
-      <div class="head">
+  <!-- ============================================================ sample explorer -->
+  <section class="section tint" id="sample" aria-labelledby="sample-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Sample report</span>
+        <h2 id="sample-title">Explore a real FlowSME report</h2>
+        <p class="lead">This is the report FlowSME wrote from a 19-minute recording of invoice processing. Switch views,
+          filter the tasks and steps, and follow each value from the PDF to the vendor portal. The data is synthetic.</p>
+      </div>
+
+      <div class="window explorer" data-reveal>
+        <div class="window-bar">
+          <span class="logo" aria-hidden="true">F</span>
+          <span class="title">Workflow report <span>· Demo: invoice processing (synthetic)</span></span>
+          <a class="btn sm" href="sample-report.html">Open the full report
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 4h8v8M16 4 6 14"/></svg></a>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Report views">
+          <button class="tab" role="tab" id="tab-summary" aria-controls="panel-summary" aria-selected="true" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Summary</button>
+          <button class="tab" role="tab" id="tab-tasks" aria-controls="panel-tasks" aria-selected="false" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>Tasks</button>
+          <button class="tab" role="tab" id="tab-map" aria-controls="panel-map" aria-selected="false" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M9 6h4a2 2 0 0 1 2 2v7"/></svg>Workflow map</button>
+          <button class="tab" role="tab" id="tab-run" aria-controls="panel-run" aria-selected="false" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>One run</button>
+          <button class="tab" role="tab" id="tab-data" aria-controls="panel-data" aria-selected="false" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h12l-3-3M20 17H8l3 3"/></svg>Data flow</button>
+          <button class="tab" role="tab" id="tab-auto" aria-controls="panel-auto" aria-selected="false" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Automation</button>
+        </div>
+
+        <!-- Summary -->
+        <div class="panel" role="tabpanel" id="panel-summary" aria-labelledby="tab-summary" tabindex="0">
+          <div class="kpis">
+            <div class="kpi"><small>Recorded work</small><b>19 min</b></div>
+            <div class="kpi accent"><small>Could be saved</small><b>14 min</b><small>76% of the recorded time</small></div>
+            <div class="kpi"><small>Hours saved a month, at 20 runs</small><b>4.8 h</b></div>
+            <div class="kpi"><small>Worth a month, at $30 an hour</small><b>$144</b></div>
+            <div class="kpi"><small>Processes found</small><b>3</b></div>
+          </div>
+          <div class="split">
+            <div class="box">
+              <h4>Time in each application</h4>
+              <ul class="bars animate">
+                <li class="app-portal"><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="track"><span class="fill" style="--w:100%"></span></span><span class="val">5.6 min</span></li>
+                <li class="app-excel"><span class="app-chip app-excel"><i></i>Excel</span><span class="track"><span class="fill" style="--w:84%"></span></span><span class="val">4.7 min</span></li>
+                <li class="app-outlook"><span class="app-chip app-outlook"><i></i>Outlook</span><span class="track"><span class="fill" style="--w:75%"></span></span><span class="val">4.2 min</span></li>
+                <li class="app-acrobat"><span class="app-chip app-acrobat"><i></i>Acrobat Reader</span><span class="track"><span class="fill" style="--w:55%"></span></span><span class="val">3.1 min</span></li>
+                <li class="app-chrome"><span class="app-chip app-chrome"><i></i>Chrome</span><span class="track"><span class="fill" style="--w:20%"></span></span><span class="val">1.1 min</span></li>
+                <li class="app-explorer"><span class="app-chip app-explorer"><i></i>File Explorer</span><span class="track"><span class="fill" style="--w:2%"></span></span><span class="val">0.1 min</span></li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>Biggest opportunity</h4>
+              <p style="margin:0 0 6px"><b>Process vendor invoice for payment</b></p>
+              <p class="muted" style="font-size:.92rem">High potential (71 out of 100). The same 23-step routine ran 8 times,
+                with 32 values copied by hand between applications.</p>
+              <div class="callout"><p>Savings are estimates from this one recording, at 20 runs a month and $30 an
+                hour. Each report uses your own figures.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="panel" role="tabpanel" id="panel-tasks" aria-labelledby="tab-tasks" tabindex="0">
+          <div class="toolbar">
+            <div class="chips" data-filter-for="task-list" role="group" aria-label="Filter by automation potential">
+              <button class="chip" type="button" data-filter="all" aria-pressed="true">All <span class="n">3</span></button>
+              <button class="chip" type="button" data-filter="high" aria-pressed="false">High <span class="n">1</span></button>
+              <button class="chip" type="button" data-filter="medium" aria-pressed="false">Medium <span class="n">0</span></button>
+              <button class="chip" type="button" data-filter="low" aria-pressed="false">Low <span class="n">2</span></button>
+            </div>
+            <label class="select">Sort
+              <select data-sort-for="task-list">
+                <option value="saving">Biggest saving first</option>
+                <option value="score">Highest potential first</option>
+                <option value="time">Most time recorded first</option>
+                <option value="order" data-dir="asc">Order recorded</option>
+              </select>
+            </label>
+          </div>
+          <p class="count" data-count-for="task-list" data-noun="tasks" aria-live="polite">Showing all 3 tasks</p>
+          <div class="task-list" id="task-list">
+            <article class="task high" data-tags="high" data-saving="13.3" data-score="71" data-time="16.4" data-order="2">
+              <div>
+                <div class="task-top"><h4><span class="id">2.</span> Process vendor invoice for payment</h4><span class="badge b-high">High</span></div>
+                <div class="apps">
+                  <span class="app-chip app-outlook"><i></i>Outlook</span><span class="app-chip app-acrobat"><i></i>Acrobat Reader</span>
+                  <span class="app-chip app-excel"><i></i>Excel</span><span class="app-chip app-portal"><i></i>Vendor Portal</span>
+                </div>
+                <div class="meter"><span>Potential</span><span class="track"><span class="fill" style="--w:71%"></span></span><b>71/100</b></div>
+                <details>
+                  <summary>Why it stands out</summary>
+                  <ul>
+                    <li>The same 23-step routine ran 8 times</li>
+                    <li>32 values copied by hand from one application to another</li>
+                    <li>369 characters typed by hand</li>
+                    <li>80 switches between applications</li>
+                  </ul>
+                </details>
+              </div>
+              <div class="facts">
+                <div>Recorded<b>16 min</b></div><div>Runs<b>8</b></div><div>Could save<b>13 min</b></div>
+              </div>
+            </article>
+            <article class="task low" data-tags="low" data-saving="0.5" data-score="24" data-time="1.7" data-order="3">
+              <div>
+                <div class="task-top"><h4><span class="id">3.</span> Send weekly AP summary email</h4><span class="badge b-low">Low</span></div>
+                <div class="apps"><span class="app-chip app-excel"><i></i>Excel</span><span class="app-chip app-outlook"><i></i>Outlook</span></div>
+                <div class="meter"><span>Potential</span><span class="track"><span class="fill" style="--w:24%"></span></span><b>24/100</b></div>
+                <details>
+                  <summary>Why it stands out</summary>
+                  <ul><li>1 value copied by hand from one application to another</li><li>242 characters typed by hand</li></ul>
+                </details>
+              </div>
+              <div class="facts">
+                <div>Recorded<b>1.7 min</b></div><div>Runs<b>1</b></div><div>Could save<b>30 s</b></div>
+              </div>
+            </article>
+            <article class="task low" data-tags="low" data-saving="0.6" data-score="16" data-time="0.75" data-order="1">
+              <div>
+                <div class="task-top"><h4><span class="id">1.</span> Prepare accounts payable review workspace</h4><span class="badge b-low">Low</span></div>
+                <div class="apps">
+                  <span class="app-chip app-outlook"><i></i>Outlook</span><span class="app-chip app-explorer"><i></i>File Explorer</span>
+                  <span class="app-chip app-excel"><i></i>Excel</span><span class="app-chip app-chrome"><i></i>Chrome</span>
+                </div>
+                <div class="meter"><span>Potential</span><span class="track"><span class="fill" style="--w:16%"></span></span><b>16/100</b></div>
+              </div>
+              <div class="facts">
+                <div>Recorded<b>45 s</b></div><div>Runs<b>1</b></div><div>Could save<b>36 s</b></div>
+              </div>
+            </article>
+          </div>
+          <p class="empty" data-empty-for="task-list" hidden>No task in this recording has medium potential.</p>
+        </div>
+
+        <!-- Workflow map -->
+        <div class="panel" role="tabpanel" id="panel-map" aria-labelledby="tab-map" tabindex="0">
+          <div class="panel-head">
+            <div><h3>Tasks in the order they happened</h3><p>Colour shows automation potential. The double border marks a routine that repeated.</p></div>
+          </div>
+          <ol class="flow">
+            <li class="terminal">Start</li>
+            <li class="node low"><b>1. Prepare accounts payable review workspace</b><span>45 s · Outlook, File Explorer, Excel</span><span class="badge b-low" style="align-self:flex-start">Low</span></li>
+            <li class="node high"><b>2. Process vendor invoice for payment</b><span>16 min · Outlook, Acrobat Reader, Excel, Vendor Portal</span>
+              <span class="loop"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></svg>Repeated 8 times</span></li>
+            <li class="node low"><b>3. Send weekly AP summary email</b><span>1.7 min · Excel, Outlook</span><span class="badge b-low" style="align-self:flex-start">Low</span></li>
+            <li class="terminal">End</li>
+          </ol>
+          <div class="legend">
+            <span>Automation potential:</span><span class="badge b-high">High</span><span class="badge b-med">Medium</span><span class="badge b-low">Low</span>
+          </div>
+          <div class="box" style="margin-top:22px">
+            <h4>Most frequent switches between applications</h4>
+            <ul class="switches">
+              <li><span>Acrobat Reader <span class="arrow">→</span> Excel</span><b>24 times</b></li>
+              <li><span>Excel <span class="arrow">→</span> Acrobat Reader</span><b>16 times</b></li>
+              <li><span>Chrome <span class="arrow">→</span> Vendor Portal</span><b>9 times</b></li>
+              <li><span>Vendor Portal <span class="arrow">→</span> Outlook</span><b>9 times</b></li>
+              <li><span>Outlook <span class="arrow">→</span> Acrobat Reader</span><b>8 times</b></li>
+              <li><span>Excel <span class="arrow">→</span> Vendor Portal</span><b>8 times</b></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- One run -->
+        <div class="panel" role="tabpanel" id="panel-run" aria-labelledby="tab-run" tabindex="0">
+          <div class="panel-head">
+            <div><h3>One run of the invoice routine</h3><p>23 steps in about 2.1 minutes. Point at the timeline to find a step. The SOP is written from these steps.</p></div>
+          </div>
+          <div class="timeline" id="run-timeline" aria-hidden="true"></div>
+          <div class="timeline-scale" aria-hidden="true"><span>0:00</span><span>1:03</span><span>2:06</span></div>
+          <div class="toolbar" style="margin-top:16px">
+            <div class="chips" data-filter-for="run-steps" role="group" aria-label="Filter steps by application">
+              <button class="chip" type="button" data-filter="all" aria-pressed="true">All <span class="n">23</span></button>
+              <button class="chip app-outlook" type="button" data-filter="outlook" aria-pressed="false"><i></i>Outlook <span class="n">4</span></button>
+              <button class="chip app-acrobat" type="button" data-filter="acrobat" aria-pressed="false"><i></i>Acrobat Reader <span class="n">4</span></button>
+              <button class="chip app-excel" type="button" data-filter="excel" aria-pressed="false"><i></i>Excel <span class="n">6</span></button>
+              <button class="chip app-portal" type="button" data-filter="portal" aria-pressed="false"><i></i>Vendor Portal <span class="n">7</span></button>
+              <button class="chip app-chrome" type="button" data-filter="chrome" aria-pressed="false"><i></i>Chrome <span class="n">2</span></button>
+            </div>
+            <span class="count" data-count-for="run-steps" data-noun="steps" aria-live="polite">Showing all 23 steps</span>
+          </div>
+          <ol class="run-steps" id="run-steps">
+            <li class="app-outlook" data-tags="outlook" data-step="1" data-app="outlook" data-dur="4.7"><span class="n">1</span><span class="desc">Opens the vendor invoice email in the Outlook inbox.</span><span class="app-chip app-outlook"><i></i>Outlook</span><span class="d">4.7 s</span></li>
+            <li class="app-outlook" data-tags="outlook" data-step="2" data-app="outlook" data-dur="8.5"><span class="n">2</span><span class="desc">Opens the invoice PDF attachment from the email.</span><span class="app-chip app-outlook"><i></i>Outlook</span><span class="d">8.5 s</span></li>
+            <li class="app-acrobat" data-tags="acrobat" data-step="3" data-app="acrobat" data-dur="6.3"><span class="n">3</span><span class="desc">Copies the invoice number from the PDF for the tracker.</span><span class="app-chip app-acrobat"><i></i>Acrobat Reader</span><span class="d">6.3 s</span></li>
+            <li class="app-excel" data-tags="excel" data-step="4" data-app="excel" data-dur="4.9"><span class="n">4</span><span class="desc">Pastes the invoice number into column A of the AP tracker.</span><span class="app-chip app-excel"><i></i>Excel</span><span class="d">4.9 s</span></li>
+            <li class="app-acrobat" data-tags="acrobat" data-step="5" data-app="acrobat" data-dur="5.3"><span class="n">5</span><span class="desc">Copies the vendor name from the invoice PDF.</span><span class="app-chip app-acrobat"><i></i>Acrobat Reader</span><span class="d">5.3 s</span></li>
+            <li class="app-excel" data-tags="excel" data-step="6" data-app="excel" data-dur="2.5"><span class="n">6</span><span class="desc">Pastes the vendor name into column B of the AP tracker.</span><span class="app-chip app-excel"><i></i>Excel</span><span class="d">2.5 s</span></li>
+            <li class="app-acrobat" data-tags="acrobat" data-step="7" data-app="acrobat" data-dur="5.4"><span class="n">7</span><span class="desc">Scrolls the invoice PDF to find the total due.</span><span class="app-chip app-acrobat"><i></i>Acrobat Reader</span><span class="d">5.4 s</span></li>
+            <li class="app-acrobat" data-tags="acrobat" data-step="8" data-app="acrobat" data-dur="6.2"><span class="n">8</span><span class="desc">Copies the invoice total from the PDF invoice.</span><span class="app-chip app-acrobat"><i></i>Acrobat Reader</span><span class="d">6.2 s</span></li>
+            <li class="app-excel" data-tags="excel" data-step="9" data-app="excel" data-dur="6.7"><span class="n">9</span><span class="desc">Pastes the invoice total into the Amount column of the tracker.</span><span class="app-chip app-excel"><i></i>Excel</span><span class="d">6.7 s</span></li>
+            <li class="app-excel" data-tags="excel" data-step="10" data-app="excel" data-dur="8.1"><span class="n">10</span><span class="desc">Enters the due date in column D of the tracker.</span><span class="app-chip app-excel"><i></i>Excel</span><span class="d">8.1 s</span></li>
+            <li class="app-excel" data-tags="excel" data-step="11" data-app="excel" data-dur="5.9"><span class="n">11</span><span class="desc">Enters the GL code in column E of the tracker.</span><span class="app-chip app-excel"><i></i>Excel</span><span class="d">5.9 s</span></li>
+            <li class="app-excel" data-tags="excel" data-step="12" data-app="excel" data-dur="6.0"><span class="n">12</span><span class="desc">Copies the invoice amount from the AP tracker spreadsheet.</span><span class="app-chip app-excel"><i></i>Excel</span><span class="d">6.0 s</span></li>
+            <li class="app-portal" data-tags="portal" data-step="13" data-app="portal" data-dur="6.5"><span class="n">13</span><span class="desc">Opens a new payment request in the vendor portal.</span><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="d">6.5 s</span></li>
+            <li class="app-portal" data-tags="portal" data-step="14" data-app="portal" data-dur="9.8"><span class="n">14</span><span class="desc">Enters the vendor name in the new payment request.</span><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="d">9.8 s</span></li>
+            <li class="app-portal" data-tags="portal" data-step="15" data-app="portal" data-dur="4.2"><span class="n">15</span><span class="desc">Pastes the invoice amount into the new payment request.</span><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="d">4.2 s</span></li>
+            <li class="app-portal" data-tags="portal" data-step="16" data-app="portal" data-dur="5.2"><span class="n">16</span><span class="desc">Enters the invoice number into the payment request form.</span><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="d">5.2 s</span></li>
+            <li class="app-portal" data-tags="portal" data-step="17" data-app="portal" data-dur="6.2"><span class="n">17</span><span class="desc">Enters the due date into the payment request form.</span><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="d">6.2 s</span></li>
+            <li class="app-portal" data-tags="portal" data-step="18" data-app="portal" data-dur="5.4"><span class="n">18</span><span class="desc">Clicks attach file to add supporting documentation.</span><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="d">5.4 s</span></li>
+            <li class="app-chrome" data-tags="chrome" data-step="19" data-app="chrome" data-dur="1.3"><span class="n">19</span><span class="desc">Selects the invoice file from the file dialog.</span><span class="app-chip app-chrome"><i></i>Chrome</span><span class="d">1.3 s</span></li>
+            <li class="app-chrome" data-tags="chrome" data-step="20" data-app="chrome" data-dur="6.3"><span class="n">20</span><span class="desc">Confirms attachment of the invoice file to the payment request.</span><span class="app-chip app-chrome"><i></i>Chrome</span><span class="d">6.3 s</span></li>
+            <li class="app-portal" data-tags="portal" data-step="21" data-app="portal" data-dur="4.1"><span class="n">21</span><span class="desc">Submits the new payment request in the vendor portal.</span><span class="app-chip app-portal"><i></i>Vendor Portal</span><span class="d">4.1 s</span></li>
+            <li class="app-outlook" data-tags="outlook" data-step="22" data-app="outlook" data-dur="2.8"><span class="n">22</span><span class="desc">Opens the Move menu to relocate the invoice email in Outlook.</span><span class="app-chip app-outlook"><i></i>Outlook</span><span class="d">2.8 s</span></li>
+            <li class="app-outlook" data-tags="outlook" data-step="23" data-app="outlook" data-dur="4.1"><span class="n">23</span><span class="desc">Selects the Processed folder to file the invoice email.</span><span class="app-chip app-outlook"><i></i>Outlook</span><span class="d">4.1 s</span></li>
+          </ol>
+        </div>
+
+        <!-- Data flow -->
+        <div class="panel" role="tabpanel" id="panel-data" aria-labelledby="tab-data" tabindex="0">
+          <div class="panel-head">
+            <div><h3>Every value, where from and where to</h3><p>Each was seen in all 8 runs. Fingerprints prove a typed value matches its source without storing it.</p></div>
+          </div>
+          <div class="toolbar">
+            <div class="chips" data-filter-for="df-list" role="group" aria-label="Filter values by how they moved">
+              <button class="chip" type="button" data-filter="all" aria-pressed="true">All <span class="n">9</span></button>
+              <button class="chip" type="button" data-filter="copy" aria-pressed="false">Copy-paste <span class="n">4</span></button>
+              <button class="chip" type="button" data-filter="typed" aria-pressed="false">Typed by hand <span class="n">5</span></button>
+              <button class="chip" type="button" data-filter="fp" aria-pressed="false">Proven by fingerprint <span class="n">3</span></button>
+              <button class="chip" type="button" data-filter="question" aria-pressed="false">Open question <span class="n">2</span></button>
+            </div>
+            <span class="count" data-count-for="df-list" data-noun="values" aria-live="polite">Showing all 9 values</span>
+          </div>
+          <ul class="df" id="df-list">
+            <li data-tags="copy"><span class="s">Step 4</span><span class="from">Invoice number<small>Acrobat Reader · INV-#.pdf</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Column A<small>Excel · AP Tracker.xlsx</small></span><span class="how"><span class="badge b-accent">Copy-paste</span></span></li>
+            <li data-tags="copy"><span class="s">Step 6</span><span class="from">Vendor<small>Acrobat Reader · INV-#.pdf</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Column B<small>Excel · AP Tracker.xlsx</small></span><span class="how"><span class="badge b-accent">Copy-paste</span></span></li>
+            <li data-tags="copy"><span class="s">Step 9</span><span class="from">Total due<small>Acrobat Reader · INV-#.pdf</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Column C<small>Excel · AP Tracker.xlsx</small></span><span class="how"><span class="badge b-accent">Copy-paste</span></span></li>
+            <li data-tags="typed question"><span class="s">Step 10</span><span class="from">Typed by hand<small>10 characters</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Column D, due date<small>Excel · AP Tracker.xlsx</small></span><span class="how"><span class="badge b-neutral">Typed</span><span class="badge b-med">Open question</span></span></li>
+            <li data-tags="typed question"><span class="s">Step 11</span><span class="from">Typed by hand<small>4 characters</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Column E, GL code<small>Excel · AP Tracker.xlsx</small></span><span class="how"><span class="badge b-neutral">Typed</span><span class="badge b-med">Open question</span></span></li>
+            <li data-tags="typed fp"><span class="s">Step 14</span><span class="from">Vendor, typed<small>same value as the PDF's Vendor</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Vendor<small>Vendor Portal · New Payment Request</small></span><span class="how"><span class="badge b-neutral">Typed</span><span class="badge b-low">Fingerprint match</span></span></li>
+            <li data-tags="copy"><span class="s">Step 15</span><span class="from">Column C<small>Excel, originally the PDF's Total due</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Amount<small>Vendor Portal · New Payment Request</small></span><span class="how"><span class="badge b-accent">Copy-paste</span></span></li>
+            <li data-tags="typed fp"><span class="s">Step 16</span><span class="from">Invoice number, typed<small>same value as the PDF's Invoice number</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Invoice number<small>Vendor Portal · New Payment Request</small></span><span class="how"><span class="badge b-neutral">Typed</span><span class="badge b-low">Fingerprint match</span></span></li>
+            <li data-tags="typed fp"><span class="s">Step 17</span><span class="from">Due date, typed<small>same value as Excel column D</small></span><span class="arrow" aria-hidden="true">→</span><span class="to">Due date<small>Vendor Portal · New Payment Request</small></span><span class="how"><span class="badge b-neutral">Typed</span><span class="badge b-low">Fingerprint match</span></span></li>
+          </ul>
+          <div class="callout" style="margin-top:16px"><p><b>Decide before automating:</b> columns D and E were typed by hand
+            every time. Is each one a fixed rule, a lookup, or a person's judgement?</p></div>
+        </div>
+
+        <!-- Automation -->
+        <div class="panel" role="tabpanel" id="panel-auto" aria-labelledby="tab-auto" tabindex="0">
+          <div class="panel-head">
+            <div><h3>Proposed automation for the invoice routine</h3><p>Built from the data flow, with how each system can connect and how sure that is.</p></div>
+          </div>
+          <div class="toolbar">
+            <div class="chips" data-filter-for="seq-list" role="group" aria-label="Filter the automation steps">
+              <button class="chip" type="button" data-filter="all" aria-pressed="true">All <span class="n">9</span></button>
+              <button class="chip" type="button" data-filter="auto" aria-pressed="false">Automated <span class="n">5</span></button>
+              <button class="chip" type="button" data-filter="person" aria-pressed="false">Needs a decision or a person <span class="n">4</span></button>
+            </div>
+            <span class="count" data-count-for="seq-list" data-noun="steps" aria-live="polite">Showing all 9 steps</span>
+          </div>
+          <ol class="seq" id="seq-list">
+            <li data-tags="auto"><span class="dot">1</span><div class="body"><div class="head"><span class="kind">Trigger</span><span class="sys">Outlook</span><span class="badge b-low">Documented</span></div>
+              <p>When a new email arrives, download its attachment, checked every 15 minutes.</p><p class="how">How: Microsoft Graph mail API, or the n8n Microsoft Outlook node.</p></div></li>
+            <li data-tags="auto"><span class="dot">2</span><div class="body"><div class="head"><span class="kind">Extract</span><span class="sys">Acrobat Reader</span><span class="badge b-low">Documented</span></div>
+              <p>Read the invoice number, vendor and total due from the PDF.</p><p class="how">How: n8n Extract From File with field parsing, and Azure Document Intelligence for scans.</p></div></li>
+            <li data-tags="auto"><span class="dot">3</span><div class="body"><div class="head"><span class="kind">Write</span><span class="sys">Excel</span><span class="badge b-low">Documented</span></div>
+              <p>Write columns A to C of AP Tracker.xlsx. Columns D and E wait for the open questions.</p><p class="how">How: Microsoft Graph Excel API, or a SQL table.</p></div></li>
+            <li data-tags="auto"><span class="dot">4</span><div class="body"><div class="head"><span class="kind">Write</span><span class="sys">Vendor Portal</span><span class="badge b-med">No API found</span></div>
+              <p>Fill in the new payment request (vendor, amount, invoice number, due date), attach the PDF and submit.</p><p class="how">How: ask the vendor for an API or bulk upload. Until then, browser automation with Playwright.</p></div></li>
+            <li data-tags="auto"><span class="dot">5</span><div class="body"><div class="head"><span class="kind">Finish</span><span class="sys">Outlook</span><span class="badge b-low">Documented</span></div>
+              <p>Move the email to the Processed folder.</p><p class="how">How: Microsoft Graph mail API.</p></div></li>
+            <li class="person" data-tags="person"><span class="dot">6</span><div class="body"><div class="head"><span class="kind">Decide</span><span class="badge b-neutral">Open</span></div>
+              <p>Where does column D, the due date, come from?</p></div></li>
+            <li class="person" data-tags="person"><span class="dot">7</span><div class="body"><div class="head"><span class="kind">Decide</span><span class="badge b-neutral">Open</span></div>
+              <p>Where does column E, the GL code, come from?</p></div></li>
+            <li class="person" data-tags="person"><span class="dot">8</span><div class="body"><div class="head"><span class="kind">Human check</span><span class="badge b-neutral">Open</span></div>
+              <p>Determine the correct due date to record for the invoice. Keep a person here, or define the rule.</p></div></li>
+            <li class="person" data-tags="person"><span class="dot">9</span><div class="body"><div class="head"><span class="kind">Human check</span><span class="badge b-neutral">Open</span></div>
+              <p>Determine the appropriate GL code to assign to the invoice. Keep a person here, or define the rule.</p></div></li>
+          </ol>
+          <div class="targets"><span>Build it for</span><span class="tool">n8n</span><span class="tool">Make</span><span class="tool">Power Automate</span><span class="tool">Node-RED</span><span class="tool">Azure Logic Apps</span><span class="tool">Windmill</span></div>
+        </div>
+
+        <div class="explorer-foot">
+          <span>Synthetic data from FlowSME's demo recording. Your report is built the same way from your own work.</span>
+          <a class="more" href="sample-report.html">Open the full report</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ what you get -->
+  <section class="section" id="get" aria-labelledby="get-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
         <span class="eyebrow">What you get</span>
         <h2 id="get-title">Everything you need to decide, document and build</h2>
-        <p class="lead">One recording gives you four things, each ready to hand to the person who needs it.</p>
+        <p class="lead">One recording gives you four things, each ready for the person who needs it.</p>
       </div>
-      <div class="grid two">
-        <article class="card">
+      <div class="grid cols-2">
+        <article class="card" data-reveal>
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
           <h3>A workflow report</h3>
-          <p>A map of the process, how data moves between your applications, and each task scored for automation
-            potential. An impact versus effort matrix and a Now, Next, Later, Hold roadmap show what to automate first
-            and when it pays back.</p>
-          <a class="more" href="sample-report.html">See a sample report</a>
+          <p>A map of the process, how data moves between your applications, and each task scored for automation potential.
+            An impact versus effort matrix and a Now, Next, Later, Hold roadmap show what to automate first and when it pays back.</p>
+          <a class="more" href="#sample" data-open-tab="tab-summary">See it in the sample</a>
         </article>
-        <article class="card">
+        <article class="card" data-reveal data-delay="1">
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></div>
           <h3>A standard operating procedure</h3>
-          <p>An SOP for each task: numbered steps with screenshots that a new hire can tick off as they go, ready to
-            print or save as a PDF.</p>
+          <p>An SOP for each task: numbered steps with screenshots that a new hire can tick off as they go, with the rules
+            and checks that apply. Print it or save it as a PDF.</p>
+          <a class="more" href="#sample" data-open-tab="tab-run">See the steps it is written from</a>
         </article>
-        <article class="card">
+        <article class="card" data-reveal>
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
           <h3>Automations for the tool you already use</h3>
-          <ul class="chips" aria-label="Supported workflow tools">
+          <ul class="chips-static" aria-label="Supported workflow tools">
             <li>n8n</li><li>Make</li><li>Power Automate</li><li>Node-RED</li><li>Azure Logic Apps</li><li>Windmill</li>
           </ul>
           <p>FlowSME creates the flow in your tool through its API, switched off until you review it and turn it on. You
-            also get Postman, SQL and Playwright starters, and a BUILD.md that lists what a person must fill in.</p>
+            also get Postman, SQL and Playwright starters, and a BUILD.md listing what a person must fill in.</p>
+          <a class="more" href="#sample" data-open-tab="tab-auto">See a proposed automation</a>
         </article>
-        <article class="card">
+        <article class="card" data-reveal data-delay="1">
+          <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></svg></div>
           <h3>User stories with Gherkin tests</h3>
-          <p>User stories for whoever builds the automation, with Given, When, Then acceptance tests taken from the
-            business rules. They come as a Gherkin file to run with Cucumber, Behave or similar.</p>
+          <p>User stories for whoever builds the automation, with Given, When, Then acceptance tests taken from the business
+            rules. They come as a Gherkin file to run with Cucumber, Behave or similar.</p>
 <pre class="gherkin" aria-label="Example acceptance test"><span class="k">Feature:</span> Process vendor invoice for payment
   <span class="k">Scenario:</span> Due date follows the payment terms
     <span class="k">Given</span> an invoice dated 2 October on 30-day terms
     <span class="k">When</span> it is entered in the invoice tracker
     <span class="k">Then</span> the due date is 1 November</pre>
-          <p class="caption-small">Illustrative example.</p>
+          <p class="note">Illustrative example.</p>
         </article>
       </div>
     </div>
   </section>
 
-  <section class="block" id="teams" aria-labelledby="teams-title">
-    <div class="wrap">
-      <div class="head">
-        <span class="eyebrow">Managers and employees</span>
-        <h2 id="teams-title">Your team records. You see the savings.</h2>
-        <p class="lead">A manager sets up the team once. Employees record their own work and send it in. Nobody types an
-          hourly cost into a report.</p>
+  <!-- ============================================================ calculator -->
+  <section class="section tint" id="calculator" aria-labelledby="calc-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Savings calculator</span>
+        <h2 id="calc-title">What could one process be worth automating?</h2>
+        <p class="lead">A quick estimate from your own numbers. A FlowSME report replaces the guesses with what a recording
+          actually shows.</p>
       </div>
-      <div class="grid two">
-        <article class="card">
-          <div class="role"><span class="tag">Manager</span></div>
-          <ul class="ticks">
-            <li>Create the team with its number of seats, then add each person with their position.</li>
-            <li>Each person gets a seat file to open once. Revoke a seat and it stops working; restore it when one is free.</li>
-            <li>Set an hourly rate for each position. Every report uses it to price the time saved.</li>
-            <li>See the recordings employees sent in one inbox, and compare several people doing the same process.</li>
-          </ul>
-        </article>
-        <article class="card">
-          <div class="role"><span class="tag">Employee</span></div>
-          <ul class="ticks">
-            <li>Open the seat file once. The app shows your name, position and team.</li>
-            <li>Record your work, pause for anything private, and send it to your manager.</li>
-            <li>Hourly rates are never shown to you. They stay on your manager's computer, and the shared team folder holds no names or rates.</li>
-          </ul>
-        </article>
-      </div>
-      <div class="callout"><p><strong>Rates stay with the manager.</strong> Employees see their own work and
-        results, never what their time is costed at.</p></div>
+      <form class="calc" id="calc" data-reveal onsubmit="return false">
+        <div class="calc-inputs">
+          <div class="field">
+            <label for="c-minutes">Minutes one run takes <small>each time it is done</small></label>
+            <div class="row"><input type="range" id="c-minutes-r" min="1" max="120" step="1" value="15" data-calc="minutes" aria-label="Minutes one run takes">
+              <input type="number" id="c-minutes" min="1" max="120" step="1" value="15" data-calc="minutes" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label for="c-runs">Runs a month <small>per person</small></label>
+            <div class="row"><input type="range" id="c-runs-r" min="1" max="400" step="1" value="20" data-calc="runs" aria-label="Runs a month">
+              <input type="number" id="c-runs" min="1" max="400" step="1" value="20" data-calc="runs" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label for="c-people">People who do it</label>
+            <div class="row"><input type="range" id="c-people-r" min="1" max="50" step="1" value="1" data-calc="people" aria-label="People who do it">
+              <input type="number" id="c-people" min="1" max="50" step="1" value="1" data-calc="people" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label for="c-share">Share that could be automated, % <small>the sample found 76%</small></label>
+            <div class="row"><input type="range" id="c-share-r" min="5" max="100" step="5" value="75" data-calc="share" aria-label="Share that could be automated, percent">
+              <input type="number" id="c-share" min="5" max="100" step="5" value="75" data-calc="share" inputmode="numeric"></div>
+          </div>
+          <div class="field">
+            <label for="c-rate">Hourly cost, $</label>
+            <div class="row"><input type="range" id="c-rate-r" min="10" max="200" step="5" value="30" data-calc="rate" aria-label="Hourly cost in dollars">
+              <input type="number" id="c-rate" min="10" max="200" step="5" value="30" data-calc="rate" inputmode="numeric"></div>
+          </div>
+        </div>
+        <div class="calc-out" aria-live="polite">
+          <div>
+            <span class="muted" style="font-size:.9rem">Hours given back a month</span>
+            <div class="big"><span data-out="hoursMonth">3.8</span><small>hours</small></div>
+          </div>
+          <dl>
+            <div><dt>Hours a year</dt><dd data-out="hoursYear">45 h</dd></div>
+            <div><dt>Working days a year</dt><dd data-out="days">6</dd></div>
+            <div style="grid-column:1 / -1"><dt>Worth a year</dt><dd data-out="moneyYear">$1,350</dd></div>
+          </dl>
+          <p>Minutes × runs × people × share automated, priced at the hourly cost. A rough guide, not a quote.</p>
+          <a class="btn primary" href="mailto:hello@flowsme.example?subject=Free%20FlowSME%20report%20on%20one%20process&amp;body=The%20process%3A%0AHow%20often%20it%20runs%3A%0AThe%20apps%20it%20uses%3A%0A">Measure it for real, free</a>
+        </div>
+      </form>
     </div>
   </section>
 
-  <section class="block alt privacy" id="privacy" aria-labelledby="privacy-title">
-    <div class="wrap">
-      <div class="head">
+  <!-- ============================================================ teams -->
+  <section class="section" id="teams" aria-labelledby="teams-title">
+    <div class="container">
+      <div class="teams-layout team-demo" id="team-demo" data-view="manager">
+        <div data-reveal>
+          <span class="eyebrow">Managers and employees</span>
+          <h2 id="teams-title">Your team records. You see the savings.</h2>
+          <p class="lead">A manager sets up the team once. Employees record their own work and send it in. Nobody types an
+            hourly cost into a report.</p>
+          <div class="segmented" role="group" aria-label="Show the app as">
+            <button type="button" data-view-btn="manager" aria-pressed="true">Manager view</button>
+            <button type="button" data-view-btn="employee" aria-pressed="false">Employee view</button>
+          </div>
+          <ul class="ticks" data-for="manager" aria-label="What a manager does">
+            <li><b>Seats:</b> create the team with its number of seats, then add each person with their position.</li>
+            <li><b>Seat files:</b> each person gets one to open once. Revoke a seat and it stops working; restore it when one is free.</li>
+            <li><b>Rates by position:</b> every report uses them to price the time saved.</li>
+            <li><b>Inbox and team view:</b> see the recordings employees sent, and compare people doing the same process.</li>
+          </ul>
+          <ul class="ticks" data-for="employee" aria-label="What an employee does">
+            <li><b>One seat file:</b> open it once, and the app shows your name, position and team.</li>
+            <li><b>Your own recordings:</b> record your work, pause for anything private, and send it to your manager.</li>
+            <li><b>No rates:</b> hourly rates are never shown to you. They stay on your manager's computer, and the shared team folder holds no names or rates.</li>
+          </ul>
+        </div>
+
+        <div class="window" data-reveal data-delay="1">
+          <div class="window-bar">
+            <span class="logo" aria-hidden="true">F</span>
+            <span class="title"><span data-for="manager">Admin panel</span><span data-for="employee" class="mock-only">FlowSME Recorder</span> <span>· example team</span></span>
+            <span class="badge b-accent" data-for="manager">3 of 5 seats</span>
+          </div>
+          <div class="table-scroll">
+            <table class="people">
+              <thead><tr><th scope="col">Person</th><th scope="col" class="pos">Position</th><th scope="col">Hourly rate</th></tr></thead>
+              <tbody>
+                <tr><td><span class="who"><span class="avatar" aria-hidden="true">PS</span>Priya Sharma</span></td><td class="pos">Accounts payable clerk</td>
+                  <td><span class="rate-shown">$30 an hour</span><span class="rate-hidden badge b-neutral">Hidden</span></td></tr>
+                <tr class="other"><td><span class="who"><span class="avatar" aria-hidden="true">BO</span>Ben Okafor</span></td><td class="pos">Accounts payable clerk</td>
+                  <td><span class="rate-shown">$30 an hour</span><span class="rate-hidden badge b-neutral">Hidden</span></td></tr>
+                <tr class="other"><td><span class="who"><span class="avatar" aria-hidden="true">DL</span>Dana Lee</span></td><td class="pos">Team lead</td>
+                  <td><span class="rate-shown">$45 an hour</span><span class="rate-hidden badge b-neutral">Hidden</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mock-foot">
+            <span data-for="manager">Inbox: 2 recordings to review</span>
+            <span data-for="employee" class="mock-only">Signed in as Priya Sharma, Accounts payable</span>
+            <span class="btn sm" data-for="manager" aria-hidden="true">Add a person</span>
+            <span class="btn sm primary mock-only" data-for="employee" aria-hidden="true">Send to my manager</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ privacy -->
+  <section class="section tint" id="privacy" aria-labelledby="privacy-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
         <span class="eyebrow">Privacy</span>
         <h2 id="privacy-title">It sees how the work flows, not what you typed</h2>
+        <p class="lead">FlowSME needs the shape of the work: which app, which field, where a value went. Not the words.</p>
       </div>
-      <div class="grid two">
-        <article class="card">
-          <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--accent)"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>Typed text is not stored</h3>
-          <p>FlowSME keeps how many characters you typed and the shortcuts you used, not the words. Password fields are
-            never captured.</p>
-        </article>
-        <article class="card">
-          <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--accent)"><path d="M12 11c0 3-1 6-3 8M8 7.5A5 5 0 0 1 17 11c0 2-.3 4-1 6M5 10a7 7 0 0 1 1.5-4.3M12 15c-.2 1.5-.7 3-1.5 4.5M20 11a8 8 0 0 0-1-3.9"/></svg>Values become fingerprints</h3>
-          <p>When you copy or type a value, FlowSME keeps a salted one-way fingerprint of it, never the value itself.
-            Matching fingerprints prove the vendor typed into the portal is the one copied from the PDF. The salt is
-            never saved, so fingerprints can't be reversed.</p>
-        </article>
-        <article class="card">
-          <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--accent)"><rect x="2" y="4" width="20" height="14" rx="2"/><rect x="6" y="7" width="10" height="8" rx="1"/><path d="M8 21h8"/></svg>Only the active window goes to the AI</h3>
-          <p>Each screenshot sent to the AI is cut to the window you are working in, plus any menu or dialog in front of
-            it. Your mail and chats in other windows never reach it.</p>
-        </article>
-        <article class="card">
-          <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--accent)"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Password windows are excluded</h3>
-          <p>When a password manager, a Windows security prompt or a sign-in window is in front, nothing is captured: no
-            screenshot, no title, no text.</p>
-        </article>
+      <div class="compare">
+        <div class="card kept" data-reveal>
+          <h3><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="width:18px;height:18px"><path d="M5 12l5 5 9-10"/></svg></span>What FlowSME uses</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><b>The app, the window and what you clicked:</b> the button, field or cell.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><b>How much you typed:</b> the number of characters and the shortcuts, not the text.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><b>Value fingerprints:</b> a salted one-way fingerprint of each value you copy or type.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><b>The active window only:</b> that window, plus any menu or dialog in front of it, is what goes to the AI.</span></li>
+          </ul>
+        </div>
+        <div class="card never" data-reveal data-delay="1">
+          <h3><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="width:18px;height:18px"><path d="M6 6l12 12M18 6 6 18"/></svg></span>What it never captures or sends</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span><b>The text you type.</b> Password fields are never captured at all.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span><b>Password windows:</b> with a password manager, a Windows security prompt or a sign-in window in front, nothing is captured. No screenshot, no title, no text.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span><b>Your other windows,</b> such as mail and chats, are never sent to the AI.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span><b>The microphone,</b> unless you choose to narrate. Ctrl+Alt+P pauses everything.</span></li>
+          </ul>
+        </div>
       </div>
-      <p class="fineprint">The microphone is off unless you choose to narrate, and Ctrl+Alt+P pauses everything. If you
-        record other people's work, get their consent and check the local rules on employee monitoring, such as GDPR or
-        works councils.</p>
+      <div class="card fingerprint" data-reveal style="margin-top:18px">
+        <div class="fp-box"><small>Copied in Acrobat Reader · Vendor</small><code>fp 3f9a…c21e</code></div>
+        <div class="fp-eq" aria-label="matches">=</div>
+        <div class="fp-box"><small>Typed in Vendor Portal · Vendor</small><code>fp 3f9a…c21e</code></div>
+        <p class="fp-text"><b style="color:var(--fg)">How fingerprints work.</b> The same value gives the same fingerprint, so
+          FlowSME can prove the vendor typed into the portal came from the PDF without storing the name. The salt is
+          never saved, so fingerprints can't be reversed. (Illustrative values.)</p>
+      </div>
+      <p class="fineprint">If you record other people's work, get their consent and check the local rules on employee
+        monitoring, such as GDPR or works councils.</p>
     </div>
   </section>
 
-  <section class="block meta-models" id="meta-ai" aria-labelledby="meta-title">
-    <div class="wrap">
-      <div class="head">
+  <!-- ============================================================ Meta -->
+  <section class="section" id="meta-ai" aria-labelledby="meta-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
         <span class="eyebrow">Built on Meta's AI</span>
         <h2 id="meta-title">Two Meta models do the reading and listening</h2>
       </div>
-      <div class="grid two">
-        <article class="card">
+      <div class="grid cols-2">
+        <article class="card" data-reveal>
           <div class="model">Muse Spark</div>
           <h3>Reads the screen and writes the analysis</h3>
           <p>Muse Spark looks at each screen change to see what you did, then writes the analysis, the SOP and the
             recommendations. A routine that repeats is described once and reused, which keeps long recordings cheap.</p>
         </article>
-        <article class="card">
+        <article class="card" data-reveal data-delay="1">
           <div class="model">Muse Voice Transcribe</div>
           <h3>Turns your narration into rules</h3>
-          <p>Muse Voice Transcribe turns what you say while you work into text. Any rule FlowSME takes from your
-            narration must quote your exact words, or it is rejected.</p>
+          <p>Muse Voice Transcribe turns what you say while you work into text. Any rule FlowSME takes from your narration
+            must quote your exact words, or it is rejected.</p>
         </article>
       </div>
-      <p class="fineprint">In our own test, reading a 5.6-minute narrated video and writing the report used about $0.30
-        of AI. Muse Spark and Muse Voice Transcribe are Meta models. FlowSME is an independent product, not made or
-        endorsed by Meta.</p>
+      <p class="fineprint">In our own test, reading a 5.6-minute narrated video and writing the report used about $0.30 of
+        AI. Muse Spark and Muse Voice Transcribe are Meta models. FlowSME is an independent product, not made or endorsed
+        by Meta.</p>
     </div>
   </section>
 
-  <section class="block alt" id="consultants" aria-labelledby="consultants-title">
-    <div class="wrap">
-      <div class="head">
+  <!-- ============================================================ consultants -->
+  <section class="section tint" id="consultants" aria-labelledby="consultants-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
         <span class="eyebrow">For automation consultants</span>
-        <h2 id="consultants-title">Scope the job from a recording, hand over a flow that is already built</h2>
-        <p class="lead">Stop guessing at discovery calls. Ask the client to record the process once, then quote from
-          what actually happens.</p>
+        <h2 id="consultants-title">Scope the job from a recording. Hand over a flow that is already built.</h2>
+        <p class="lead">Stop guessing at discovery calls. Ask the client to record the process once, then quote from what
+          actually happens.</p>
       </div>
-      <div class="grid two">
-        <article class="card">
+      <ol class="engage" data-reveal>
+        <li>The client records the process</li>
+        <li>You get the report and the roadmap</li>
+        <li>Quote from days to build and payback</li>
+        <li>Build it in their tool, switched off</li>
+      </ol>
+      <div class="grid cols-4">
+        <article class="card" data-reveal>
           <h3>Light on the client's PC</h3>
-          <p>Your client installs FlowSME Recorder, which only records and shows results. The analysis runs on the
-            FlowSME server, so nothing that makes the results sits on their computer. A client with a screen video can
-            send that instead.</p>
+          <p>The client installs FlowSME Recorder, which only records and shows results. The analysis runs on the FlowSME
+            server. A client with a screen video can send that instead.</p>
         </article>
-        <article class="card">
+        <article class="card" data-reveal data-delay="1">
           <h3>A scope you can price</h3>
-          <p>The report gives you the tasks, the minutes saved per run, a roadmap with days to build and payback time,
-            and the open questions to settle with the client.</p>
+          <p>The tasks, the minutes saved, a roadmap with days to build and payback time, and the open questions to settle
+            with the client.</p>
         </article>
-        <article class="card">
-          <h3>Built in their tool, switched off</h3>
-          <p>Create the flow straight in the client's n8n, Make, Power Automate, Node-RED, Logic Apps or Windmill. It
-            stays off until they review it and turn it on.</p>
+        <article class="card" data-reveal data-delay="2">
+          <h3>Built in their tool</h3>
+          <p>Create the flow in the client's n8n, Make, Power Automate, Node-RED, Logic Apps or Windmill. It stays off
+            until they review it and turn it on.</p>
         </article>
-        <article class="card">
+        <article class="card" data-reveal data-delay="3">
           <h3>One definition of done</h3>
           <p>User stories, Gherkin acceptance tests and the SOP give your builders and your client the same picture of
             what the automation must do.</p>
@@ -576,13 +814,15 @@
     </div>
   </section>
 
-  <section class="block" id="faq" aria-labelledby="faq-title">
-    <div class="wrap">
-      <div class="head">
+  <!-- ============================================================ FAQ -->
+  <section class="section" id="faq" aria-labelledby="faq-title">
+    <div class="container faq-layout">
+      <div data-reveal>
         <span class="eyebrow">FAQ</span>
         <h2 id="faq-title">Questions people ask</h2>
+        <p class="lead">Something else? Write to <a href="mailto:hello@flowsme.example">hello@flowsme.example</a>.</p>
       </div>
-      <div class="faq">
+      <div class="faq" data-reveal>
         <details>
           <summary>What does FlowSME need from me?</summary>
           <p>A Windows PC and one process you do often. Record it with FlowSME Recorder, or send a screen video you
@@ -630,42 +870,60 @@
     </div>
   </section>
 
+  <!-- ============================================================ final CTA -->
   <section class="final" aria-labelledby="final-title">
-    <div class="wrap">
-      <h2 id="final-title">Send one process. See what it's worth automating.</h2>
-      <p class="lead">Tell us about a task your team repeats, record it or send a video, and get the FlowSME report on it,
-        free.</p>
-      <div class="ctas">
-        <a class="btn primary" href="mailto:hello@flowsme.example?subject=Free%20FlowSME%20report%20on%20one%20process&amp;body=The%20process%3A%0AHow%20often%20it%20runs%3A%0AThe%20apps%20it%20uses%3A%0A">Get a free report on one process</a>
-        <a class="btn" href="sample-report.html">See a sample report</a>
+    <div class="container">
+      <div class="final-card" data-reveal>
+        <h2 id="final-title">Send one process. See what it's worth automating.</h2>
+        <p class="lead">Tell us about a task your team repeats, record it or send a video, and get the FlowSME report on
+          it, free.</p>
+        <div class="ctas">
+          <a class="btn primary" href="mailto:hello@flowsme.example?subject=Free%20FlowSME%20report%20on%20one%20process&amp;body=The%20process%3A%0AHow%20often%20it%20runs%3A%0AThe%20apps%20it%20uses%3A%0A">Get a free report on one process</a>
+          <a class="btn" href="#sample">See a sample report</a>
+        </div>
       </div>
     </div>
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <div>
-      <a class="brand" href="#top"><span class="logo" aria-hidden="true">F</span>FlowSME</a>
-      <p style="margin-top:10px">Find what to automate from a screen recording. © 2026 FlowSME. Muse Spark and Muse Voice
-        Transcribe are Meta models; FlowSME is not made or endorsed by Meta.</p>
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="#top"><span class="logo" aria-hidden="true">F</span>FlowSME</a>
+        <p>Find what to automate from a screen recording: the workflow, the hours it saves, the SOP and the flow.</p>
+      </div>
+      <nav aria-label="Product">
+        <h3>Product</h3>
+        <ul>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#sample">Sample report</a></li>
+          <li><a href="sample-report.html">Full sample report</a></li>
+          <li><a href="#calculator">Savings calculator</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Who it is for">
+        <h3>Who it's for</h3>
+        <ul>
+          <li><a href="#teams">Managers and teams</a></li>
+          <li><a href="#consultants">Automation consultants</a></li>
+          <li><a href="#meta-ai">Built on Meta's AI</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Trust and contact">
+        <h3>Trust</h3>
+        <ul>
+          <li><a href="#privacy">Privacy</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="mailto:hello@flowsme.example">hello@flowsme.example</a></li>
+        </ul>
+      </nav>
     </div>
-    <nav aria-label="Footer">
-      <a href="sample-report.html">Sample report</a>
-      <a href="#privacy">Privacy</a>
-      <a href="#faq">FAQ</a>
-      <a href="mailto:hello@flowsme.example">hello@flowsme.example</a>
-    </nav>
+    <div class="footer-bottom">
+      <span>© 2026 FlowSME</span>
+      <span>Muse Spark and Muse Voice Transcribe are Meta models. FlowSME is not made or endorsed by Meta.</span>
+    </div>
   </div>
 </footer>
-
-<script>
-  document.getElementById("theme").addEventListener("click", function () {
-    var root = document.documentElement;
-    var dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-    root.dataset.theme = dark ? "light" : "dark";
-    try { localStorage.setItem("flowsme-theme", root.dataset.theme); } catch (e) {}
-  });
-</script>
 </body>
 </html>

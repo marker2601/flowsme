@@ -1,0 +1,16 @@
+# Response headers for Cloudflare Pages and Netlify (both read this file).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# site.css and site.js are linked with ?v=N, so bump N in index.html when they change
+/assets/*
+  Cache-Control: public, max-age=86400
+
+/sample-report.html
+  X-Robots-Tag: noindex
+
+/README.md
+  X-Robots-Tag: noindex
