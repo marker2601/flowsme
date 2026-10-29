@@ -8,18 +8,18 @@
 <style>
   :root {
     --bg:#f4f5f8; --card:#ffffff; --fg:#1b1d22; --muted:#626873; --line:#e4e6eb; --soft:#f7f8fa;
-    --accent:#3355d1; --accent-soft:#e8edfc; --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 8px rgba(16,24,40,.04);
+    --accent:#3355d1; --accent-soft:#e8edfc; --on-accent:#fff; --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 8px rgba(16,24,40,.04);
     --high:#b42318; --high-bg:#fee4e2; --med:#b54708; --med-bg:#fef0c7; --low:#067647; --low-bg:#dcfae6;
     --next:#175cd3; --next-bg:#d1e9ff; --hold:#475467; --hold-bg:#eaecf0;
   }
   :root[data-theme="dark"] {
     --bg:#111317; --card:#1a1d23; --fg:#e7e9ee; --muted:#9aa1ad; --line:#2a2e36; --soft:#20242b;
-    --accent:#8ea8ff; --accent-soft:#232c48; --shadow:none;
+    --accent:#8ea8ff; --accent-soft:#232c48; --on-accent:#111317; --shadow:none;
     --high:#fda29b; --high-bg:#4a1f1c; --med:#fec84b; --med-bg:#4a3510; --low:#75e0a7; --low-bg:#123b27;
     --next:#84caff; --next-bg:#14304f; --hold:#cfd4dc; --hold-bg:#2a2f37;
   }
   * { box-sizing:border-box; }
-  html { scroll-behavior:smooth; scroll-padding-top:76px; }
+  html { --bar-h:64px; scroll-behavior:smooth; scroll-padding-top:calc(var(--bar-h) + 18px); }
   body { margin:0; background:var(--bg); color:var(--fg);
          font:15.5px/1.6 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif; }
   a { color:var(--accent); }
@@ -30,14 +30,16 @@
           display:grid; place-items:center; color:#fff; font-size:14px; }
   .bar .title { flex:1; min-width:0; }
   .bar .title b { display:block; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .bar .title span { font-size:12px; color:var(--muted); }
+  .bar .title span { display:block; font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis;
+                     white-space:nowrap; }
   .btn { border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:8px;
          padding:6px 12px; font:inherit; font-size:13.5px; cursor:pointer; white-space:nowrap; }
   .btn:hover { border-color:var(--accent); color:var(--accent); }
-  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   .layout { display:grid; grid-template-columns:250px minmax(0,1fr); gap:24px; max-width:1320px;
             margin:0 auto; padding:24px 22px 80px; }
-  nav.toc { position:sticky; top:76px; align-self:start; max-height:calc(100vh - 96px); overflow:auto;
+  nav.toc { position:sticky; top:calc(var(--bar-h) + 18px); align-self:start;
+            max-height:calc(100vh - var(--bar-h) - 38px); overflow:auto;
             font-size:13.5px; padding-right:6px; }
   nav.toc .label { color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.8px;
                    margin:4px 10px 8px; }
@@ -96,13 +98,13 @@
   .task-body { padding:0 18px 14px; border-top:1px solid var(--line); }
   details.task.same { background:var(--soft); }
   .tabs { display:flex; gap:4px; flex-wrap:wrap; border-bottom:1px solid var(--line); margin:12px 0 4px;
-          position:sticky; top:62px; background:var(--card); z-index:5; padding-top:6px; }
+          position:sticky; top:var(--bar-h); background:var(--card); z-index:5; padding-top:6px; }
   .tab { border:none; background:none; color:var(--muted); padding:8px 12px; font:inherit; font-size:13.5px;
          border-bottom:2px solid transparent; cursor:pointer; margin-bottom:-1px; }
   .tab:hover { color:var(--fg); }
   .tab.on { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
   .pane[hidden] { display:none; }
-  .progress { position:sticky; top:62px; z-index:6; background:var(--card); border:1px solid var(--line);
+  .progress { position:sticky; top:calc(var(--bar-h) + 8px); z-index:6; background:var(--card); border:1px solid var(--line);
               border-radius:12px; padding:10px 16px; margin-bottom:14px; display:flex; align-items:center; gap:14px;
               box-shadow:var(--shadow); }
   .progress .track { flex:1; height:8px; background:var(--soft); border-radius:99px; overflow:hidden; }
@@ -127,7 +129,7 @@
   sub { color:var(--muted); font-size:12.5px; }
   @media (max-width:1000px) {
     .layout { grid-template-columns:minmax(0,1fr); padding:16px 12px 60px; }
-    nav.toc { position:fixed; top:58px; left:0; bottom:0; width:270px; max-height:none; background:var(--card);
+    nav.toc { position:fixed; top:var(--bar-h); left:0; bottom:0; width:270px; max-height:none; background:var(--card);
               border-right:1px solid var(--line); padding:14px; transform:translateX(-105%); transition:transform .2s;
               z-index:30; }
     body.toc-open nav.toc { transform:none; }
@@ -137,6 +139,8 @@
     /* a phone has room for the logo, the title and short buttons, not the full labels */
     .bar { padding:10px 12px; gap:10px; }
     .bar .wide { display:none; }
+    .tabs { flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; }  /* one row, not three */
+    .tab { flex:none; margin-bottom:0; }
   }
   @media print {
     .bar, nav.toc, .tabs, .progress, .lightbox, article.step label { display:none !important; }
@@ -1059,6 +1063,10 @@ DESKTOP FLOW: AP_Workspace_Launcher
   const theme = (() => { try { return localStorage.getItem("flowsme-theme"); } catch (e) { return null; } })();
   if (theme) document.documentElement.dataset.theme = theme;
   else if (matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.dataset.theme = "dark";
+  // the contents, the task tabs and the progress bar stick just below the title bar, whatever its height
+  const topBar = document.querySelector(".bar");
+  new ResizeObserver(() => document.documentElement.style.setProperty("--bar-h", topBar.offsetHeight + "px"))
+    .observe(topBar);
 
   main.innerHTML = marked.parse(document.getElementById("md").textContent);
   main.querySelectorAll("code.language-mermaid").forEach((code) => {
