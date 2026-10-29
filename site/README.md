@@ -34,8 +34,7 @@ When `assets/site.css` or `assets/site.js` change, bump `?v=2` where `index.html
 ## Rebuilding the sample report
 
 `sample-report.html` is `examples/demo-invoice-processing/analysis/report.md` rendered by `flowsme.page.render`,
-with the same summary cards `report.py` makes, `noindex`, a link back to the site, and a fix that keeps the report's
-title bar inside a phone screen. From the repository root:
+with the same summary cards `report.py` makes, `noindex` and a link back to the site. From the repository root:
 
 ```python
 import json, sys
@@ -59,13 +58,11 @@ kpis = [{"label": "Recorded work", "value": fmt_minutes(total)},
         {"label": f"Biggest opportunity · {top['level'].lower()} potential", "value": top["name"], "wide": True}]
 page = render(md.splitlines()[0].lstrip("# ").strip(), md, "report", {"kpis": kpis})
 page = page.replace('initial-scale=1">', 'initial-scale=1">\n<meta name="robots" content="noindex">', 1)
-page = page.replace('<div class="brand"><span class="logo">F</span>FlowSME</div>',
-                    '<a class="brand" href="index.html" title="Back to the FlowSME website" '
-                    'style="color:inherit;text-decoration:none"><span class="logo">F</span>FlowSME</a>')
+page = page.replace('<div class="brand"><span class="logo">F</span><span class="wide">FlowSME</span></div>',
+                    '<a class="brand" href="index.html" title="Back to the FlowSME website" style="color:inherit;'
+                    'text-decoration:none"><span class="logo">F</span><span class="wide">FlowSME</span></a>')
 page = page.replace('<button class="btn" id="toc-btn"', '<a class="btn hide-small" href="index.html" '
                     'style="text-decoration:none">&larr; Website</a>\n  <button class="btn" id="toc-btn"')
-page = page.replace('</style>', '  @media (max-width:600px) { .bar { padding:10px 12px; gap:10px; } '
-                    '#print { display:none; } }\n</style>', 1)  # the report's title bar is wider than a phone
 Path("site/sample-report.html").write_text(page, encoding="utf-8")
 ```
 

@@ -133,6 +133,11 @@
     body.toc-open nav.toc { transform:none; }
     .bar .hide-small { display:none; }
   }
+  @media (max-width:600px) {
+    /* a phone has room for the logo, the title and short buttons, not the full labels */
+    .bar { padding:10px 12px; gap:10px; }
+    .bar .wide { display:none; }
+  }
   @media print {
     .bar, nav.toc, .tabs, .progress, .lightbox, article.step label { display:none !important; }
     .layout { display:block; padding:0; } body { background:#fff; }
@@ -140,20 +145,19 @@
     .pane[hidden] { display:block !important; }
     .pane::before { content:attr(data-title); display:block; font-weight:700; margin:12px 0 4px; }
   }
-  @media (max-width:600px) { .bar { padding:10px 12px; gap:10px; } #print { display:none; } }
 </style>
 </head>
 <body data-kind="report">
 <header class="bar">
-  <a class="brand" href="index.html" title="Back to the FlowSME website" style="color:inherit;text-decoration:none"><span class="logo">F</span>FlowSME</a>
+  <a class="brand" href="index.html" title="Back to the FlowSME website" style="color:inherit;text-decoration:none"><span class="logo">F</span><span class="wide">FlowSME</span></a>
   <div class="title"><b id="bar-title">Workflow analysis: Demo: invoice processing (synthetic)</b><span>Workflow report</span></div>
   <a class="btn hide-small" href="index.html" style="text-decoration:none">&larr; Website</a>
-  <button class="btn" id="toc-btn" title="Contents">☰ Contents</button>
+  <button class="btn" id="toc-btn" title="Contents" aria-label="Contents">☰<span class="wide"> Contents</span></button>
   <button class="btn hide-small" id="expand" hidden>Expand all</button>
   <button class="btn hide-small" id="collapse" hidden>Collapse all</button>
   <button class="btn hide-small" id="shots" hidden>Hide screenshots</button>
   <button class="btn" id="theme" title="Light or dark">◐</button>
-  <button class="btn primary" id="print">Print / Save PDF</button>
+  <button class="btn primary" id="print">Print<span class="wide"> / Save PDF</span></button>
 </header>
 <div class="layout">
   <nav class="toc" id="toc"><div class="label">Contents</div></nav>

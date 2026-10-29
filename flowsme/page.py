@@ -156,6 +156,11 @@ PAGE = """<!doctype html>
     body.toc-open nav.toc { transform:none; }
     .bar .hide-small { display:none; }
   }
+  @media (max-width:600px) {
+    /* a phone has room for the logo, the title and short buttons, not the full labels */
+    .bar { padding:10px 12px; gap:10px; }
+    .bar .wide { display:none; }
+  }
   @media print {
     .bar, nav.toc, .tabs, .progress, .lightbox, article.step label { display:none !important; }
     .layout { display:block; padding:0; } body { background:#fff; }
@@ -167,14 +172,14 @@ PAGE = """<!doctype html>
 </head>
 <body data-kind="__KIND__">
 <header class="bar">
-  <div class="brand"><span class="logo">F</span>FlowSME</div>
+  <div class="brand"><span class="logo">F</span><span class="wide">FlowSME</span></div>
   <div class="title"><b id="bar-title">__TITLE__</b><span>__KIND_LABEL__</span></div>
-  <button class="btn" id="toc-btn" title="Contents">☰ Contents</button>
+  <button class="btn" id="toc-btn" title="Contents" aria-label="Contents">☰<span class="wide"> Contents</span></button>
   <button class="btn hide-small" id="expand" hidden>Expand all</button>
   <button class="btn hide-small" id="collapse" hidden>Collapse all</button>
   <button class="btn hide-small" id="shots" hidden>Hide screenshots</button>
   <button class="btn" id="theme" title="Light or dark">◐</button>
-  <button class="btn primary" id="print">Print / Save PDF</button>
+  <button class="btn primary" id="print">Print<span class="wide"> / Save PDF</span></button>
 </header>
 <div class="layout">
   <nav class="toc" id="toc"><div class="label">Contents</div></nav>
