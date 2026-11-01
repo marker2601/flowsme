@@ -6,8 +6,9 @@
   python -m flowsme.server seats "Acme Finance" 10
   python -m flowsme.server list
 
-The data folder is FLOWSME_DATA, or "server-data" in the current folder. Seat keys are shown once and saved as
-a seat file for the person; the server keeps only their hashes."""
+The data folder is FLOWSME_DATA, or "server-data" in the current folder. A new seat key is written once, into a
+seat file in --out (default "seat-files-to-send", outside the data folder): send it to the person over a private
+channel, then delete it. The server keeps only the key's hash."""
 from __future__ import annotations
 
 import argparse
@@ -20,8 +21,9 @@ from .store import Store
 
 
 def _seat_file(server: str, org: dict, member: dict, key: str, out: Path) -> Path:
-    slug = re.sub(r"[^A-Za-z0-9]+", " ", member["name"]).strip() or "person"
-    path = out / f"{slug} - FlowSME seat.flowseat"
+    out.mkdir(parents=True, exist_ok=True)
+    slug = lambda text, fallback: re.sub(r"[^A-Za-z0-9]+", " ", text).strip()[:40] or fallback  # noqa: E731
+    path = out / f"{slug(org['name'], org['id'])} - {slug(member['name'], 'person')} - {member['seat']}.flowseat"
     path.write_text(json.dumps({"kind": "flowsme-cloud-seat", "version": 1, "server": server, "key": key,
                                 "name": member["name"], "team": org["name"], "role": member["role"]}, indent=1),
                     encoding="utf-8")
@@ -50,6 +52,8 @@ def main() -> None:
     n.add_argument("org")
     n.add_argument("seats", type=int)
     sub.add_parser("list", help="organisations and their seats")
+    p.add_argument("--out", default=os.environ.get("FLOWSME_SEAT_OUT", "seat-files-to-send"),
+                   help="where new seat files go (keep it outside the data folder; delete them once sent)")
     args = p.parse_args()
 
     data = Path(args.data)
@@ -59,26 +63,43 @@ def main() -> None:
         from .api import create_app
 
         print(f"FlowSME server {data.resolve()} on http://{args.host}:{args.port}")
-        uvicorn.run(create_app(data, args.workers), host=args.host, port=args.port, log_level="info")
+        # Behind a TLS proxy, trust its X-Forwarded-For (FORWARDED_ALLOW_IPS) so each client is told apart.
+        # Run one server process per data folder: the JSON files are locked within a process only.
+        uvicorn.run(create_app(data, args.workers), host=args.host, port=args.port, log_level="info",
+                    proxy_headers=True, forwarded_allow_ips=os.environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1"))
         return
     store = Store(data)
-    out = data / "seat-files"
-    out.mkdir(parents=True, exist_ok=True)
+    out = Path(args.out)
+    if args.cmd in ("create-org", "add-manager"):
+        if out.resolve() == data.resolve() or data.resolve() in out.resolve().parents:
+            raise SystemExit("Keep --out outside the data folder: seat files hold keys, the server keeps only hashes.")
+        try:  # before anything is created, so a key is never made that can't be handed over
+            out.mkdir(parents=True, exist_ok=True)
+            probe = out / ".write-test"
+            probe.write_text("", encoding="utf-8")
+            probe.unlink()
+        except OSError as exc:
+            raise SystemExit(f"Can't write seat files to {out}: {exc}. Choose another folder with --out.") from None
+    try:
+        _admin(args, store, out)
+    except (KeyError, ValueError) as exc:
+        raise SystemExit(str(exc).strip("'\"")) from None
+
+
+def _admin(args, store: Store, out: Path) -> None:
+    sent = "Send it to them privately, then delete it: FlowSME can always make a new key."
     if args.cmd == "create-org":
         org = store.create_org(args.name, args.seats, args.currency)
         member, key = store.add_member(org, args.manager, org["default_position"], role="manager")
-        print(f"Created {org['name']} ({org['id']}) with {org['seats']} seats.")
-        print(f"Manager seat file: {_seat_file(args.server_url, org, member, key, out)}")
+        print(f"Created {org['name']} ({org['id']}) with {org['seats']} seat{'' if org['seats'] == 1 else 's'}.")
+        print(f"Manager seat file: {_seat_file(args.server_url, org, member, key, out)}\n{sent}")
     elif args.cmd == "add-manager":
         org = store.by_name(args.org)
         member, key = store.add_member(org, args.name, org["default_position"], role="manager")
-        print(f"Manager seat file: {_seat_file(args.server_url, org, member, key, out)}")
+        print(f"Manager seat file: {_seat_file(args.server_url, org, member, key, out)}\n{sent}")
     elif args.cmd == "seats":
         org = store.by_name(args.org)
-        if args.seats < len(store.employees(org)):
-            raise SystemExit(f"{len(store.employees(org))} seats are in use: revoke some first.")
-        org["seats"] = args.seats
-        store.save_org(org)
+        store.set_seats(org, args.seats)
         print(f"{org['name']} now has {args.seats} seats.")
     else:
         for org in store.orgs():

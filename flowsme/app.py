@@ -800,7 +800,7 @@ class App:
         tree = ttk.Treeview(f, columns=("task", "potential", "saved"), show="headings", height=min(len(tasks), 5),
                             selectmode="browse")
         for col, label, width in (("task", "Task", 420), ("potential", "Potential", 110),
-                                  ("saved", "Saves per run", 110)):
+                                  ("saved", "Saves each time", 110)):
             tree.heading(col, text=label, anchor="w")
             tree.column(col, width=int(width * scale), anchor="w")
         for t in tasks:
@@ -1135,7 +1135,7 @@ class App:
             secs = meta.get("duration_seconds") or 0
             self.summary.config(text=(
                 f"{fmt_minutes(secs / 60)} recorded, {len(tasks)} task{'s' if len(tasks) != 1 else ''}. About "
-                f"{fmt_minutes(saved)} could be saved per run: {hours:.1f} hours{money(total)} a month."
+                f"{fmt_minutes(saved)} could be saved each time this work is done: {hours:.1f} hours{money(total)} a month."
                 + (f" AI cost of the report: about ${cost:.2f}." if cost else " Made with built-in rules.")
                 + " Double-click a task to open the report."))
             for t in tasks:
@@ -1475,8 +1475,10 @@ def self_test() -> tuple[bool, str]:
             threading.Timer(2, rec.stop).start()
             rec.run()
             report = analyze_session(build_demo(tmp), cfg, log=lambda *_: None)["paths"]["html"]
+            if "marked v" not in report.read_text(encoding="utf-8"):
+                raise RuntimeError("report pages are missing their built-in Markdown renderer (assets/marked.min.js)")
             return f"2-second recording saved: {(tmp / 'recording' / 'meta.json').exists()}; " \
-                   f"demo report written: {report.exists()}"
+                   f"demo report written: {report.exists()}, works offline"
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
@@ -1497,8 +1499,9 @@ def main(config_path: str | None = None, check: bool = False) -> None:
         ok, text = self_test()
         out = Path(os.environ.get("TEMP", ".")) / "FlowSME-self-test.txt"
         out.write_text(text, encoding="utf-8")
-        ctypes.windll.user32.MessageBoxW(None, f"{text}\n\nSaved to {out}", "FlowSME", 0x40 if ok else 0x10)
-        return
+        if "--quiet" not in sys.argv:  # --quiet: no message box, for scripts; the exit code says it all
+            ctypes.windll.user32.MessageBoxW(None, f"{text}\n\nSaved to {out}", "FlowSME", 0x40 if ok else 0x10)
+        raise SystemExit(0 if ok else 1)
     with contextlib.suppress(Exception):  # its own taskbar button and icon
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("FlowSME.App")
     # One FlowSME at a time: two recorders would record everything twice.

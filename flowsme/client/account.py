@@ -62,12 +62,26 @@ def forget(home: Path) -> None:
         (home / "account.json").unlink()
 
 
-# ---- remembered tool settings (user environment variables, like the full app) -----------------------
+# ---- remembered tool settings: encrypted for this Windows user, like the seat key ---------------------
+
+def _tools_file() -> Path:
+    return Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "FlowSME Client" / "tools.dat"
+
+
+def _tools() -> dict:
+    with contextlib.suppress(OSError, ValueError):
+        return json.loads(_dpapi(_tools_file().read_bytes(), False).decode("utf-8"))
+    return {}
+
 
 def saved_setting(name: str) -> str:
+    """A workflow tool's address or key: set for this run (environment), else remembered by the Build dialog."""
     if os.environ.get(name):
         return os.environ[name]
-    with contextlib.suppress(OSError):
+    found = _tools().get(name)
+    if found:
+        return str(found)
+    with contextlib.suppress(OSError):  # versions before 0.5.1 kept them as user environment variables
         import winreg
 
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
@@ -76,8 +90,13 @@ def saved_setting(name: str) -> str:
 
 
 def store_setting(name: str, value: str) -> None:
-    import winreg
+    data = _tools()
+    data[name] = value
+    path = _tools_file()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(_dpapi(json.dumps(data).encode("utf-8"), True))
+    with contextlib.suppress(OSError):  # and no plain copy left where every program can read it
+        import winreg
 
-    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
-        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
-    os.environ[name] = value
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
+            winreg.DeleteValue(key, name)

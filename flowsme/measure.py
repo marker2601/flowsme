@@ -14,6 +14,13 @@ from .models import PASTE_KEYS, Task, fmt_minutes
 MR_FACTOR = 2.66  # individuals chart: limits at mean ± 2.66 × average moving range (3 sigma)
 
 
+
+def _per_item(minutes, task: dict):
+    """The report's saving is for the whole recording; a routine repeated in it saves that much per repeat."""
+    if not minutes:
+        return minutes
+    return minutes / max(1, int(task.get("runs") or 1))
+
 def stats(values: list[float]) -> dict:
     n = len(values)
     sd = stdev(values) if n > 1 else 0.0
@@ -170,8 +177,10 @@ def summarize(session_dir: Path, task_id: int | None = None, items: int | None =
             "seconds": [round(x, 1) for x in seconds], "time": time,
             "steps_per_run": round(mean(counts), 1), "entries_per_run": round(mean(entries), 1),
             "switches_per_run": round(mean(switches), 1),
-            "estimated_minutes_saved": (task.get("estimate") or {}).get("minutes_saved_per_run"),
+            "estimated_minutes_saved": _per_item((task.get("estimate") or {}).get("minutes_saved_per_run"), task),
             "runs_per_month": options.get("runs_per_month", 20), "hourly_cost": options.get("hourly_cost", 30),
+            # the report's "times a month" is how often the recorded work is done; each time holds this many items
+            "items_per_month": options.get("runs_per_month", 20) * max(1, int(time["n"] or 1)),
             "currency": options.get("currency", "$"), "show_money": options.get("show_money", True)}
 
 
@@ -184,7 +193,7 @@ def compare(before_dir: Path, after_dir: Path, before_task: int | None = None, a
     b, a = summarize(before_dir, before_task, before_items), summarize(after_dir, after_task, after_items)
     saved = b["time"]["mean"] - a["time"]["mean"]
     test = welch(b["seconds"], a["seconds"])
-    per_month = b["runs_per_month"]
+    per_month = b["items_per_month"]
     result = {"before": b, "after": a, "seconds_saved_per_run": round(saved, 1),
               "percent_saved": round(saved / b["time"]["mean"], 3) if b["time"]["mean"] else 0.0,
               "hours_saved_per_month": round(saved * per_month / 3600, 1),
@@ -232,7 +241,8 @@ def _comparison_markdown(r: dict) -> str:
              f"**{r['verdict']}**\n"]
     est = b["estimated_minutes_saved"]
     lines.append(f"Saved per item: **{fmt_minutes(r['seconds_saved_per_run'] / 60)}** "
-                 f"({r['percent_saved']:.0%}). At {b['runs_per_month']} items a month: "
+                 f"({r['percent_saved']:.0%}). At {b['items_per_month']} items a month ({b['runs_per_month']} times a month, "
+                 f"{b['time']['n']} items each as recorded): "
                  f"**{r['hours_saved_per_month']} hours**"
                  + (f", about {b['currency']}{r['money_saved_per_month']:,}." if b["show_money"] else ".")
                  + (f" The report estimated {fmt_minutes(est)} per item." if est else "") + "\n")

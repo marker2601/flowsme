@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .describe import _encode_screenshot
 from .integration import _navigation, document_of, endpoint, label
-from .models import Task, base_app, fmt_minutes
+from .models import Task, base_app, fmt_minutes, plural
 from .schemas import SOP
 
 MAX_IMAGES = 30
@@ -47,7 +47,8 @@ def write_sop(session_dir: Path, task: Task, plan: dict, checks: dict, rules: li
     from .page import render
 
     (out / f"{name}.md").write_text(md, encoding="utf-8")
-    (out / f"{name}.html").write_text(render(f"SOP: {task.name}", page, "sop"), encoding="utf-8")
+    (out / f"{name}.html").write_text(render(f"SOP: {task.name}", page, "sop",
+                                          {"key": f"{session_dir.name}/{task.id}"}), encoding="utf-8")
     log(f"SOP written for task {task.id}: {name}.html")
     return out / f"{name}.html"
 
@@ -82,7 +83,7 @@ def _markdown(session_dir: Path, task: Task, steps, instructions, purpose, plan,
              f"`{session_dir.name}` on {date.today().isoformat()}. Review and approve before use.</sub>\n")
     w.append("| | |\n|---|---|")
     w.append(f"| Purpose | {_cell(purpose)} |")
-    w.append(f"| Applies to | Each item of this routine (seen {runs} times in the recording, {per_item}) |")
+    w.append(f"| Applies to | Each item of this routine (seen {plural(runs, 'time')} in the recording, {per_item}) |")
     w.append(f"| Applications | {', '.join(dict.fromkeys(base_app(s.app) for s in steps))} |")
     if task.inputs:
         w.append(f"| Inputs | {_cell('; '.join(task.inputs))} |")
@@ -112,7 +113,7 @@ def _markdown(session_dir: Path, task: Task, steps, instructions, purpose, plan,
         w.append(f"### {n}. {text}\n")
         w.append(f"<sub>{_cell(where)} · about {max(step.duration, 1):.0f} s</sub>\n")
         if step.screenshot and step.screenshot != last_shot and shown < MAX_IMAGES:
-            image = _image(session_dir, step, embed)
+            image = _image(session_dir, step, embed, n)
             if image:
                 w.append(image + "\n")
                 shown += 1
@@ -154,8 +155,8 @@ def _markdown(session_dir: Path, task: Task, steps, instructions, purpose, plan,
     return "\n".join(w)
 
 
-def _image(session_dir: Path, step, embed: bool) -> str:
-    alt = f"Step {step.index}"
+def _image(session_dir: Path, step, embed: bool, n: int) -> str:
+    alt = f"Screenshot for step {n}"
     if not embed:
         return f"![{alt}](../{step.screenshot})"
     data = _encode_screenshot(session_dir, step, 760, crop=True)

@@ -1,6 +1,8 @@
 """Write the analysis as report.md, a self-contained report.html, and analysis.json."""
 from __future__ import annotations
 
+import base64
+import io
 import json
 import re
 from pathlib import Path
@@ -9,7 +11,7 @@ from .config import Config
 from .integration import label
 from .knowledge import EVIDENCE, METHODS
 from .measure import control_chart_svg
-from .models import Step, Task, fmt_minutes
+from .models import Step, Task, fmt_minutes, plural
 from .page import render
 from .workflow import mermaid_apps, mermaid_workflow
 
@@ -30,8 +32,8 @@ def write_report(session_dir: Path, meta: dict, steps: list[Step], tasks: list[T
     markdown = _markdown(title, session_dir.name, meta, steps, tasks, amap, cfg, engine)
     paths = {"markdown": out / f"{name}.md", "html": out / f"{name}.html", "json": out / "analysis.json"}
     paths["markdown"].write_text(markdown, encoding="utf-8")
-    paths["html"].write_text(render(title, markdown, "report", {"kpis": _kpis(steps, tasks, cfg)}),
-                             encoding="utf-8")
+    paths["html"].write_text(render(title, _inline_shots(session_dir, markdown), "report",
+                                    {"kpis": _kpis(steps, tasks, cfg)}), encoding="utf-8")
     if name != "report":
         del paths["json"]
         return paths
@@ -46,6 +48,29 @@ def _process_name(folder: str) -> str:
     return (name[:1].upper() + name[1:]) if name else folder
 
 
+def _inline_shots(session_dir: Path, markdown: str) -> str:
+    """Screenshots inside the page, made smaller, so report.html shows them wherever it is opened or sent."""
+    from PIL import Image
+
+    root = (session_dir / "shots").resolve()
+
+    def inline(match: re.Match) -> str:  # only this recording's screenshots, whatever the page text says
+        path = (session_dir / match.group(1)).resolve()
+        if root not in path.parents or path.suffix.lower() not in (".png", ".jpg", ".jpeg") or not path.is_file():
+            return match.group(0)
+        try:
+            with Image.open(path) as im:
+                img = im.convert("RGB")
+        except OSError:
+            return match.group(0)
+        if img.width > 1100:
+            img = img.resize((1100, round(img.height * 1100 / img.width)), Image.Resampling.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, "JPEG", quality=72)
+        return f'src="data:image/jpeg;base64,{base64.b64encode(buf.getvalue()).decode("ascii")}"'
+    return re.sub(r'src="\.\./(shots/[^"]+)"', inline, markdown)
+
+
 def _kpis(steps: list[Step], tasks: list[Task], cfg: Config) -> list[dict]:
     """The summary cards at the top of the report page."""
     a = cfg.analysis
@@ -55,8 +80,8 @@ def _kpis(steps: list[Step], tasks: list[Task], cfg: Config) -> list[dict]:
     hours = sum(t.estimate.get("hours_saved_per_month", 0) for t in main)
     share = f"{saved / total * 100:.0f}%" if total else "0%"
     cards = [{"label": "Recorded work", "value": fmt_minutes(total)},
-             {"label": "Could be saved per run", "value": f"{fmt_minutes(saved)} ({share})"},
-             {"label": f"Hours saved a month ({a.runs_per_month} runs)", "value": f"{hours:.1f} h"}]
+             {"label": "Could be saved per recording", "value": f"{fmt_minutes(saved)} ({share})"},
+             {"label": f"Hours saved a month (done {a.runs_per_month}× a month)", "value": f"{hours:.1f} h"}]
     if a.show_money:
         money = sum(t.estimate.get("cost_saved_per_month", 0) for t in main)
         cards.append({"label": "Worth a month", "value": f"{a.currency}{money:,}"})
@@ -100,14 +125,14 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
 
     w("## Summary\n")
     w(f"- **Recorded work:** {fmt_minutes(total)}")
-    w(f"- **Time automation could save:** about {fmt_minutes(saved)} per run "
+    w(f"- **Time automation could save:** about {fmt_minutes(saved)} per recording like this one "
       f"({saved / total * 100 if total else 0:.0f}% of the recorded time)")
     if a.show_money:
         rate = f"the {a.position} rate, " if a.position else ""
-        w(f"- **If this process runs {a.runs_per_month} times a month:** about {monthly:.1f} hours a month, roughly "
+        w(f"- **If the recorded work is done {a.runs_per_month} times a month:** about {monthly:.1f} hours a month, roughly "
           f"{cur}{sum(t.estimate.get('cost_saved_per_month', 0) for t in main):,} at {rate}{cur}{a.hourly_cost:g} an hour")
     else:
-        w(f"- **If this process runs {a.runs_per_month} times a month:** about {monthly:.1f} hours a month"
+        w(f"- **If the recorded work is done {a.runs_per_month} times a month:** about {monthly:.1f} hours a month"
           + (f" of {a.position} time" if a.position else "") + ". Your team's admin sees the money figures.")
     if ranked:
         top = ranked[0]
@@ -117,7 +142,7 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
       "app's Admin panel, what an hour of each position costs) to match the real business.\n")
 
     w("## Opportunities\n")
-    w("| # | Task | Time | Runs | Applications | Automation potential | Est. saving per run |")
+    w("| # | Task | Time | Repeats | Applications | Automation potential | Est. saving per recording |")
     w("|---|---|---|---|---|---|---|")
     for t in ranked:
         potential = f"same process as task {t.same_as}" if t.same_as else f"{t.level} ({t.score:.0f}/100)"
@@ -130,7 +155,7 @@ def _markdown(title: str, session: str, meta: dict, steps: list[Step], tasks: li
         w("## What to automate first\n")
         w(f"Impact (hours saved a month) against effort (days to build). Quick wins come first: high impact for "
           f"under {pri['effort_cut_days']:g} days of work. High impact here means at least "
-          f"{pri['impact_cut_hours']:g} hours a month.\n")
+          f"{pri['impact_cut_hours']:g} hour{'' if pri['impact_cut_hours'] == 1 else 's'} a month.\n")
         w(pri["svg"] + "\n")
         w("| Phase | # | Task | Saves a month | Effort | Pays back | Why this effort |")
         w("|---|---|---|---|---|---|---|")
@@ -204,7 +229,7 @@ def _task_section(w, t: Task, cfg: Config, session: str, turns: list[dict]) -> N
           f"data flow, automation design, checks and SOP are described once, under task {t.same_as}, and the "
           f"roadmap counts this time there.\n")
         return
-    runs = f"{t.runs} runs of about {fmt_minutes(t.minutes / t.runs)}" if t.repeated else "1 run"
+    runs = f"{t.runs} repeats of about {fmt_minutes(t.minutes / t.runs)}" if t.repeated else "done once"
     w(f"**Automation potential: {t.level} ({t.score:.0f}/100)** · {fmt_minutes(t.minutes)} in total · {runs} · "
       f"{', '.join(t.apps)}\n")
     if t.summary:
@@ -219,8 +244,10 @@ def _task_section(w, t: Task, cfg: Config, session: str, turns: list[dict]) -> N
     est = t.estimate
     if est.get("minutes_saved_per_run"):
         money = f" or {cfg.analysis.currency}{est['cost_saved_per_month']:,}" if cfg.analysis.show_money else ""
-        w(f"**Estimated saving:** about {fmt_minutes(est['minutes_saved_per_run'])} per run "
-          f"({est['automatable_fraction'] * 100:.0f}% of this task), about {est['hours_saved_per_month']} hours"
+        each = (f"; about {fmt_minutes(est['minutes_saved_per_run'] / t.runs)} for each of the {t.runs} repeats"
+                if t.repeated else "")
+        w(f"**Estimated saving:** about {fmt_minutes(est['minutes_saved_per_run'])} per recording like this one "
+          f"({est['automatable_fraction'] * 100:.0f}% of this task{each}), about {est['hours_saved_per_month']} hour{'' if est['hours_saved_per_month'] == 1 else 's'}"
           f"{money} a month.\n")
 
     shots = [s for s in rep if s.screenshot and s.action == "click"]
@@ -229,7 +256,7 @@ def _task_section(w, t: Task, cfg: Config, session: str, turns: list[dict]) -> N
         picks = list({s.index: s for s in picks}.values())
         w(" ".join(f'<img src="../{s.screenshot}" alt="Step {rep.index(s) + 1}" width="31%">' for s in picks) + "\n")
 
-    w(f"**Steps{' (one run)' if t.repeated else ''}:**\n")
+    w(f"**Steps{' (one repeat)' if t.repeated else ''}:**\n")
     w("\n".join(f"{i}. [{s.app}] {s.description}" for i, s in enumerate(rep[:60], 1)))
     if len(rep) > 60:
         w(f"\n_...and {len(rep) - 60} more steps._")
@@ -244,15 +271,18 @@ def _task_section(w, t: Task, cfg: Config, session: str, turns: list[dict]) -> N
     if (t.improvement or {}).get("sop"):
         w(f"**Standard operating procedure:** [{t.improvement['sop']}]({t.improvement['sop']}) (a draft with "
           "a screenshot per step, the rules and checks; for the process owner to review and approve)\n")
+    _recommendations(w, t)
     _integration_section(w, t, session)
     _tobe_section(w, t)
     _improvement_section(w, t, cfg)
 
+
+def _recommendations(w, t: Task) -> None:
     rec = t.recommendation
     if not rec:
         return
     source = "AI analysis" if rec.get("source") == "ai" else "built-in rules; connect an AI model for task-specific advice"
-    w(f"**Recommendations** _({source})_\n")
+    w(f"#### Recommendations\n\n_From the {source}._\n")
     for i, r in enumerate(rec.get("recommendations", []), 1):
         bits = [APPROACH_LABELS.get(r.get("approach"), str(r.get("approach") or ""))]
         if r.get("effort"):
@@ -409,7 +439,7 @@ def _improvement_section(w, t: Task, cfg: Config) -> None:
 
     total = sum(lean["time_by_class"].values()) or 1
     names = {"VA?": "value-adding? (judgement, confirm)", "BVA": "business-required", "NVA": "waste (non-value-adding)"}
-    w(f"**Measure.** {tools['minutes_per_run']} min of hands-on work per item, {t.runs} items in this recording, "
+    w(f"**Measure.** {tools['minutes_per_run']} min of hands-on work per item, {plural(t.runs, 'item')} in this recording, "
       f"{checks['manual_entries_per_item']} manual entries per item.\n")
     var = imp.get("variation")
     if var:

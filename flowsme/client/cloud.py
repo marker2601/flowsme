@@ -17,6 +17,17 @@ class CloudError(Exception):
     pass
 
 
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A redirect would carry the Authorization header to wherever it points: refuse it instead."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise urllib.error.HTTPError(req.full_url, code, f"Redirected to {newurl}; not followed", headers, fp)
+
+
+_open = urllib.request.build_opener(_NoRedirect).open
+
+
 def check_address(server: str) -> str:
     """Only https, so seat keys and recordings are encrypted on the way; plain http only to this computer."""
     server = server.strip().rstrip("/")
@@ -34,7 +45,7 @@ class Cloud:
         request = urllib.request.Request(f"{self.server}/api/v1{path}", data=data, method=method, headers={
             "Authorization": f"Bearer {self.key}", "User-Agent": "FlowSME-Client", **(headers or {})})
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as resp:
+            with _open(request, timeout=timeout) as resp:
                 return resp.read()
         except urllib.error.HTTPError as exc:
             try:

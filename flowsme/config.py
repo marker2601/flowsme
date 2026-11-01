@@ -91,6 +91,7 @@ class AnalysisConfig:
     # whether money appears at all: an employee's app shows hours only, the rates stay with the manager.
     position: str = ""
     show_money: bool = True
+    show_ai_usage: bool = True  # the AI cost line in reports and logs (off on the FlowSME server)
     web_search: bool = True
     max_recommended_tasks: int = 5
 

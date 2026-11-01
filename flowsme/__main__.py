@@ -19,6 +19,7 @@ def main(argv: list[str] | None = None) -> None:
 
     app = sub.add_parser("app", help="open the FlowSME window: Record, Pause, Stop and Report (Windows)")
     app.add_argument("--self-test", action="store_true", help="check that recording and reports work, then exit")
+    app.add_argument("--quiet", action="store_true", help="with --self-test: no message box; exit code 0 = all good")
 
     rec = sub.add_parser("record", help="record your screen activity (Windows)")
     rec.add_argument("--name", help="short label for the session, e.g. 'invoice processing'")
@@ -77,10 +78,10 @@ def main(argv: list[str] | None = None) -> None:
         cfg.llm.provider = "offline"
     if getattr(args, "no_search", False):
         cfg.analysis.web_search = False
-    if getattr(args, "runs_per_month", None):
-        cfg.analysis.runs_per_month = args.runs_per_month
-    if getattr(args, "hourly_cost", None):
-        cfg.analysis.hourly_cost = args.hourly_cost
+    if getattr(args, "runs_per_month", None) is not None:  # 0 is an answer too, not "not given"
+        cfg.analysis.runs_per_month = max(1, args.runs_per_month)
+    if getattr(args, "hourly_cost", None) is not None:
+        cfg.analysis.hourly_cost = max(0.0, args.hourly_cost)
     if getattr(args, "tools", None):
         sep = ";" if ";" in args.tools else ","
         cfg.customer.tools = [t.strip() for t in args.tools.split(sep) if t.strip()]
@@ -93,11 +94,15 @@ def main(argv: list[str] | None = None) -> None:
         path = Recorder(cfg, new_session_dir(cfg.sessions_dir, args.name)).run(duration=args.duration)
         print(f"Analyse it with:  python -m flowsme analyze {path.name}")
     elif args.command == "import":
+        import zipfile
         from pathlib import Path
 
         from .session import import_recording
 
-        path = import_recording(Path(args.zip), cfg.sessions_dir)
+        try:
+            path = import_recording(Path(args.zip), cfg.sessions_dir)
+        except (OSError, ValueError, zipfile.BadZipFile) as exc:
+            raise SystemExit(f"Can't import {args.zip}: {exc}") from None
         print(f"Imported {path.name}. Analyse it with:  python -m flowsme analyze {path.name}")
     elif args.command == "team":
         from .team import team_view
@@ -166,11 +171,12 @@ def _analyze(path, cfg) -> None:
 
     print(f"Analysing {path}")
     result = analyze_session(path, cfg)
-    ranked = sorted((t for t in result["tasks"] if not t.misc and not t.same_as), key=lambda t: -t.score)
+    ranked = sorted((t for t in result["tasks"] if not t.misc and not t.same_as
+                     and t.estimate.get("minutes_saved_per_run")), key=lambda t: -t.score)
     print("\nTop opportunities:")
     for t in ranked[:5]:
         print(f"  {t.id}. {t.name}: {t.level} ({t.score:.0f}/100), "
-              f"about {fmt_minutes(t.estimate['minutes_saved_per_run'])} saved per run")
+              f"about {fmt_minutes(t.estimate['minutes_saved_per_run'])} saved per recording like this one")
     print(f"\nReport: {result['paths']['html'].resolve()}")
 
 

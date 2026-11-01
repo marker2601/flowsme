@@ -8,7 +8,7 @@ from math import log10
 from statistics import median
 
 from .integration import DOCUMENTED, FOUND
-from .models import Task
+from .models import Task, plural
 
 EFFORT_DAYS = {"hours": 0.5, "days": 3.0, "weeks": 15.0}
 LOW_EFFORT_DAYS = 5.0
@@ -37,7 +37,7 @@ def effort(task: Task) -> dict:
     unknown = len(plan.get("open_questions", []))
     if unknown:
         days += 0.5 * unknown
-        reasons.append(f"{unknown} open question(s) to settle first, +{0.5 * unknown:g} days")
+        reasons.append(f"{plural(unknown, 'open question')} to settle first, +{plural(0.5 * unknown, 'day')}")
     return {"days": round(days, 1), "reasons": reasons}
 
 

@@ -7,7 +7,10 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import math
+import os
 import re
+import sys
 import secrets
 import shutil
 import threading
@@ -21,6 +24,7 @@ from ..org import DEFAULT_POSITIONS
 LOCK = threading.RLock()
 MAX_UNPACKED = 4 * 1024 ** 3  # a recording zip may unpack to at most 4 GB...
 MAX_FILES = 20_000           # ...in at most this many files (screenshots), so a zip bomb can't fill the disk
+DAILY_REPORTS = 40           # analyses a day per organisation, unless its org.json sets "daily_reports"
 _CODE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
@@ -54,8 +58,25 @@ def _read(path: Path) -> dict:
 def _write(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f"{path.stem}.{secrets.token_hex(4)}.tmp")
-    tmp.write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
+    with open(tmp, "w", encoding="utf-8") as out:
+        out.write(json.dumps(data, indent=1, ensure_ascii=False))
+        out.flush()
+        os.fsync(out.fileno())  # on disk before it replaces the old file: a power cut leaves one or the other
     _retry(lambda: tmp.replace(path))
+
+
+def _readable(paths) -> list[dict]:
+    """Every file that reads as JSON; a damaged one is reported and skipped, so it can't stop the server."""
+    found = []
+    for path in paths:
+        try:
+            data = _read(path)
+        except (OSError, ValueError) as exc:
+            print(f"FlowSME: skipping unreadable {path}: {exc}", file=sys.stderr)
+            continue
+        if isinstance(data, dict):
+            found.append(data)
+    return found
 
 
 class Store:
@@ -79,7 +100,7 @@ class Store:
         return self.root / "orgs" / org_id / "org.json"
 
     def orgs(self) -> list[dict]:
-        return [_read(p) for p in sorted((self.root / "orgs").glob("O-*/org.json"))]
+        return _readable(sorted((self.root / "orgs").glob("O-*/org.json")))
 
     def org(self, org_id: str) -> dict:
         return _read(self._org_path(org_id))
@@ -89,9 +110,22 @@ class Store:
             _write(self._org_path(org["id"]), org)
             self._index()
 
+    @contextlib.contextmanager
+    def _editing(self, org: dict):
+        """The organisation as it is on disk now, saved afterwards; the caller's copy is updated to match. Two
+        admin requests at once can't overwrite each other's change."""
+        with LOCK:
+            fresh = self.org(org["id"])
+            yield fresh
+            self.save_org(fresh)
+            org.clear()
+            org.update(fresh)
+
     def create_org(self, name: str, seats: int, currency: str = "$") -> dict:
         if not name.strip() or seats < 1:
             raise ValueError("An organisation needs a name and at least one seat.")
+        if any(o["name"].lower() == name.strip().lower() for o in self.orgs()):
+            raise ValueError(f"There is already an organisation called {name.strip()}.")
         org = {"id": "O-" + secrets.token_hex(6).upper(), "name": name.strip(), "seats": int(seats),
                "currency": currency, "created": now(), "positions": [dict(p) for p in DEFAULT_POSITIONS],
                "default_position": DEFAULT_POSITIONS[0]["name"], "members": []}
@@ -121,38 +155,68 @@ class Store:
         """A new person and their seat key. Managers don't take one of the plan's seats."""
         if not name.strip():
             raise ValueError("Enter the person's name.")
-        if position not in [p["name"] for p in org["positions"]]:
-            raise ValueError("Choose one of the positions.")
-        if role == "employee" and len(self.employees(org)) >= org["seats"]:
-            raise ValueError(f"All {org['seats']} seats are in use. Revoke one, or ask FlowSME for more seats.")
-        used = {m["seat"] for m in org["members"]}
-        seat = None
-        while seat is None or seat in used:
-            seat = "FS-" + "".join(secrets.choice(_CODE) for _ in range(4)) + "-" + \
-                   "".join(secrets.choice(_CODE) for _ in range(4))
-        key = new_key()
-        member = {"seat": seat, "name": name.strip(), "email": email.strip(), "position": position, "role": role,
-                  "status": "active", "issued": now(), "revoked": None, "key_hash": key_hash(key)}
-        org["members"].append(member)
-        self.save_org(org)
+        with self._editing(org) as org:
+            if position not in [p["name"] for p in org["positions"]]:
+                raise ValueError("Choose one of the positions.")
+            if role == "employee" and len(self.employees(org)) >= org["seats"]:
+                raise ValueError(f"All {org['seats']} seats are in use. Revoke one, or ask FlowSME for more seats.")
+            used = {m["seat"] for m in org["members"]}
+            seat = None
+            while seat is None or seat in used:
+                seat = "FS-" + "".join(secrets.choice(_CODE) for _ in range(4)) + "-" + \
+                       "".join(secrets.choice(_CODE) for _ in range(4))
+            key = new_key()
+            member = {"seat": seat, "name": name.strip()[:80], "email": email.strip()[:120], "position": position,
+                      "role": role, "status": "active", "issued": now(), "revoked": None, "key_hash": key_hash(key)}
+            org["members"].append(member)
         return member, key
 
     def new_key(self, org: dict, seat: str) -> str:
-        member = self.member(org, seat)
-        key = new_key()
-        member["key_hash"] = key_hash(key)  # the old key stops working at once
-        self.save_org(org)
+        with self._editing(org) as org:
+            member = self.member(org, seat)
+            key = new_key()
+            member["key_hash"] = key_hash(key)  # the old key stops working at once
         return key
 
     def set_status(self, org: dict, seat: str, active: bool) -> None:
-        member = self.member(org, seat)
-        if active and member["status"] != "active":
-            if member["role"] == "employee" and len(self.employees(org)) >= org["seats"]:
-                raise ValueError(f"All {org['seats']} seats are in use. Revoke another seat first.")
-            member.update(status="active", revoked=None)
-        elif not active and member["status"] == "active":
-            member.update(status="revoked", revoked=now())
-        self.save_org(org)
+        with self._editing(org) as org:
+            member = self.member(org, seat)
+            if active and member["status"] != "active":
+                if member["role"] == "employee" and len(self.employees(org)) >= org["seats"]:
+                    raise ValueError(f"All {org['seats']} seats are in use. Revoke another seat first.")
+                member.update(status="active", revoked=None)
+            elif not active and member["status"] == "active":
+                member.update(status="revoked", revoked=now())
+
+    def set_member_position(self, org: dict, seat: str, position: str) -> None:
+        with self._editing(org) as org:
+            if position not in [p["name"] for p in org["positions"]]:
+                raise ValueError("Choose one of the positions.")
+            self.member(org, seat)["position"] = position
+
+    def set_seats(self, org: dict, seats: int) -> None:
+        with self._editing(org) as org:
+            if seats < 1:
+                raise ValueError("A plan needs at least one seat.")
+            if seats < len(self.employees(org)):
+                raise ValueError(f"{len(self.employees(org))} seats are in use: revoke some first.")
+            org["seats"] = int(seats)
+
+    def use_report(self, org: dict, refund: bool = False) -> None:
+        """Count one analysis against the organisation's daily allowance (each costs AI money)."""
+        with self._editing(org) as org:
+            today = now()[:10]
+            usage = org.get("usage") if (org.get("usage") or {}).get("day") == today else {"day": today, "reports": 0}
+            if refund:
+                usage["reports"] = max(0, usage["reports"] - 1)
+                org["usage"] = usage
+                return
+            limit = int(org.get("daily_reports", DAILY_REPORTS))
+            if usage["reports"] >= limit:
+                raise ValueError(f"Your team has used today's {limit} reports. More tomorrow, or ask FlowSME "
+                                 "for a bigger allowance.")
+            usage["reports"] += 1
+            org["usage"] = usage
 
     def who(self, key: str) -> tuple[dict, dict] | None:
         """The organisation and person a seat key belongs to, or None."""
@@ -162,8 +226,15 @@ class Store:
             found = self._keys.get(key_hash(key))
         if not found:
             return None
-        org = self.org(found[0])
-        return org, self.member(org, found[1])
+        try:
+            org = self.org(found[0])
+            member = self.member(org, found[1])
+        except (KeyError, OSError, ValueError):
+            return None
+        if member.get("key_hash") != key_hash(key):  # replaced since this process last indexed
+            self._index()
+            return None
+        return org, member
 
     # ---- positions and rates ------------------------------------------------------------------------
 
@@ -181,18 +252,23 @@ class Store:
             rates = [float(p["hourly_cost"]) for p in positions]
         except (KeyError, TypeError, ValueError):
             raise ValueError("Each position needs a cost of an hour.") from None
-        if any(r < 0 for r in rates):
-            raise ValueError("A cost of an hour can't be negative.")
-        in_use = {m["position"] for m in org["members"] if m["status"] == "active"} - set(names) - set(renames)
-        if in_use:
-            raise ValueError(f"Still in use: {', '.join(sorted(in_use))}. Move those people first.")
-        for m in org["members"]:
-            m["position"] = renames.get(m["position"], m["position"])
-        default = renames.get(default, default)
-        org["positions"] = [{"name": n, "hourly_cost": r} for n, r in zip(names, rates)]
-        org["currency"] = (currency or "$").strip()[:5] or "$"
-        org["default_position"] = default if default in names else names[0]
-        self.save_org(org)
+        if any(not math.isfinite(r) or r < 0 or r > 100_000 for r in rates):
+            raise ValueError("A cost of an hour must be a number from 0 to 100,000.")
+        with self._editing(org) as org:
+            in_use = {m["position"] for m in org["members"] if m["status"] == "active"} - set(names) - set(renames)
+            if in_use:
+                raise ValueError(f"Still in use: {', '.join(sorted(in_use))}. Move those people first.")
+            for m in org["members"]:
+                m["position"] = renames.get(m["position"], m["position"])
+            default = renames.get(default, default)
+            org["positions"] = [{"name": n[:60], "hourly_cost": r} for n, r in zip(names, rates)]
+            org["currency"] = (currency or "$").strip()[:5] or "$"
+            org["default_position"] = default if default in names else names[0]
+        if renames:  # recordings keep their position by name: rename it there too, so re-runs keep the rate
+            for record in self.records(org["id"]):
+                if record.get("position") in renames:
+                    record["position"] = renames[record["position"]]
+                    self.save_record(record)
 
     # ---- recordings ---------------------------------------------------------------------------------
 
@@ -216,8 +292,8 @@ class Store:
 
     def records(self, org_id: str) -> list[dict]:
         folder = self.recordings_dir(org_id)
-        found = [_read(p) for p in folder.glob("R-*/record.json")] if folder.exists() else []
-        return sorted(found, key=lambda r: r["uploaded"], reverse=True)
+        found = _readable(folder.glob("R-*/record.json")) if folder.exists() else []
+        return sorted(found, key=lambda r: str(r.get("uploaded")), reverse=True)
 
     def session_dir(self, record: dict) -> Path:
         return self.recordings_dir(record["org"]) / record["id"] / record["session"]
@@ -238,14 +314,21 @@ class Store:
         folder.mkdir(parents=True)
         try:
             session = import_recording(zip_path, folder)
-        except Exception:
+            for stale in ("analysis",):  # results come only from this server's own analysis
+                shutil.rmtree(session / stale, ignore_errors=True)
+            with contextlib.suppress(FileNotFoundError):
+                (session / "seat.json").unlink()
+            meta = load_meta(session)
+            if not isinstance(meta, dict):
+                raise ValueError("meta.json is not a recording's details.")
+        except (ValueError, OSError, zipfile.BadZipFile, KeyError) as exc:
+            shutil.rmtree(folder, ignore_errors=True)
+            detail = str(exc) if isinstance(exc, ValueError) and "zip" in str(exc).lower() else ""
+            raise ValueError(detail or "This isn't a complete FlowSME recording. Record it again, or send the "
+                             "file the Recorder made.") from None
+        except BaseException:
             shutil.rmtree(folder, ignore_errors=True)
             raise
-        for stale in ("analysis",):  # results come only from this server's own analysis
-            shutil.rmtree(session / stale, ignore_errors=True)
-        with contextlib.suppress(FileNotFoundError):
-            (session / "seat.json").unlink()
-        meta = load_meta(session)
         record = {"id": rec_id, "org": org["id"], "seat": member["seat"], "session": session.name,
                   "title": str(options.get("title") or meta.get("name") or session.name)[:120],
                   "started": meta.get("started"), "seconds": meta.get("duration_seconds"),
@@ -272,4 +355,18 @@ class Store:
         return record
 
     def delete_recording(self, record: dict) -> None:
-        shutil.rmtree(self.recordings_dir(record["org"]) / record["id"], ignore_errors=True)
+        """Gone from the list at once (renamed away), then removed; refused if Windows is holding a file."""
+        folder = self.recordings_dir(record["org"]) / record["id"]
+        gone = folder.with_name(f"deleted-{record['id']}-{secrets.token_hex(3)}")
+        try:
+            _retry(lambda: folder.rename(gone))
+        except OSError:
+            raise ValueError("A file of this recording is in use on the server. Try again in a minute.") from None
+        shutil.rmtree(gone, ignore_errors=True)
+        if gone.exists():
+            print(f"FlowSME: {gone} is still being removed (a file was in use)", file=sys.stderr)
+
+    def sweep(self) -> None:
+        """Finish deletions that a busy file interrupted."""
+        for gone in (self.root / "orgs").glob("O-*/recordings/deleted-*"):
+            shutil.rmtree(gone, ignore_errors=True)

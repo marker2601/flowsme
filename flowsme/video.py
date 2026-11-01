@@ -66,9 +66,15 @@ def ffmpeg() -> str:
     return found
 
 
+FFMPEG_TIMEOUT = 30 * 60  # seconds for one ffmpeg run; a broken or endless file must not block the server
+
 def _run(args: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run([ffmpeg(), "-hide_banner", "-nostdin", *args], capture_output=True, text=True,
-                          errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    try:
+        return subprocess.run([ffmpeg(), "-hide_banner", "-nostdin", *args], capture_output=True, text=True,
+                              errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                              timeout=FFMPEG_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise SystemExit("Reading the video took too long. Try a shorter video (under an hour).") from None
 
 
 def probe(video: Path) -> tuple[float, bool]:

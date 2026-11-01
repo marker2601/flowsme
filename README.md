@@ -7,6 +7,33 @@ recommends how to automate it, with links to existing tools and a draft automati
 It works like a process consultant shadowing you. It sees what you click, type and copy, not just which apps
 were open.
 
+## Built on Meta's AI
+
+Every report is made with Meta's Model API (`https://api.meta.ai/v1`, settings in `config.meta.toml` and the
+server's `server.toml`):
+
+| What | Meta model / API | Where |
+|---|---|---|
+| Reads each screenshot and describes the step in business language (only the active window is sent) | Muse Spark, vision | [describe.py](flowsme/describe.py) |
+| Names the tasks, writes the recommendations, SOP wording and user stories, always as schema-checked JSON | Muse Spark, structured output | [workflow.py](flowsme/workflow.py), [recommend.py](flowsme/recommend.py), [sop.py](flowsme/sop.py) |
+| Finds existing tools and guides for the task, with cited sources | Muse Spark, Responses API `web_search` | [llm.py](flowsme/llm.py) (`grounded`) |
+| Transcribes what the person says while working and turns it into business rules, quoted word for word | Muse Voice Transcribe, then Muse Spark | [narration.py](flowsme/narration.py) |
+| Reads a screen video frame by frame when there is no recording | Muse Spark, vision | [video.py](flowsme/video.py) |
+
+A spending cap per report (`max_cost_usd`) and a per-recording cache keep the cost predictable: about $0.30 for
+the 5.6-minute test video. Without a key, FlowSME still works with its built-in rules, so it can be tried
+offline. Other OpenAI-compatible providers can be configured too (see [Using an AI model](#using-an-ai-model)).
+
+## Try it in five minutes
+
+1. Install **FlowSME Recorder** (`FlowSME-Recorder-Setup-0.5.1.exe`) and open the seat file you were sent.
+2. Click **Record**, do one round of the task (say what you do and why, if you like), then **Stop**.
+3. Click **Get report**. In about two minutes: the process map, what to automate first, hours (and, for
+   managers, money) saved, an SOP to approve, and ready-made workflows for n8n, Node-RED, Make, Power Automate,
+   Logic Apps or Windmill.
+
+No seat yet? `python -m flowsme demo --offline` makes a full report from a built-in sample recording.
+
 ## For customers: FlowSME Recorder and the FlowSME server
 
 Customers never get FlowSME itself. They install **FlowSME Recorder**, which only records and shows results.
@@ -23,8 +50,15 @@ Everything that makes the results runs on the **FlowSME server**, which you run:
   The Recorder keeps the key encrypted for that Windows user. A revoked seat stops working on its next request.
 - **Who sees what:** employees see their own recordings and hours saved. Managers see the whole team, with
   money at each person's position rate. One organisation never sees another's data.
-- **On the wire:** the Recorder only talks to an `https://` server (plain `http` only on the same computer).
-  Uploads are limited to 1 GB and checked before unpacking. The API's documentation pages are switched off.
+- **On the wire:** the Recorder only talks to an `https://` server (plain `http` only on the same computer), and
+  never follows a redirect with its key. An upload without a valid key, or over 1 GB, is refused before it is
+  read; zips are checked before unpacking. Repeated wrong keys from one address are slowed down. The API's
+  documentation pages are switched off.
+- **Costs stay bounded:** each organisation has a daily report allowance (40 unless its `org.json` sets
+  `daily_reports`), each person at most 3 reports waiting, and each report a spending cap. FlowSME's own AI
+  cost never appears on customers' pages.
+- **Workflow-tool keys** (n8n, Make...) are kept encrypted for the Windows user, like the seat key, and only
+  go to `https://` addresses (or `http` on the customer's own network).
 
 Run it on one computer first:
 
@@ -38,17 +72,22 @@ uv pip install --python .venv/Scripts/python.exe -r requirements-server.txt
 .venv/Scripts/python.exe -m flowsme.client
 ```
 
-The first command writes the manager's seat file to `server-data/seat-files/`. Open it in FlowSME Recorder,
-then add people from the Admin panel. Set `MODEL_API_KEY` for the server process to use Muse Spark; without
+The first command writes the manager's seat file to `seat-files-to-send/`, outside the data folder. Send it to the
+manager privately, then delete it: the server keeps only a hash of the key, and can always make a new one. The
+manager opens it in FlowSME Recorder and adds people from the Admin panel. Set `MODEL_API_KEY` for the server process to use Muse Spark; without
 it, reports use the built-in rules. Other server commands: `add-manager`, `seats` (change a plan's seats) and
 `list`.
 
 Build the Recorder for customers with `.venv/Scripts/python.exe packaging/build_installer.py --client`. This
-writes `dist/FlowSME-Recorder-Setup-0.5.0.exe`, which installs as "FlowSME Recorder", separate from FlowSME. Run
+writes `dist/FlowSME-Recorder-Setup-0.5.1.exe`, which installs as "FlowSME Recorder", separate from FlowSME. Run
 `FlowSMERecorder.exe --self-test` to check a PC.
 
 To put the server online, use the `Dockerfile` on any host that serves it over HTTPS. Keep the data folder on
 an encrypted, backed-up disk, and set `FLOWSME_SERVER_URL` to its public address so seat files point to it.
+Run one server process per data folder (the JSON files are locked within a process), and set
+`FORWARDED_ALLOW_IPS` to the TLS proxy's address so each client's own address is seen. A damaged file is
+skipped and named in the server log rather than stopping the server; a job that fails says why in the
+recording and logs the details.
 
 ### Screen videos instead of a recording
 
@@ -70,14 +109,14 @@ FlowSME, or `python -m flowsme import-video file.mp4` from the command line.
   was found as repeating with high potential, close to what the recorder found from the same work. Reading
   plus the report cost about $0.3 with Muse Spark.
 
-Still to do before many customers: rate limits on failed sign-ins, a database in place of the JSON files,
-compiling the Recorder to native code (Nuitka), signing the installers, and a licence agreement customers
-accept.
+Still to do before many customers: hosting the server, a database in place of the JSON files, compiling the
+Recorder to native code (Nuitka), signing the installers, a retention policy for recordings, and the terms of
+service, privacy notice and data-processing agreement customers accept.
 
 ## The desktop app (Windows)
 
 The full app, for you and your demos; it contains everything, so don't give it to customers (they get
-FlowSME Recorder, above). Run `FlowSME-Setup-0.5.0.exe`, click **Install**, then **Open FlowSME**.
+FlowSME Recorder, above). Run `FlowSME-Setup-0.5.1.exe`, click **Install**, then **Open FlowSME**.
 
 - **No administrator rights needed.** It installs for the current Windows user in
   `%LOCALAPPDATA%\Programs\FlowSME`, with Start menu and desktop shortcuts, and appears in Settings > Apps
@@ -154,7 +193,7 @@ seat file**. (Later: **More > Set up a team** or **Join a team**.)
   `inbox/`. Rates stay in the manager's `team.json` in `%LOCALAPPDATA%\FlowSME`. Without a folder, seats
   and recordings travel by email, and the manager imports them with More > Import.
 
-Silent install for IT: `FlowSME-Setup-0.5.0.exe /S` (add `/nodesktop` to skip the desktop shortcut).
+Silent install for IT: `FlowSME-Setup-0.5.1.exe /S` (add `/nodesktop` to skip the desktop shortcut).
 
 Build the app and the installer:
 
@@ -204,7 +243,7 @@ Analyse the most recent recording:
 Other commands: `sessions` lists recordings, and `analyze <session-id>` analyses a specific one. Useful flags:
 `--offline` (no AI), `--no-search` (no web search), `--runs-per-month 20` and `--hourly-cost 30`.
 
-## Using an AI model (Llama)
+## Using an AI model
 
 Without a model, FlowSME uses built-in heuristics. Steps are named from the UI element and window, and the
 recommendations come from rules. With a model you get plain-English step descriptions read from the
@@ -501,6 +540,27 @@ report    ->  HTML / Markdown / JSON
 - If you use this on other people's work, get their consent and check the local rules on employee
   monitoring (for example GDPR or works councils).
 
+## Tests
+
+```bash
+.venv/Scripts/python.exe -m pip install -r requirements-dev.txt
+.venv/Scripts/python.exe -m pytest tests -q
+```
+
+The tests run offline: they never call an AI model or the web, so they need no key and cost nothing. They cover
+the analysis and report (each process described once, no money in the employees' copy), every workflow tool's
+file, team seat files, the server's API (seats, roles, uploads, the analysis job, what each role and other
+organisations can see), and that the FlowSME Recorder loads no server code. GitHub runs them on every push.
+
+## Report pages
+
+Each report, SOP, comparison and team page is one HTML file that works wherever it is sent: the Markdown
+renderer and the screenshots are inside it, and only the diagrams need the internet (without it they show their
+text). A Content-Security-Policy lets only FlowSME's own scripts run and blocks every outside request, so text
+recorded from a window title can never run as code or send the report anywhere. Pages print in light colours,
+fit a phone, and work with the keyboard. They are marked `noindex`, so a report put on the web by mistake is not
+listed by search engines.
+
 ## Limits of this MVP
 
 - Recording works on Windows only. Analysis runs anywhere.
@@ -514,5 +574,5 @@ report    ->  HTML / Markdown / JSON
 - Read browser URLs through UI Automation for better web-app identification.
 - Redact personal data (OCR + PII detection) from screenshots before they are sent to a hosted model.
 - Fill in more of each generated flow (connections, PDF reading) so less is left behind a warning sign.
-- A hosted FlowSME service for seats and licences, in place of the shared team folder.
+- Host the FlowSME server, so customers need nothing but FlowSME Recorder and a seat file.
 - Add a small tray app with record, pause and stop buttons.

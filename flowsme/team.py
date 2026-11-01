@@ -41,7 +41,8 @@ def _person(session_dir: Path, items: int | None) -> dict:
     switches = sum(1 for a, b in zip(work, work[1:]) if steps[a]["app"] != steps[b]["app"])
     routine_share = sum(s["seconds"]) / seconds if seconds and s["seconds"] else 0.0
     spread = s["time"]["sd"] if (s["detected_runs"] == n and routine_share >= ROUTINE_SHARE) else None
-    return {**s, "runs": n, "time": {"mean": round(seconds / n, 1), "sd": spread}, "routine_share": round(routine_share, 2),
+    return {**s, "runs": n, "items_per_month": s["runs_per_month"] * max(1, n),
+            "time": {"mean": round(seconds / n, 1), "sd": spread}, "routine_share": round(routine_share, 2),
             "steps_per_run": round(len(work) / n, 1), "entries_per_run": round(entries / n, 1),
             "switches_per_run": round(switches / n, 1)}
 
@@ -81,7 +82,7 @@ def team_view(session_dirs: list[Path], names: list[str] | None = None, out_dir:
         result["scope_warning"] = (f"Check that these recordings cover the same work: values entered by hand per "
                                    f"item range from {min(entries):g} to {max(entries):g}. Correct the item counts "
                                    "if FlowSME miscounted, or leave out recordings of a different process.")
-    month = best["runs_per_month"]
+    month = best["items_per_month"]
     gap = sum(max(p["vs_best_seconds"], 0) for p in people) * month / 3600
     result["hours_per_month_if_all_matched_best"] = round(gap, 1)
 
@@ -92,7 +93,7 @@ def team_view(session_dirs: list[Path], names: list[str] | None = None, out_dir:
 
     paths = {"markdown": out / "team.md", "html": out / "team.html", "json": out / "team.json"}
     paths["markdown"].write_text(md, encoding="utf-8")
-    paths["html"].write_text(render("Team view", md, "team"), encoding="utf-8")
+    paths["html"].write_text(render(f"Team view: {best['task']}", md, "team"), encoding="utf-8")
     paths["json"].write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
     log(f"Team view of {len(people)} recordings: fastest method {best['name']} at "
         f"{fmt_minutes(best['time']['mean'] / 60)} per item.")
@@ -103,9 +104,9 @@ def _markdown(r: dict, out: Path) -> str:
     people = r["people"]
     best = next(p for p in people if p["name"] == r["best"])
     lines = [f"# Team view: {best['task']}\n",
-             f"{len(people)} recordings of the same process. The fastest steady method is **{best['name']}**, at "
+             f"{len(people)} recordings of the same process. The fastest steady method is **{html.escape(best['name'])}**, at "
              f"{fmt_minutes(best['time']['mean'] / 60)} per item. If everyone worked at that pace, the team would "
-             f"save about **{r['hours_per_month_if_all_matched_best']} hours a month** (at {best['runs_per_month']} "
+             f"save about **{r['hours_per_month_if_all_matched_best']} hours a month** (at {best['items_per_month']} "
              "items a month each) before any automation.\n"]
     if r.get("scope_warning"):
         lines.append(f"> **{r['scope_warning']}**\n")

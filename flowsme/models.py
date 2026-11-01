@@ -140,6 +140,11 @@ class Task:
         return list(dict.fromkeys(s.app for s in self.steps))
 
 
+def plural(n: float, word: str, many: str | None = None) -> str:
+    """'1 value', '3 values' (or the given plural: 'person', 'people')."""
+    return f"{n:g} {word if n == 1 else many or word + 's'}"
+
+
 def fmt_minutes(minutes: float) -> str:
     if minutes < 1:
         return f"{minutes * 60:.0f} s"
