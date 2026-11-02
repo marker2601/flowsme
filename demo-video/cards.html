@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FlowSME demo overlays</title>
+<!-- One overlay per URL hash (#title, #close, #label-...), rendered to a transparent 1920x1080 PNG by still.js. -->
+<style>
+  :root { --accent:#3355d1; --violet:#7a5af8; --ink:#14161b; --muted:#5d6470; --line:rgba(20,22,27,.12); }
+  * { box-sizing:border-box; margin:0; }
+  html, body { width:1920px; height:1080px; background:transparent; overflow:hidden;
+               font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif; color:var(--ink); }
+  .card { display:none; position:absolute; }
+  .logo { width:88px; height:88px; border-radius:22px; background:linear-gradient(135deg,var(--accent),var(--violet));
+          color:#fff; display:grid; place-items:center; font-weight:700; font-size:48px;
+          box-shadow:0 10px 30px rgba(51,85,209,.35); }
+  /* Title: a panel over the real report, which stays visible around it. */
+  #title { left:50%; top:50%; transform:translate(-50%,-50%); width:1180px; padding:64px 72px; border-radius:28px;
+           background:rgba(255,255,255,.94); box-shadow:0 30px 80px rgba(10,14,30,.35); text-align:left; }
+  #title .row { display:flex; align-items:center; gap:28px; }
+  #title h1 { font-size:92px; letter-spacing:-1.5px; line-height:1; }
+  #title p { font-size:42px; line-height:1.3; margin-top:34px; color:#2a2e36; }
+  #title small { display:block; margin-top:30px; font-size:28px; color:var(--muted); }
+  /* Closing card: full frame. */
+  /* Full frame except the bottom band, which stays the dark stage so the captions read the same as elsewhere. */
+  #close { inset:0 0 150px 0; background:radial-gradient(1200px 700px at 30% 20%, #eef1fd, #f7f8fb 60%, #eef0f6);
+           flex-direction:column; justify-content:center; padding:0 220px; }
+  #close .row { display:flex; align-items:center; gap:28px; }
+  #close h1 { font-size:96px; letter-spacing:-1.5px; }
+  #close p { font-size:46px; margin-top:36px; line-height:1.3; }
+  #close ul { list-style:none; padding:0; margin-top:44px; display:grid; gap:18px; font-size:34px; color:#2a2e36; }
+  #close li::before { content:""; display:inline-block; width:14px; height:14px; border-radius:50%;
+                      background:var(--accent); margin-right:20px; vertical-align:middle; }
+  #close .foot { margin-top:56px; font-size:28px; color:var(--muted); }
+  /* Chapter label: top-left margin above the product frame. */
+  .label { left:192px; top:10px; display:none; align-items:center; gap:14px; font-size:30px; font-weight:600;
+           color:#eef1fb; }
+  .label .pill { font-size:22px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:#fff;
+                 background:linear-gradient(135deg,var(--accent),var(--violet)); padding:5px 14px; border-radius:999px; }
+  .label .plain { color:#c9cfdb; font-weight:500; }
+  /* Truth note: top-right margin, level with the chapter label. */
+  .note { right:192px; top:18px; display:none; font-size:24px; color:#c9cfdb; }
+</style>
+</head>
+<body>
+<section class="card" id="title">
+  <div class="row"><div class="logo">F</div><h1>FlowSME</h1></div>
+  <p>Watch the work once. Get the process, the SOP and the automation.</p>
+  <small>Built on Meta's Muse Spark and Muse Voice Transcribe · Meta Global AI Developer Hackathon</small>
+</section>
+<section class="card" id="close">
+  <div class="row"><div class="logo">F</div><h1>FlowSME</h1></div>
+  <p>Show it the work once. Get the process and the automation.</p>
+  <ul>
+    <li>Muse Spark reads the screen and writes the analysis</li>
+    <li>Muse Voice Transcribe turns what people say into rules</li>
+    <li>Recorder recordings send Meta only the active window</li>
+    <li>A spending cap on every report</li>
+    <li>Employees see hours, never pay rates</li>
+  </ul>
+  <div class="foot">github.com/marker2601/flowsme</div>
+</section>
+<div class="card label" id="label"><span class="pill">Built during the hackathon</span><span id="label-text"></span></div>
+<div class="card label" id="plain"><span class="plain" id="plain-text"></span></div>
+<div class="card note" id="note"><span id="note-text"></span></div>
+<script>
+  // #title, #close, #label=Text, #plain=Text, #note=Text; several joined with &.
+  for (const part of decodeURIComponent(location.hash.slice(1)).split("&")) {
+    const [id, text] = part.split("=");
+    const el = document.getElementById(id);
+    el.style.display = id === "title" ? "block" : "flex";
+    if (text !== undefined) document.getElementById(id + "-text").textContent = text;
+  }
+</script>
+</body>
+</html>

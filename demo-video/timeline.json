@@ -350,1332 +350,1337 @@
  {
   "id": "s3",
   "start": 26.025,
-  "speech_end": 41.692,
-  "end": 42.193,
-  "text": "Here's a five-and-a-half-minute screen video of invoice entry: Notepad into an Excel tracker, explained out loud while working. In FlowSME Recorder, I import it. The Recorder only records and sends. The analysis runs on our server.",
+  "speech_end": 41.03,
+  "end": 41.53,
+  "text": "Here's a five-and-a-half-minute screen video of invoice entry: Notepad into an Excel tracker, explained out loud while working. Customers send a video like this from FlowSME Recorder, our Windows app, and the analysis runs on our server.",
   "words": [
    {
     "start": 26.025,
-    "end": 26.212,
+    "end": 26.25,
     "text": "Here's"
    },
    {
-    "start": 26.237,
-    "end": 26.312,
+    "start": 26.262,
+    "end": 26.337,
     "text": "a"
    },
    {
-    "start": 26.325,
-    "end": 27.4,
+    "start": 26.35,
+    "end": 27.425,
     "text": "five-and-a-half-minute"
    },
    {
-    "start": 27.412,
-    "end": 27.725,
+    "start": 27.438,
+    "end": 27.762,
     "text": "screen"
    },
    {
-    "start": 27.737,
-    "end": 28.175,
+    "start": 27.762,
+    "end": 28.188,
     "text": "video"
    },
    {
-    "start": 28.187,
-    "end": 28.325,
+    "start": 28.2,
+    "end": 28.337,
     "text": "of"
    },
    {
-    "start": 28.337,
-    "end": 28.7,
+    "start": 28.35,
+    "end": 28.725,
     "text": "invoice"
    },
    {
-    "start": 28.75,
-    "end": 29.175,
+    "start": 28.787,
+    "end": 29.2,
     "text": "entry"
    },
    {
-    "start": 29.737,
-    "end": 30.3,
+    "start": 29.75,
+    "end": 30.325,
     "text": "Notepad"
    },
    {
-    "start": 30.312,
-    "end": 30.587,
+    "start": 30.337,
+    "end": 30.613,
     "text": "into"
    },
    {
-    "start": 30.587,
-    "end": 30.65,
+    "start": 30.625,
+    "end": 30.688,
     "text": "an"
    },
    {
-    "start": 30.662,
-    "end": 31.037,
+    "start": 30.7,
+    "end": 31.087,
     "text": "Excel"
    },
    {
-    "start": 31.05,
+    "start": 31.1,
     "end": 31.562,
     "text": "tracker"
    },
    {
-    "start": 31.938,
-    "end": 32.45,
+    "start": 31.95,
+    "end": 32.487,
     "text": "explained"
    },
    {
-    "start": 32.462,
-    "end": 32.662,
+    "start": 32.5,
+    "end": 32.687,
     "text": "out"
    },
    {
-    "start": 32.675,
+    "start": 32.687,
     "end": 33.025,
     "text": "loud"
    },
    {
-    "start": 33.025,
-    "end": 33.25,
+    "start": 33.037,
+    "end": 33.262,
     "text": "while"
    },
    {
-    "start": 33.25,
-    "end": 33.762,
+    "start": 33.275,
+    "end": 33.787,
     "text": "working"
    },
    {
-    "start": 34.163,
-    "end": 34.325,
-    "text": "In"
+    "start": 34.188,
+    "end": 34.662,
+    "text": "Customers"
    },
    {
-    "start": 34.337,
-    "end": 35.137,
+    "start": 34.675,
+    "end": 34.85,
+    "text": "send"
+   },
+   {
+    "start": 34.862,
+    "end": 34.887,
+    "text": "a"
+   },
+   {
+    "start": 34.9,
+    "end": 35.262,
+    "text": "video"
+   },
+   {
+    "start": 35.262,
+    "end": 35.487,
+    "text": "like"
+   },
+   {
+    "start": 35.5,
+    "end": 35.762,
+    "text": "this"
+   },
+   {
+    "start": 35.775,
+    "end": 35.987,
+    "text": "from"
+   },
+   {
+    "start": 36.0,
+    "end": 36.712,
     "text": "FlowSME"
    },
    {
-    "start": 35.15,
-    "end": 35.687,
+    "start": 36.725,
+    "end": 37.287,
     "text": "Recorder"
    },
    {
-    "start": 35.875,
-    "end": 35.987,
-    "text": "I"
-   },
-   {
-    "start": 35.987,
-    "end": 36.337,
-    "text": "import"
-   },
-   {
-    "start": 36.35,
-    "end": 36.562,
-    "text": "it"
-   },
-   {
-    "start": 36.95,
-    "end": 37.012,
-    "text": "The"
-   },
-   {
-    "start": 37.012,
-    "end": 37.512,
-    "text": "Recorder"
-   },
-   {
-    "start": 37.562,
-    "end": 37.825,
-    "text": "only"
-   },
-   {
-    "start": 37.837,
-    "end": 38.413,
-    "text": "records"
-   },
-   {
-    "start": 38.475,
-    "end": 38.663,
-    "text": "and"
-   },
-   {
-    "start": 38.675,
-    "end": 39.325,
-    "text": "sends"
-   },
-   {
-    "start": 39.687,
-    "end": 39.737,
-    "text": "The"
-   },
-   {
-    "start": 39.737,
-    "end": 40.45,
-    "text": "analysis"
-   },
-   {
-    "start": 40.525,
-    "end": 40.862,
-    "text": "runs"
-   },
-   {
-    "start": 40.875,
-    "end": 40.987,
-    "text": "on"
-   },
-   {
-    "start": 41.0,
-    "end": 41.1,
+    "start": 37.812,
+    "end": 37.987,
     "text": "our"
    },
    {
-    "start": 41.112,
-    "end": 41.612,
+    "start": 37.987,
+    "end": 38.362,
+    "text": "Windows"
+   },
+   {
+    "start": 38.375,
+    "end": 38.675,
+    "text": "app"
+   },
+   {
+    "start": 38.95,
+    "end": 39.112,
+    "text": "and"
+   },
+   {
+    "start": 39.125,
+    "end": 39.2,
+    "text": "the"
+   },
+   {
+    "start": 39.212,
+    "end": 39.912,
+    "text": "analysis"
+   },
+   {
+    "start": 39.987,
+    "end": 40.25,
+    "text": "runs"
+   },
+   {
+    "start": 40.262,
+    "end": 40.362,
+    "text": "on"
+   },
+   {
+    "start": 40.362,
+    "end": 40.462,
+    "text": "our"
+   },
+   {
+    "start": 40.475,
+    "end": 40.95,
     "text": "server"
    }
   ]
  },
  {
   "id": "s4",
-  "start": 42.193,
-  "speech_end": 61.448,
-  "end": 61.948,
+  "start": 41.53,
+  "speech_end": 60.785,
+  "end": 61.285,
   "text": "On the server, Muse Spark reads each screen change: which app, which field, and whether a value was typed, copied or pasted. Muse Voice Transcribe turns the soundtrack into text, lined up with the steps. Then Muse Spark names the tasks and writes the recommendations, as schema-checked JSON.",
   "words": [
    {
-    "start": 42.193,
-    "end": 42.305,
+    "start": 41.53,
+    "end": 41.642,
     "text": "On"
    },
    {
-    "start": 42.318,
-    "end": 42.393,
+    "start": 41.655,
+    "end": 41.73,
     "text": "the"
    },
    {
-    "start": 42.405,
-    "end": 42.83,
+    "start": 41.742,
+    "end": 42.167,
     "text": "server"
    },
    {
-    "start": 43.268,
-    "end": 43.53,
+    "start": 42.605,
+    "end": 42.867,
     "text": "Muse"
    },
    {
-    "start": 43.543,
-    "end": 43.943,
+    "start": 42.88,
+    "end": 43.28,
     "text": "Spark"
    },
    {
-    "start": 43.955,
-    "end": 44.268,
+    "start": 43.292,
+    "end": 43.605,
     "text": "reads"
    },
    {
-    "start": 44.368,
-    "end": 44.605,
+    "start": 43.705,
+    "end": 43.942,
     "text": "each"
    },
    {
-    "start": 44.618,
-    "end": 44.968,
+    "start": 43.955,
+    "end": 44.305,
     "text": "screen"
    },
    {
-    "start": 44.98,
-    "end": 45.43,
+    "start": 44.317,
+    "end": 44.767,
     "text": "change"
    },
    {
-    "start": 45.718,
-    "end": 45.905,
+    "start": 45.055,
+    "end": 45.242,
     "text": "which"
    },
    {
-    "start": 45.918,
-    "end": 46.243,
+    "start": 45.255,
+    "end": 45.58,
     "text": "app"
    },
    {
-    "start": 46.48,
-    "end": 46.68,
+    "start": 45.817,
+    "end": 46.017,
     "text": "which"
    },
    {
-    "start": 46.693,
-    "end": 47.168,
+    "start": 46.03,
+    "end": 46.505,
     "text": "field"
    },
    {
-    "start": 47.393,
-    "end": 47.555,
+    "start": 46.73,
+    "end": 46.892,
     "text": "and"
    },
    {
-    "start": 47.555,
-    "end": 47.793,
+    "start": 46.892,
+    "end": 47.13,
     "text": "whether"
    },
    {
-    "start": 47.805,
-    "end": 47.843,
+    "start": 47.142,
+    "end": 47.18,
     "text": "a"
    },
    {
-    "start": 47.855,
-    "end": 48.205,
+    "start": 47.192,
+    "end": 47.542,
     "text": "value"
    },
    {
-    "start": 48.205,
-    "end": 48.368,
+    "start": 47.542,
+    "end": 47.705,
     "text": "was"
    },
    {
-    "start": 48.38,
-    "end": 48.805,
+    "start": 47.718,
+    "end": 48.142,
     "text": "typed"
    },
    {
-    "start": 49.18,
-    "end": 49.755,
+    "start": 48.517,
+    "end": 49.093,
     "text": "copied"
    },
    {
-    "start": 49.818,
-    "end": 49.98,
+    "start": 49.155,
+    "end": 49.317,
     "text": "or"
    },
    {
-    "start": 49.98,
-    "end": 50.505,
+    "start": 49.317,
+    "end": 49.843,
     "text": "pasted"
    },
    {
-    "start": 50.88,
-    "end": 51.193,
+    "start": 50.218,
+    "end": 50.53,
     "text": "Muse"
    },
    {
-    "start": 51.205,
-    "end": 51.505,
+    "start": 50.542,
+    "end": 50.843,
     "text": "Voice"
    },
    {
-    "start": 51.518,
-    "end": 52.218,
+    "start": 50.855,
+    "end": 51.555,
     "text": "Transcribe"
    },
    {
-    "start": 52.343,
-    "end": 52.668,
+    "start": 51.68,
+    "end": 52.005,
     "text": "turns"
    },
    {
-    "start": 52.668,
-    "end": 52.768,
+    "start": 52.005,
+    "end": 52.105,
     "text": "the"
    },
    {
-    "start": 52.78,
-    "end": 53.393,
+    "start": 52.117,
+    "end": 52.73,
     "text": "soundtrack"
    },
    {
-    "start": 53.405,
-    "end": 53.555,
+    "start": 52.742,
+    "end": 52.892,
     "text": "into"
    },
    {
-    "start": 53.568,
-    "end": 54.105,
+    "start": 52.905,
+    "end": 53.442,
     "text": "text"
    },
    {
-    "start": 54.543,
-    "end": 54.855,
+    "start": 53.88,
+    "end": 54.192,
     "text": "lined"
    },
    {
-    "start": 54.868,
-    "end": 55.068,
+    "start": 54.205,
+    "end": 54.405,
     "text": "up"
    },
    {
-    "start": 55.08,
-    "end": 55.18,
+    "start": 54.417,
+    "end": 54.517,
     "text": "with"
    },
    {
-    "start": 55.193,
-    "end": 55.268,
+    "start": 54.53,
+    "end": 54.605,
     "text": "the"
    },
    {
-    "start": 55.28,
-    "end": 55.805,
+    "start": 54.617,
+    "end": 55.142,
     "text": "steps"
    },
    {
-    "start": 56.193,
-    "end": 56.468,
+    "start": 55.53,
+    "end": 55.805,
     "text": "Then"
    },
    {
-    "start": 56.48,
-    "end": 56.768,
+    "start": 55.817,
+    "end": 56.105,
     "text": "Muse"
    },
    {
-    "start": 56.78,
-    "end": 57.13,
+    "start": 56.117,
+    "end": 56.468,
     "text": "Spark"
    },
    {
-    "start": 57.143,
-    "end": 57.393,
+    "start": 56.48,
+    "end": 56.73,
     "text": "names"
    },
    {
-    "start": 57.393,
-    "end": 57.48,
+    "start": 56.73,
+    "end": 56.817,
     "text": "the"
    },
    {
-    "start": 57.493,
-    "end": 58.03,
+    "start": 56.83,
+    "end": 57.367,
     "text": "tasks"
    },
    {
-    "start": 58.118,
-    "end": 58.43,
+    "start": 57.455,
+    "end": 57.767,
     "text": "and"
    },
    {
-    "start": 58.443,
-    "end": 58.743,
+    "start": 57.78,
+    "end": 58.08,
     "text": "writes"
    },
    {
-    "start": 58.755,
-    "end": 58.843,
+    "start": 58.093,
+    "end": 58.18,
     "text": "the"
    },
    {
-    "start": 58.843,
-    "end": 59.73,
+    "start": 58.18,
+    "end": 59.067,
     "text": "recommendations"
    },
    {
-    "start": 59.955,
-    "end": 60.18,
+    "start": 59.292,
+    "end": 59.517,
     "text": "as"
    },
    {
-    "start": 60.18,
-    "end": 60.768,
+    "start": 59.517,
+    "end": 60.105,
     "text": "schema-checked"
    },
    {
-    "start": 60.78,
-    "end": 61.368,
+    "start": 60.117,
+    "end": 60.705,
     "text": "JSON"
    }
   ]
  },
  {
   "id": "s5",
-  "start": 61.948,
-  "speech_end": 75.128,
-  "end": 75.629,
-  "text": "A couple of minutes later, the report is back. It found the invoice routine repeating, how long each round takes, and the hours it could save each month. This chart says what to automate first, and the roadmap shows the payback.",
+  "start": 61.285,
+  "speech_end": 75.213,
+  "end": 75.713,
+  "text": "A couple of minutes later, the report is back. It found the same five-step routine four times, and six hours a month to save. The chart and the roadmap say what to automate first: a quick win that pays back in under seven months.",
   "words": [
    {
-    "start": 61.948,
-    "end": 62.022,
+    "start": 61.285,
+    "end": 61.334,
     "text": "A"
    },
    {
-    "start": 62.034,
-    "end": 62.316,
+    "start": 61.346,
+    "end": 61.64,
     "text": "couple"
    },
    {
-    "start": 62.316,
-    "end": 62.377,
+    "start": 61.64,
+    "end": 61.702,
     "text": "of"
    },
    {
-    "start": 62.389,
-    "end": 62.659,
+    "start": 61.702,
+    "end": 61.971,
     "text": "minutes"
    },
    {
-    "start": 62.671,
-    "end": 63.026,
+    "start": 61.984,
+    "end": 62.327,
     "text": "later"
    },
    {
-    "start": 63.443,
-    "end": 63.517,
+    "start": 62.743,
+    "end": 62.829,
     "text": "the"
    },
    {
-    "start": 63.529,
-    "end": 63.86,
+    "start": 62.841,
+    "end": 63.209,
     "text": "report"
    },
    {
-    "start": 63.872,
-    "end": 63.982,
+    "start": 63.221,
+    "end": 63.332,
     "text": "is"
    },
    {
-    "start": 63.995,
-    "end": 64.448,
+    "start": 63.344,
+    "end": 63.809,
     "text": "back"
    },
    {
-    "start": 64.816,
-    "end": 64.914,
+    "start": 64.189,
+    "end": 64.287,
     "text": "It"
    },
    {
-    "start": 64.926,
-    "end": 65.196,
+    "start": 64.3,
+    "end": 64.582,
     "text": "found"
    },
    {
-    "start": 65.196,
-    "end": 65.245,
+    "start": 64.582,
+    "end": 64.655,
     "text": "the"
    },
    {
-    "start": 65.257,
-    "end": 65.747,
-    "text": "invoice"
+    "start": 64.667,
+    "end": 65.133,
+    "text": "same"
    },
    {
-    "start": 65.759,
-    "end": 66.164,
+    "start": 65.133,
+    "end": 65.635,
+    "text": "five-step"
+   },
+   {
+    "start": 65.648,
+    "end": 65.966,
     "text": "routine"
    },
    {
-    "start": 66.164,
-    "end": 66.654,
-    "text": "repeating"
+    "start": 65.979,
+    "end": 66.162,
+    "text": "four"
    },
    {
-    "start": 66.887,
-    "end": 67.034,
-    "text": "how"
+    "start": 66.162,
+    "end": 66.689,
+    "text": "times"
    },
    {
-    "start": 67.046,
-    "end": 67.401,
-    "text": "long"
-   },
-   {
-    "start": 67.414,
-    "end": 67.585,
-    "text": "each"
-   },
-   {
-    "start": 67.597,
-    "end": 67.843,
-    "text": "round"
-   },
-   {
-    "start": 67.855,
-    "end": 68.259,
-    "text": "takes"
-   },
-   {
-    "start": 68.48,
-    "end": 68.627,
+    "start": 66.91,
+    "end": 67.155,
     "text": "and"
    },
    {
-    "start": 68.627,
-    "end": 68.737,
-    "text": "the"
+    "start": 67.167,
+    "end": 67.535,
+    "text": "six"
    },
    {
-    "start": 68.749,
-    "end": 69.166,
+    "start": 67.547,
+    "end": 67.866,
     "text": "hours"
    },
    {
-    "start": 69.178,
-    "end": 69.252,
-    "text": "it"
+    "start": 67.878,
+    "end": 67.915,
+    "text": "a"
    },
    {
-    "start": 69.264,
-    "end": 69.387,
-    "text": "could"
-   },
-   {
-    "start": 69.399,
-    "end": 69.742,
-    "text": "save"
-   },
-   {
-    "start": 69.926,
-    "end": 70.147,
-    "text": "each"
-   },
-   {
-    "start": 70.159,
-    "end": 70.588,
+    "start": 67.927,
+    "end": 68.221,
     "text": "month"
    },
    {
-    "start": 70.955,
-    "end": 71.164,
-    "text": "This"
-   },
-   {
-    "start": 71.176,
-    "end": 71.458,
-    "text": "chart"
-   },
-   {
-    "start": 71.47,
-    "end": 71.801,
-    "text": "says"
-   },
-   {
-    "start": 71.801,
-    "end": 71.924,
-    "text": "what"
-   },
-   {
-    "start": 71.936,
-    "end": 72.034,
+    "start": 68.221,
+    "end": 68.319,
     "text": "to"
    },
    {
-    "start": 72.046,
-    "end": 72.475,
-    "text": "automate"
+    "start": 68.332,
+    "end": 68.834,
+    "text": "save"
    },
    {
-    "start": 72.487,
-    "end": 72.965,
-    "text": "first"
+    "start": 69.189,
+    "end": 69.238,
+    "text": "The"
    },
    {
-    "start": 73.321,
-    "end": 73.443,
+    "start": 69.251,
+    "end": 69.741,
+    "text": "chart"
+   },
+   {
+    "start": 69.827,
+    "end": 69.949,
     "text": "and"
    },
    {
-    "start": 73.455,
-    "end": 73.529,
+    "start": 69.961,
+    "end": 70.023,
     "text": "the"
    },
    {
-    "start": 73.541,
-    "end": 74.093,
+    "start": 70.023,
+    "end": 70.513,
     "text": "roadmap"
    },
    {
-    "start": 74.105,
-    "end": 74.424,
-    "text": "shows"
+    "start": 70.525,
+    "end": 70.832,
+    "text": "say"
    },
    {
-    "start": 74.436,
-    "end": 74.497,
-    "text": "the"
+    "start": 70.844,
+    "end": 71.003,
+    "text": "what"
    },
    {
-    "start": 74.509,
-    "end": 75.049,
-    "text": "payback"
+    "start": 71.015,
+    "end": 71.101,
+    "text": "to"
+   },
+   {
+    "start": 71.113,
+    "end": 71.567,
+    "text": "automate"
+   },
+   {
+    "start": 71.579,
+    "end": 72.02,
+    "text": "first"
+   },
+   {
+    "start": 72.535,
+    "end": 72.596,
+    "text": "a"
+   },
+   {
+    "start": 72.596,
+    "end": 72.927,
+    "text": "quick"
+   },
+   {
+    "start": 72.927,
+    "end": 73.197,
+    "text": "win"
+   },
+   {
+    "start": 73.209,
+    "end": 73.368,
+    "text": "that"
+   },
+   {
+    "start": 73.368,
+    "end": 73.638,
+    "text": "pays"
+   },
+   {
+    "start": 73.65,
+    "end": 73.932,
+    "text": "back"
+   },
+   {
+    "start": 73.944,
+    "end": 74.128,
+    "text": "in"
+   },
+   {
+    "start": 74.14,
+    "end": 74.361,
+    "text": "under"
+   },
+   {
+    "start": 74.373,
+    "end": 74.667,
+    "text": "seven"
+   },
+   {
+    "start": 74.667,
+    "end": 75.133,
+    "text": "months"
    }
   ]
  },
  {
   "id": "s6",
-  "start": 75.629,
-  "speech_end": 90.021,
-  "end": 90.522,
-  "text": "Values typed by hand are the hard part. Here, the person said the due date is the invoice date plus thirty days. FlowSME turned that into a business rule, and it keeps a rule only when it quotes the transcript word for word.",
+  "start": 75.713,
+  "speech_end": 86.605,
+  "end": 87.106,
+  "text": "It also listens. The person said all their suppliers are on net 30, so the top recommendation works out the due date as the invoice date plus thirty days, instead of someone doing the sum.",
   "words": [
    {
-    "start": 75.629,
-    "end": 76.129,
-    "text": "Values"
+    "start": 75.713,
+    "end": 75.8,
+    "text": "It"
    },
    {
-    "start": 76.141,
-    "end": 76.441,
-    "text": "typed"
+    "start": 75.813,
+    "end": 76.15,
+    "text": "also"
    },
    {
-    "start": 76.454,
-    "end": 76.604,
-    "text": "by"
+    "start": 76.163,
+    "end": 76.825,
+    "text": "listens"
    },
    {
-    "start": 76.616,
-    "end": 77.179,
-    "text": "hand"
+    "start": 77.213,
+    "end": 77.263,
+    "text": "The"
    },
    {
-    "start": 77.529,
-    "end": 77.729,
-    "text": "are"
-   },
-   {
-    "start": 77.741,
-    "end": 77.804,
-    "text": "the"
-   },
-   {
-    "start": 77.816,
-    "end": 78.154,
-    "text": "hard"
-   },
-   {
-    "start": 78.166,
-    "end": 78.591,
-    "text": "part"
-   },
-   {
-    "start": 79.029,
-    "end": 79.354,
-    "text": "Here"
-   },
-   {
-    "start": 79.629,
-    "end": 79.704,
-    "text": "the"
-   },
-   {
-    "start": 79.716,
-    "end": 80.091,
+    "start": 77.263,
+    "end": 77.675,
     "text": "person"
    },
    {
-    "start": 80.104,
-    "end": 80.329,
+    "start": 77.688,
+    "end": 78.038,
     "text": "said"
    },
    {
-    "start": 80.329,
-    "end": 80.404,
+    "start": 78.05,
+    "end": 78.213,
+    "text": "all"
+   },
+   {
+    "start": 78.225,
+    "end": 78.35,
+    "text": "their"
+   },
+   {
+    "start": 78.363,
+    "end": 78.925,
+    "text": "suppliers"
+   },
+   {
+    "start": 78.938,
+    "end": 79.125,
+    "text": "are"
+   },
+   {
+    "start": 79.138,
+    "end": 79.313,
+    "text": "on"
+   },
+   {
+    "start": 79.325,
+    "end": 79.513,
+    "text": "net"
+   },
+   {
+    "start": 79.513,
+    "end": 79.888,
+    "text": "30"
+   },
+   {
+    "start": 80.15,
+    "end": 80.3,
+    "text": "so"
+   },
+   {
+    "start": 80.3,
+    "end": 80.388,
     "text": "the"
    },
    {
-    "start": 80.416,
-    "end": 80.629,
+    "start": 80.4,
+    "end": 80.7,
+    "text": "top"
+   },
+   {
+    "start": 80.713,
+    "end": 81.375,
+    "text": "recommendation"
+   },
+   {
+    "start": 81.388,
+    "end": 81.625,
+    "text": "works"
+   },
+   {
+    "start": 81.638,
+    "end": 81.788,
+    "text": "out"
+   },
+   {
+    "start": 81.8,
+    "end": 81.888,
+    "text": "the"
+   },
+   {
+    "start": 81.9,
+    "end": 82.1,
     "text": "due"
    },
    {
-    "start": 80.641,
-    "end": 80.954,
+    "start": 82.1,
+    "end": 82.425,
     "text": "date"
    },
    {
-    "start": 81.066,
-    "end": 81.166,
-    "text": "is"
+    "start": 82.763,
+    "end": 82.913,
+    "text": "as"
    },
    {
-    "start": 81.166,
-    "end": 81.279,
+    "start": 82.913,
+    "end": 82.988,
     "text": "the"
    },
    {
-    "start": 81.291,
-    "end": 81.791,
+    "start": 83.0,
+    "end": 83.513,
     "text": "invoice"
    },
    {
-    "start": 81.791,
-    "end": 82.104,
+    "start": 83.513,
+    "end": 83.763,
     "text": "date"
    },
    {
-    "start": 82.116,
-    "end": 82.441,
+    "start": 83.775,
+    "end": 84.05,
     "text": "plus"
    },
    {
-    "start": 82.454,
-    "end": 82.691,
+    "start": 84.063,
+    "end": 84.3,
     "text": "thirty"
    },
    {
-    "start": 82.704,
-    "end": 83.229,
+    "start": 84.3,
+    "end": 84.738,
     "text": "days"
    },
    {
-    "start": 83.666,
-    "end": 84.304,
-    "text": "FlowSME"
+    "start": 85.113,
+    "end": 85.463,
+    "text": "instead"
    },
    {
-    "start": 84.316,
-    "end": 84.691,
-    "text": "turned"
+    "start": 85.475,
+    "end": 85.538,
+    "text": "of"
    },
    {
-    "start": 84.704,
-    "end": 84.841,
-    "text": "that"
+    "start": 85.55,
+    "end": 85.85,
+    "text": "someone"
    },
    {
-    "start": 84.841,
-    "end": 85.054,
-    "text": "into"
+    "start": 85.863,
+    "end": 86.063,
+    "text": "doing"
    },
    {
-    "start": 85.066,
-    "end": 85.154,
-    "text": "a"
-   },
-   {
-    "start": 85.154,
-    "end": 85.529,
-    "text": "business"
-   },
-   {
-    "start": 85.541,
-    "end": 85.841,
-    "text": "rule"
-   },
-   {
-    "start": 86.279,
-    "end": 86.491,
-    "text": "and"
-   },
-   {
-    "start": 86.591,
-    "end": 86.666,
-    "text": "it"
-   },
-   {
-    "start": 86.679,
-    "end": 86.929,
-    "text": "keeps"
-   },
-   {
-    "start": 86.941,
-    "end": 86.991,
-    "text": "a"
-   },
-   {
-    "start": 87.004,
-    "end": 87.416,
-    "text": "rule"
-   },
-   {
-    "start": 87.516,
-    "end": 87.804,
-    "text": "only"
-   },
-   {
-    "start": 87.816,
-    "end": 87.941,
-    "text": "when"
-   },
-   {
-    "start": 87.954,
-    "end": 88.029,
-    "text": "it"
-   },
-   {
-    "start": 88.041,
-    "end": 88.454,
-    "text": "quotes"
-   },
-   {
-    "start": 88.466,
-    "end": 88.566,
+    "start": 86.075,
+    "end": 86.15,
     "text": "the"
    },
    {
-    "start": 88.566,
-    "end": 89.141,
-    "text": "transcript"
-   },
-   {
-    "start": 89.154,
-    "end": 89.366,
-    "text": "word"
-   },
-   {
-    "start": 89.379,
-    "end": 89.541,
-    "text": "for"
-   },
-   {
-    "start": 89.554,
-    "end": 89.941,
-    "text": "word"
+    "start": 86.15,
+    "end": 86.525,
+    "text": "sum"
    }
   ]
  },
  {
   "id": "s7",
-  "start": 90.522,
-  "speech_end": 102.842,
-  "end": 103.342,
-  "text": "For the team, there's an SOP: numbered steps with a screenshot of each, the reason behind each check, and an approval block. For whoever builds the automation, user stories with acceptance tests.",
+  "start": 87.106,
+  "speech_end": 98.077,
+  "end": 98.577,
+  "text": "For the team, there's a draft SOP: numbered steps with a screenshot of each, the checks, and an approval block. For whoever builds it, user stories with acceptance tests.",
   "words": [
    {
-    "start": 90.522,
-    "end": 90.596,
+    "start": 87.106,
+    "end": 87.18,
     "text": "For"
    },
    {
-    "start": 90.609,
-    "end": 90.695,
+    "start": 87.193,
+    "end": 87.279,
     "text": "the"
    },
    {
-    "start": 90.708,
-    "end": 91.141,
+    "start": 87.279,
+    "end": 87.7,
     "text": "team"
    },
    {
-    "start": 91.364,
-    "end": 91.524,
+    "start": 88.084,
+    "end": 88.245,
     "text": "there's"
    },
    {
-    "start": 91.524,
-    "end": 91.636,
-    "text": "an"
-   },
-   {
-    "start": 91.648,
-    "end": 92.292,
-    "text": "SOP"
-   },
-   {
-    "start": 92.861,
-    "end": 93.158,
-    "text": "numbered"
-   },
-   {
-    "start": 93.171,
-    "end": 93.579,
-    "text": "steps"
-   },
-   {
-    "start": 93.591,
-    "end": 93.715,
-    "text": "with"
-   },
-   {
-    "start": 93.727,
-    "end": 93.765,
+    "start": 88.245,
+    "end": 88.306,
     "text": "a"
    },
    {
-    "start": 93.777,
-    "end": 94.371,
-    "text": "screenshot"
+    "start": 88.319,
+    "end": 88.715,
+    "text": "draft"
    },
    {
-    "start": 94.371,
-    "end": 94.458,
-    "text": "of"
+    "start": 88.727,
+    "end": 89.309,
+    "text": "SOP"
    },
    {
-    "start": 94.482,
-    "end": 94.866,
-    "text": "each"
+    "start": 89.866,
+    "end": 90.138,
+    "text": "numbered"
    },
    {
-    "start": 95.126,
-    "end": 95.225,
-    "text": "the"
+    "start": 90.151,
+    "end": 90.534,
+    "text": "steps"
    },
    {
-    "start": 95.237,
-    "end": 95.596,
-    "text": "reason"
-   },
-   {
-    "start": 95.609,
-    "end": 96.017,
-    "text": "behind"
-   },
-   {
-    "start": 96.029,
-    "end": 96.24,
-    "text": "each"
-   },
-   {
-    "start": 96.24,
-    "end": 96.661,
-    "text": "check"
-   },
-   {
-    "start": 96.822,
-    "end": 97.069,
-    "text": "and"
-   },
-   {
-    "start": 97.143,
-    "end": 97.205,
-    "text": "an"
-   },
-   {
-    "start": 97.218,
-    "end": 97.614,
-    "text": "approval"
-   },
-   {
-    "start": 97.626,
-    "end": 98.034,
-    "text": "block"
-   },
-   {
-    "start": 98.492,
-    "end": 98.715,
-    "text": "For"
-   },
-   {
-    "start": 98.727,
-    "end": 99.123,
-    "text": "whoever"
-   },
-   {
-    "start": 99.123,
-    "end": 99.458,
-    "text": "builds"
-   },
-   {
-    "start": 99.47,
-    "end": 99.581,
-    "text": "the"
-   },
-   {
-    "start": 99.643,
-    "end": 100.361,
-    "text": "automation"
-   },
-   {
-    "start": 100.807,
-    "end": 101.042,
-    "text": "user"
-   },
-   {
-    "start": 101.054,
-    "end": 101.611,
-    "text": "stories"
-   },
-   {
-    "start": 101.623,
-    "end": 101.735,
+    "start": 90.534,
+    "end": 90.646,
     "text": "with"
    },
    {
-    "start": 101.747,
-    "end": 102.279,
+    "start": 90.658,
+    "end": 90.695,
+    "text": "a"
+   },
+   {
+    "start": 90.707,
+    "end": 91.277,
+    "text": "screenshot"
+   },
+   {
+    "start": 91.277,
+    "end": 91.363,
+    "text": "of"
+   },
+   {
+    "start": 91.376,
+    "end": 91.747,
+    "text": "each"
+   },
+   {
+    "start": 92.019,
+    "end": 92.106,
+    "text": "the"
+   },
+   {
+    "start": 92.106,
+    "end": 92.601,
+    "text": "checks"
+   },
+   {
+    "start": 92.613,
+    "end": 92.91,
+    "text": "and"
+   },
+   {
+    "start": 92.985,
+    "end": 93.047,
+    "text": "an"
+   },
+   {
+    "start": 93.059,
+    "end": 93.455,
+    "text": "approval"
+   },
+   {
+    "start": 93.467,
+    "end": 93.876,
+    "text": "block"
+   },
+   {
+    "start": 94.346,
+    "end": 94.594,
+    "text": "For"
+   },
+   {
+    "start": 94.606,
+    "end": 95.027,
+    "text": "whoever"
+   },
+   {
+    "start": 95.039,
+    "end": 95.311,
+    "text": "builds"
+   },
+   {
+    "start": 95.324,
+    "end": 95.485,
+    "text": "it"
+   },
+   {
+    "start": 95.967,
+    "end": 96.215,
+    "text": "user"
+   },
+   {
+    "start": 96.227,
+    "end": 96.772,
+    "text": "stories"
+   },
+   {
+    "start": 96.784,
+    "end": 96.908,
+    "text": "with"
+   },
+   {
+    "start": 96.92,
+    "end": 97.477,
     "text": "acceptance"
    },
    {
-    "start": 102.279,
-    "end": 102.762,
+    "start": 97.477,
+    "end": 97.997,
     "text": "tests"
    }
   ]
  },
  {
   "id": "s8",
-  "start": 103.342,
-  "speech_end": 113.521,
-  "end": 114.121,
-  "text": "Build sends a ready-made workflow, switched off, to the customer's own tool: n8n, Node-RED, Make, Power Automate, Logic Apps, or Windmill.",
+  "start": 98.577,
+  "speech_end": 109.672,
+  "end": 110.272,
+  "text": "Build writes the workflow for the customer's own tool: n8n, Node-RED, Make, Power Automate, Logic Apps, or Windmill. The Recorder can send it there, switched off.",
   "words": [
    {
-    "start": 103.342,
-    "end": 103.59,
+    "start": 98.577,
+    "end": 98.837,
     "text": "Build"
    },
    {
-    "start": 103.602,
-    "end": 103.986,
-    "text": "sends"
+    "start": 98.849,
+    "end": 99.171,
+    "text": "writes"
    },
    {
-    "start": 104.047,
-    "end": 104.097,
-    "text": "a"
-   },
-   {
-    "start": 104.109,
-    "end": 104.666,
-    "text": "ready-made"
-   },
-   {
-    "start": 104.679,
-    "end": 105.236,
-    "text": "workflow"
-   },
-   {
-    "start": 105.471,
-    "end": 105.83,
-    "text": "switched"
-   },
-   {
-    "start": 105.842,
-    "end": 106.176,
-    "text": "off"
-   },
-   {
-    "start": 106.436,
-    "end": 106.523,
-    "text": "to"
-   },
-   {
-    "start": 106.523,
-    "end": 106.609,
+    "start": 99.171,
+    "end": 99.282,
     "text": "the"
    },
    {
-    "start": 106.622,
-    "end": 107.154,
+    "start": 99.295,
+    "end": 99.765,
+    "text": "workflow"
+   },
+   {
+    "start": 99.765,
+    "end": 99.852,
+    "text": "for"
+   },
+   {
+    "start": 99.864,
+    "end": 99.938,
+    "text": "the"
+   },
+   {
+    "start": 99.951,
+    "end": 100.495,
     "text": "customer's"
    },
    {
-    "start": 107.166,
-    "end": 107.364,
+    "start": 100.508,
+    "end": 100.706,
     "text": "own"
    },
    {
-    "start": 107.377,
-    "end": 107.785,
+    "start": 100.706,
+    "end": 101.077,
     "text": "tool"
    },
    {
-    "start": 108.317,
-    "end": 109.245,
+    "start": 101.622,
+    "end": 102.537,
     "text": "n8n"
    },
    {
-    "start": 109.443,
-    "end": 109.939,
+    "start": 102.933,
+    "end": 103.416,
     "text": "Node-RED"
    },
    {
-    "start": 110.174,
-    "end": 110.458,
+    "start": 103.651,
+    "end": 103.961,
     "text": "Make"
    },
    {
-    "start": 110.718,
-    "end": 111.164,
+    "start": 104.221,
+    "end": 104.654,
     "text": "Power"
    },
    {
-    "start": 111.176,
-    "end": 111.646,
+    "start": 104.666,
+    "end": 105.174,
     "text": "Automate"
    },
    {
-    "start": 111.857,
-    "end": 112.228,
+    "start": 105.396,
+    "end": 105.792,
     "text": "Logic"
    },
    {
-    "start": 112.241,
-    "end": 112.637,
+    "start": 105.805,
+    "end": 106.213,
     "text": "Apps"
    },
    {
-    "start": 112.723,
-    "end": 112.896,
+    "start": 106.287,
+    "end": 106.473,
     "text": "or"
    },
    {
-    "start": 112.909,
-    "end": 113.441,
+    "start": 106.485,
+    "end": 106.993,
     "text": "Windmill"
+   },
+   {
+    "start": 107.376,
+    "end": 107.426,
+    "text": "The"
+   },
+   {
+    "start": 107.438,
+    "end": 107.909,
+    "text": "Recorder"
+   },
+   {
+    "start": 107.921,
+    "end": 108.07,
+    "text": "can"
+   },
+   {
+    "start": 108.07,
+    "end": 108.305,
+    "text": "send"
+   },
+   {
+    "start": 108.317,
+    "end": 108.416,
+    "text": "it"
+   },
+   {
+    "start": 108.416,
+    "end": 108.701,
+    "text": "there"
+   },
+   {
+    "start": 108.812,
+    "end": 109.171,
+    "text": "switched"
+   },
+   {
+    "start": 109.183,
+    "end": 109.592,
+    "text": "off"
    }
   ]
  },
  {
   "id": "s9",
-  "start": 114.121,
-  "speech_end": 126.599,
-  "end": 126.599,
-  "text": "Only the active window goes to Meta, every report has a spending cap, and employees see hours, never pay rates. FlowSME: show it the work once, and get the process and the automation.",
+  "start": 110.272,
+  "speech_end": 124.038,
+  "end": 124.038,
+  "text": "With the Recorder, only the active window goes to Meta. Every report has a spending cap, and employees see hours, never pay rates. FlowSME: show it the work once, and get the process and the automation.",
   "words": [
    {
-    "start": 114.121,
-    "end": 114.363,
-    "text": "Only"
+    "start": 110.272,
+    "end": 110.374,
+    "text": "With"
    },
    {
-    "start": 114.376,
-    "end": 114.478,
+    "start": 110.387,
+    "end": 110.463,
     "text": "the"
    },
    {
-    "start": 114.491,
-    "end": 114.81,
+    "start": 110.463,
+    "end": 111.025,
+    "text": "Recorder"
+   },
+   {
+    "start": 111.611,
+    "end": 111.866,
+    "text": "only"
+   },
+   {
+    "start": 111.879,
+    "end": 111.968,
+    "text": "the"
+   },
+   {
+    "start": 111.981,
+    "end": 112.313,
     "text": "active"
    },
    {
-    "start": 114.81,
-    "end": 115.141,
+    "start": 112.326,
+    "end": 112.721,
     "text": "window"
    },
    {
-    "start": 115.154,
-    "end": 115.486,
+    "start": 112.734,
+    "end": 113.104,
     "text": "goes"
    },
    {
-    "start": 115.499,
-    "end": 115.601,
+    "start": 113.116,
+    "end": 113.218,
     "text": "to"
    },
    {
-    "start": 115.613,
-    "end": 116.021,
+    "start": 113.231,
+    "end": 113.588,
     "text": "Meta"
    },
    {
-    "start": 116.315,
-    "end": 116.621,
-    "text": "every"
+    "start": 113.971,
+    "end": 114.252,
+    "text": "Every"
    },
    {
-    "start": 116.634,
-    "end": 117.055,
+    "start": 114.252,
+    "end": 114.66,
     "text": "report"
    },
    {
-    "start": 117.067,
-    "end": 117.246,
+    "start": 114.672,
+    "end": 114.864,
     "text": "has"
    },
    {
-    "start": 117.259,
-    "end": 117.297,
+    "start": 114.877,
+    "end": 114.928,
     "text": "a"
    },
    {
-    "start": 117.31,
-    "end": 117.68,
+    "start": 114.94,
+    "end": 115.323,
     "text": "spending"
    },
    {
-    "start": 117.692,
-    "end": 118.075,
+    "start": 115.336,
+    "end": 115.744,
     "text": "cap"
    },
    {
-    "start": 118.496,
-    "end": 118.649,
+    "start": 115.986,
+    "end": 116.203,
     "text": "and"
    },
    {
-    "start": 118.649,
-    "end": 119.249,
+    "start": 116.216,
+    "end": 116.803,
     "text": "employees"
    },
    {
-    "start": 119.249,
-    "end": 119.453,
+    "start": 116.815,
+    "end": 117.032,
     "text": "see"
    },
    {
-    "start": 119.453,
-    "end": 119.95,
+    "start": 117.032,
+    "end": 117.555,
     "text": "hours"
    },
    {
-    "start": 120.167,
-    "end": 120.511,
+    "start": 117.759,
+    "end": 118.091,
     "text": "never"
    },
    {
-    "start": 120.524,
-    "end": 120.754,
+    "start": 118.091,
+    "end": 118.295,
     "text": "pay"
    },
    {
-    "start": 120.754,
-    "end": 121.302,
+    "start": 118.308,
+    "end": 118.843,
     "text": "rates"
    },
    {
-    "start": 121.736,
-    "end": 122.386,
+    "start": 119.277,
+    "end": 119.966,
     "text": "FlowSME"
    },
    {
-    "start": 123.037,
-    "end": 123.292,
+    "start": 120.616,
+    "end": 120.884,
     "text": "show"
    },
    {
-    "start": 123.305,
-    "end": 123.381,
+    "start": 120.897,
+    "end": 120.974,
     "text": "it"
    },
    {
-    "start": 123.394,
-    "end": 123.47,
+    "start": 120.986,
+    "end": 121.076,
     "text": "the"
    },
    {
-    "start": 123.47,
-    "end": 123.649,
+    "start": 121.088,
+    "end": 121.267,
     "text": "work"
    },
    {
-    "start": 123.649,
-    "end": 124.07,
+    "start": 121.267,
+    "end": 121.713,
     "text": "once"
    },
    {
-    "start": 124.427,
-    "end": 124.58,
+    "start": 121.866,
+    "end": 122.032,
     "text": "and"
    },
    {
-    "start": 124.593,
-    "end": 124.733,
+    "start": 122.045,
+    "end": 122.198,
     "text": "get"
    },
    {
-    "start": 124.733,
-    "end": 124.81,
+    "start": 122.198,
+    "end": 122.275,
     "text": "the"
    },
    {
-    "start": 124.823,
-    "end": 125.46,
+    "start": 122.287,
+    "end": 122.912,
     "text": "process"
    },
    {
-    "start": 125.473,
-    "end": 125.69,
+    "start": 122.925,
+    "end": 123.116,
     "text": "and"
    },
    {
-    "start": 125.703,
-    "end": 125.779,
+    "start": 123.129,
+    "end": 123.206,
     "text": "the"
    },
    {
-    "start": 125.792,
-    "end": 126.519,
+    "start": 123.218,
+    "end": 123.958,
     "text": "automation"
    }
   ]
