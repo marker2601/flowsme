@@ -1,0 +1,25 @@
+{
+  "voice": "en-US-AvaMultilingualNeural",
+  "volume": "+0%",
+  "note": "Same settings for the audition and the full narration. pause_after is silence added after the segment, in seconds.",
+  "segments": [
+    {"id": "s1", "tone": "bright hook", "rate": "+2%", "pitch": "+2Hz", "pause_after": 0.6,
+     "text": "Every small business runs on routines nobody ever wrote down. FlowSME watches one round of the work, and hands back the process, the SOP, and the automation."},
+    {"id": "s2", "tone": "calmer problem", "rate": "-3%", "pitch": "-1Hz", "pause_after": 0.6,
+     "text": "Hiring a consultant to shadow your staff is slow and expensive, so most small firms never do it. The same invoice gets retyped by hand, every day. This demo shows what we built during the hackathon, on Meta's models."},
+    {"id": "s3", "tone": "steady explanation", "rate": "+0%", "pitch": "+0Hz", "pause_after": 0.5,
+     "text": "Here's a five-and-a-half-minute screen video of invoice entry: Notepad into an Excel tracker, explained out loud while working. In FlowSME Recorder, I import it. The Recorder only records and sends. The analysis runs on our server."},
+    {"id": "s4", "tone": "steady explanation", "rate": "+0%", "pitch": "+0Hz", "pause_after": 0.5,
+     "text": "On the server, Muse Spark reads each screen change: which app, which field, and whether a value was typed, copied or pasted. Muse Voice Transcribe turns the soundtrack into text, lined up with the steps. Then Muse Spark names the tasks and writes the recommendations, as schema-checked JSON."},
+    {"id": "s5", "tone": "lifted outcome", "rate": "+2%", "pitch": "+1Hz", "pause_after": 0.5,
+     "text": "A couple of minutes later, the report is back. It found the invoice routine repeating, how long each round takes, and the hours it could save each month. This chart says what to automate first, and the roadmap shows the payback."},
+    {"id": "s6", "tone": "steady explanation", "rate": "+0%", "pitch": "+0Hz", "pause_after": 0.5,
+     "text": "Values typed by hand are the hard part. Here, the person said the due date is the invoice date plus thirty days. FlowSME turned that into a business rule, and it keeps a rule only when it quotes the transcript word for word."},
+    {"id": "s7", "tone": "lifted outcome", "rate": "+1%", "pitch": "+1Hz", "pause_after": 0.5,
+     "text": "For the team, there's an SOP: numbered steps with a screenshot of each, the reason behind each check, and an approval block. For whoever builds the automation, user stories with acceptance tests."},
+    {"id": "s8", "tone": "lifted outcome", "rate": "+1%", "pitch": "+1Hz", "pause_after": 0.6,
+     "text": "Build sends a ready-made workflow, switched off, to the customer's own tool: n8n, Node-RED, Make, Power Automate, Logic Apps, or Windmill."},
+    {"id": "s9", "tone": "calm, confident close", "rate": "-2%", "pitch": "+0Hz", "pause_after": 0.0,
+     "text": "Only the active window goes to Meta, every report has a spending cap, and employees see hours, never pay rates. FlowSME: show it the work once, and get the process and the automation."}
+  ]
+}

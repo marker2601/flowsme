@@ -12,3 +12,8 @@ server-data/
 test-videos/
 # Seat files the server writes for the manager (they hold seat keys in plain text).
 seat-files-to-send/
+
+# Demo video: generated audio and video (rebuilt by the scripts in demo-video/).
+demo-video/media/
+demo-video/out/
+demo-video/audition-*.m4a
