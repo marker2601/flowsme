@@ -251,10 +251,10 @@ def video_to_session(video: Path, sessions_dir: Path, name: str, cfg: Config, lo
             if (exe, title) != window:
                 events.append({"t": t, "type": "focus", "app": exe, "title": title})
                 window = (exe, title)
-            name = (a["element"] or "").strip()[:120]
-            if VALUE_LIKE.fullmatch(name) or "@" in name:  # a selected value, not a field's name: keep it out
-                name = "selected text"
-            element = {"name": name, "role": KINDS.get(a["element_kind"], "")}
+            field = (a["element"] or "").strip()[:120]
+            if VALUE_LIKE.fullmatch(field) or "@" in field:  # a selected value, not a field's name: keep it out
+                field = "selected text"
+            element = {"name": field, "role": KINDS.get(a["element_kind"], "")}
             base = {"t": t, "app": exe, "title": title}
             if kind in ("click", "type", "copy", "paste", "switch"):
                 events.append({**base, "type": "click", "button": "left", "element": element,
