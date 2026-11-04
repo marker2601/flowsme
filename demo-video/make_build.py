@@ -73,7 +73,7 @@ out.write_text(f"""<!doctype html>
   <div class="grid">
     <div>{cols}</div>
     <div class="n8n"><h3>The n8n workflow, node by node</h3><div class="flow">{flow}</div>
-      <span class="state">Sent {state}: nothing runs until someone turns it on</span></div>
+      <span class="state">Goes to n8n {state}: nothing runs until someone turns it on</span></div>
   </div>
 </body></html>""", encoding="utf-8")
 print(out, [n["name"] for n in order], state)

@@ -1,17 +1,20 @@
 """Write one capture.js scene per chapter, timed from timeline.json, and record them all in parallel.
 
     python scenes.py [scene ...]      (no names = every scene)
+    python scenes.py v2 [scene ...]   version 2: timeline-v2.json, media/v2/pages -> media/v2/frames
 
-Pages come from media/pages (the run's report.html, sop.html and the generated panel.html and build.html)."""
+Pages come from media/pages (the run's report.html, sop.html and the generated panel.html and build.html); for
+version 2 from media/v2/pages (report.html, sop.html, build.html and the api.html that make_api.py writes)."""
 import json
 import subprocess
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).parent.resolve()
-PAGES = HERE / "media" / "pages"
-FRAMES = HERE / "media" / "frames"
-T = {s["id"]: s for s in json.loads((HERE / "timeline.json").read_text(encoding="utf-8"))}
+V2 = sys.argv[1:2] == ["v2"]
+MEDIA = HERE / "media" / ("v2" if V2 else "")
+PAGES, FRAMES = MEDIA / "pages", MEDIA / "frames"
+T = {s["id"]: s for s in json.loads((HERE / ("timeline-v2.json" if V2 else "timeline.json")).read_text(encoding="utf-8"))}
 
 
 def length(*ids: str, extra: float = 0.5) -> float:
@@ -74,16 +77,50 @@ SCENES = {
     "build": {"url": url("build.html"), "seconds": length("s8"), "actions": [step(0.3, 1), step(2.6, 2), step(6.4, 3)]},
 }
 
+BUILD_AT = 6.9  # version 2: seconds of chapter 10 in the Recorder before the Build output page
+SCENES_V2 = {
+    "report_open": SCENES["report_open"],
+    # Chapters 4-6: the calls to Meta's Model API, revealed in step with the narration.
+    "api_vision": {"url": url("api.html"), "seconds": length("s4"), "actions": [
+        step(0, 1), step(9.0, 2), step(11.3, 3),
+        {"at": 11.5, "do": "move", "to": ".v1 .res .hl", "dur": 1.0}]},
+    "api_voice": {"url": url("api.html"), "seconds": length("s5"), "actions": [
+        step(0, 4), step(2.6, 5),
+        {"at": 4.6, "do": "move", "to": ".v2 .res .hl", "dur": 1.0}, step(8.4, 6),
+        {"at": 9.6, "do": "move", "to": ".v2 .carry .pane:first-child .hl", "dur": 1.0},
+        {"at": 11.2, "do": "move", "to": ".v2 .carry .pane:last-child .hl", "dur": 1.0}]},
+    "api_tasks": {"url": url("api.html"), "seconds": length("s6"), "actions": [
+        step(0, 7), {"at": 0.6, "do": "move", "to": ".v3 .pane:first-child pre", "dur": 1.0},
+        {"at": 2.2, "do": "move", "to": ".v3 .hits", "dur": 1.0},
+        {"at": 4.6, "do": "move", "to": ".v3 .pane:last-child .hl", "dur": 1.0}, step(7.4, 8),
+        {"at": 8.0, "do": "move", "to": ".v3 .meter .bar", "dur": 1.0},
+        {"at": 10.6, "do": "move", "to": ".v3 .meter .mtext span", "dur": 1.0}]},
+    # Chapter 8: hours a month in the summary, then the roadmap row and its payback.
+    "report_plan": {"url": url("report.html"), "seconds": length("s8"), "setup": TAG, "actions": [
+        {"at": 0, "do": "scroll", "to": "#k-summary", "dur": 0, "offset": 60},
+        {"at": 0.8, "do": "move", "to": "section.card:has(#k-summary) li:nth-child(3)", "dur": 1.2},
+        {"at": 3.6, "do": "scroll", "to": "section.card:has(#k-what-to-automate-first) .table-wrap", "dur": 1.4, "offset": 260},
+        {"at": 5.2, "do": "move", "to": "section.card:has(#k-what-to-automate-first) tbody tr:first-child td:nth-child(1)", "dur": 1.0},
+        {"at": 7.4, "do": "move", "to": "section.card:has(#k-what-to-automate-first) tbody tr:first-child td:nth-child(6)", "dur": 1.0}]},
+    "sop": {**SCENES["sop"], "seconds": round(T["s9"]["end"] - T["s9"]["start"] - 4.0, 2)},
+    "report_stories": SCENES["report_stories"],
+    # Chapter 10, after the Recorder's Build dialog: what Build wrote.
+    "build": {"url": url("build.html"), "seconds": round(T["s10"]["end"] - T["s10"]["start"] - BUILD_AT + 0.5, 2),
+              "actions": [step(0.2, 1), step(3.4, 2), step(5.2, 3)]},
+}
+if V2:
+    SCENES = SCENES_V2
+
 
 def main(names: list[str]) -> None:
     procs = []
     for name in names or SCENES:
         scene = {**SCENES[name], "zoom": 1.5, "out": str(FRAMES / name)}
-        path = HERE / "media" / f"scene-{name}.json"
+        path = MEDIA / f"scene-{name}.json"
         path.write_text(json.dumps(scene, indent=1), encoding="utf-8")
         procs.append((name, subprocess.Popen(["node", str(HERE / "capture.js"), str(path)])))
     for name, p in procs:
         print(name, "ok" if p.wait() == 0 else "FAILED", flush=True)
 
 
-main(sys.argv[1:])
+main(sys.argv[2:] if V2 else sys.argv[1:])

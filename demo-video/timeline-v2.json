@@ -1,0 +1,2240 @@
+[
+ {
+  "id": "s1",
+  "start": 0.0,
+  "speech_end": 10.95,
+  "end": 11.55,
+  "text": "Every small business runs on routines nobody ever wrote down. FlowSME watches one round of the work, and hands back the process, the SOP, and the automation.",
+  "words": [
+   {
+    "start": 0.0,
+    "end": 0.233,
+    "text": "Every"
+   },
+   {
+    "start": 0.245,
+    "end": 0.551,
+    "text": "small"
+   },
+   {
+    "start": 0.564,
+    "end": 1.078,
+    "text": "business"
+   },
+   {
+    "start": 1.262,
+    "end": 1.532,
+    "text": "runs"
+   },
+   {
+    "start": 1.532,
+    "end": 1.642,
+    "text": "on"
+   },
+   {
+    "start": 1.654,
+    "end": 2.206,
+    "text": "routines"
+   },
+   {
+    "start": 2.218,
+    "end": 2.782,
+    "text": "nobody"
+   },
+   {
+    "start": 3.039,
+    "end": 3.272,
+    "text": "ever"
+   },
+   {
+    "start": 3.284,
+    "end": 3.493,
+    "text": "wrote"
+   },
+   {
+    "start": 3.493,
+    "end": 3.873,
+    "text": "down"
+   },
+   {
+    "start": 4.277,
+    "end": 4.976,
+    "text": "FlowSME"
+   },
+   {
+    "start": 4.988,
+    "end": 5.551,
+    "text": "watches"
+   },
+   {
+    "start": 5.564,
+    "end": 5.882,
+    "text": "one"
+   },
+   {
+    "start": 5.895,
+    "end": 6.115,
+    "text": "round"
+   },
+   {
+    "start": 6.127,
+    "end": 6.176,
+    "text": "of"
+   },
+   {
+    "start": 6.176,
+    "end": 6.262,
+    "text": "the"
+   },
+   {
+    "start": 6.275,
+    "end": 6.605,
+    "text": "work"
+   },
+   {
+    "start": 6.985,
+    "end": 7.083,
+    "text": "and"
+   },
+   {
+    "start": 7.096,
+    "end": 7.451,
+    "text": "hands"
+   },
+   {
+    "start": 7.463,
+    "end": 7.684,
+    "text": "back"
+   },
+   {
+    "start": 7.684,
+    "end": 7.757,
+    "text": "the"
+   },
+   {
+    "start": 7.77,
+    "end": 8.358,
+    "text": "process"
+   },
+   {
+    "start": 8.566,
+    "end": 8.627,
+    "text": "the"
+   },
+   {
+    "start": 8.64,
+    "end": 9.424,
+    "text": "SOP"
+   },
+   {
+    "start": 9.804,
+    "end": 10.061,
+    "text": "and"
+   },
+   {
+    "start": 10.073,
+    "end": 10.172,
+    "text": "the"
+   },
+   {
+    "start": 10.184,
+    "end": 10.87,
+    "text": "automation"
+   }
+  ]
+ },
+ {
+  "id": "s2",
+  "start": 11.55,
+  "speech_end": 25.663,
+  "end": 26.263,
+  "text": "Hiring a consultant to shadow your staff is slow and expensive, so most small firms never do it. The same invoice gets retyped by hand, every day. This demo shows what we built during the hackathon, on Meta's models.",
+  "words": [
+   {
+    "start": 11.55,
+    "end": 11.885,
+    "text": "Hiring"
+   },
+   {
+    "start": 11.898,
+    "end": 11.937,
+    "text": "a"
+   },
+   {
+    "start": 11.95,
+    "end": 12.491,
+    "text": "consultant"
+   },
+   {
+    "start": 12.491,
+    "end": 12.568,
+    "text": "to"
+   },
+   {
+    "start": 12.581,
+    "end": 12.955,
+    "text": "shadow"
+   },
+   {
+    "start": 12.968,
+    "end": 13.109,
+    "text": "your"
+   },
+   {
+    "start": 13.122,
+    "end": 13.509,
+    "text": "staff"
+   },
+   {
+    "start": 13.573,
+    "end": 13.689,
+    "text": "is"
+   },
+   {
+    "start": 13.689,
+    "end": 14.282,
+    "text": "slow"
+   },
+   {
+    "start": 14.295,
+    "end": 14.566,
+    "text": "and"
+   },
+   {
+    "start": 14.63,
+    "end": 15.287,
+    "text": "expensive"
+   },
+   {
+    "start": 15.751,
+    "end": 15.983,
+    "text": "so"
+   },
+   {
+    "start": 15.996,
+    "end": 16.357,
+    "text": "most"
+   },
+   {
+    "start": 16.357,
+    "end": 16.705,
+    "text": "small"
+   },
+   {
+    "start": 16.718,
+    "end": 17.066,
+    "text": "firms"
+   },
+   {
+    "start": 17.078,
+    "end": 17.413,
+    "text": "never"
+   },
+   {
+    "start": 17.413,
+    "end": 17.581,
+    "text": "do"
+   },
+   {
+    "start": 17.594,
+    "end": 17.8,
+    "text": "it"
+   },
+   {
+    "start": 18.199,
+    "end": 18.277,
+    "text": "The"
+   },
+   {
+    "start": 18.29,
+    "end": 18.663,
+    "text": "same"
+   },
+   {
+    "start": 18.676,
+    "end": 19.218,
+    "text": "invoice"
+   },
+   {
+    "start": 19.23,
+    "end": 19.475,
+    "text": "gets"
+   },
+   {
+    "start": 19.488,
+    "end": 20.042,
+    "text": "retyped"
+   },
+   {
+    "start": 20.055,
+    "end": 20.21,
+    "text": "by"
+   },
+   {
+    "start": 20.223,
+    "end": 20.751,
+    "text": "hand"
+   },
+   {
+    "start": 20.944,
+    "end": 21.202,
+    "text": "every"
+   },
+   {
+    "start": 21.215,
+    "end": 21.602,
+    "text": "day"
+   },
+   {
+    "start": 22.001,
+    "end": 22.246,
+    "text": "This"
+   },
+   {
+    "start": 22.246,
+    "end": 22.594,
+    "text": "demo"
+   },
+   {
+    "start": 22.607,
+    "end": 23.045,
+    "text": "shows"
+   },
+   {
+    "start": 23.045,
+    "end": 23.161,
+    "text": "what"
+   },
+   {
+    "start": 23.161,
+    "end": 23.277,
+    "text": "we"
+   },
+   {
+    "start": 23.277,
+    "end": 23.522,
+    "text": "built"
+   },
+   {
+    "start": 23.535,
+    "end": 23.741,
+    "text": "during"
+   },
+   {
+    "start": 23.754,
+    "end": 23.805,
+    "text": "the"
+   },
+   {
+    "start": 23.818,
+    "end": 24.527,
+    "text": "hackathon"
+   },
+   {
+    "start": 24.54,
+    "end": 24.694,
+    "text": "on"
+   },
+   {
+    "start": 24.707,
+    "end": 24.978,
+    "text": "Meta's"
+   },
+   {
+    "start": 24.978,
+    "end": 25.583,
+    "text": "models"
+   }
+  ]
+ },
+ {
+  "id": "s3",
+  "start": 26.263,
+  "speech_end": 46.418,
+  "end": 46.918,
+  "text": "This is FlowSME Recorder, our Windows app. Press Record and work as usual: it keeps each click, the field, whether a value was typed, copied or pasted, a picture of the active window only, and your voice. Here, a manager imports a screen video instead, and Get report sends it to our server.",
+  "words": [
+   {
+    "start": 26.263,
+    "end": 26.575,
+    "text": "This"
+   },
+   {
+    "start": 26.651,
+    "end": 26.851,
+    "text": "is"
+   },
+   {
+    "start": 26.863,
+    "end": 27.625,
+    "text": "FlowSME"
+   },
+   {
+    "start": 27.638,
+    "end": 28.151,
+    "text": "Recorder"
+   },
+   {
+    "start": 28.675,
+    "end": 28.863,
+    "text": "our"
+   },
+   {
+    "start": 28.875,
+    "end": 29.25,
+    "text": "Windows"
+   },
+   {
+    "start": 29.263,
+    "end": 29.601,
+    "text": "app."
+   },
+   {
+    "start": 29.988,
+    "end": 30.213,
+    "text": "Press"
+   },
+   {
+    "start": 30.226,
+    "end": 30.738,
+    "text": "Record"
+   },
+   {
+    "start": 30.75,
+    "end": 30.901,
+    "text": "and"
+   },
+   {
+    "start": 30.913,
+    "end": 31.138,
+    "text": "work"
+   },
+   {
+    "start": 31.151,
+    "end": 31.276,
+    "text": "as"
+   },
+   {
+    "start": 31.276,
+    "end": 31.738,
+    "text": "usual"
+   },
+   {
+    "start": 32.276,
+    "end": 32.35,
+    "text": "it"
+   },
+   {
+    "start": 32.35,
+    "end": 32.651,
+    "text": "keeps"
+   },
+   {
+    "start": 32.725,
+    "end": 32.938,
+    "text": "each"
+   },
+   {
+    "start": 32.95,
+    "end": 33.313,
+    "text": "click"
+   },
+   {
+    "start": 33.563,
+    "end": 33.651,
+    "text": "the"
+   },
+   {
+    "start": 33.663,
+    "end": 34.163,
+    "text": "field"
+   },
+   {
+    "start": 34.538,
+    "end": 34.763,
+    "text": "whether"
+   },
+   {
+    "start": 34.776,
+    "end": 34.813,
+    "text": "a"
+   },
+   {
+    "start": 34.825,
+    "end": 35.226,
+    "text": "value"
+   },
+   {
+    "start": 35.226,
+    "end": 35.388,
+    "text": "was"
+   },
+   {
+    "start": 35.401,
+    "end": 35.825,
+    "text": "typed"
+   },
+   {
+    "start": 36.063,
+    "end": 36.601,
+    "text": "copied"
+   },
+   {
+    "start": 36.613,
+    "end": 36.763,
+    "text": "or"
+   },
+   {
+    "start": 36.776,
+    "end": 37.238,
+    "text": "pasted"
+   },
+   {
+    "start": 37.7,
+    "end": 37.726,
+    "text": "a"
+   },
+   {
+    "start": 37.726,
+    "end": 38.075,
+    "text": "picture"
+   },
+   {
+    "start": 38.088,
+    "end": 38.163,
+    "text": "of"
+   },
+   {
+    "start": 38.175,
+    "end": 38.25,
+    "text": "the"
+   },
+   {
+    "start": 38.263,
+    "end": 38.588,
+    "text": "active"
+   },
+   {
+    "start": 38.601,
+    "end": 38.938,
+    "text": "window"
+   },
+   {
+    "start": 38.95,
+    "end": 39.413,
+    "text": "only"
+   },
+   {
+    "start": 39.588,
+    "end": 39.776,
+    "text": "and"
+   },
+   {
+    "start": 39.788,
+    "end": 39.888,
+    "text": "your"
+   },
+   {
+    "start": 39.901,
+    "end": 40.438,
+    "text": "voice"
+   },
+   {
+    "start": 40.901,
+    "end": 41.2,
+    "text": "Here"
+   },
+   {
+    "start": 41.713,
+    "end": 41.75,
+    "text": "a"
+   },
+   {
+    "start": 41.763,
+    "end": 42.2,
+    "text": "manager"
+   },
+   {
+    "start": 42.213,
+    "end": 42.601,
+    "text": "imports"
+   },
+   {
+    "start": 42.613,
+    "end": 42.663,
+    "text": "a"
+   },
+   {
+    "start": 42.675,
+    "end": 43.026,
+    "text": "screen"
+   },
+   {
+    "start": 43.038,
+    "end": 43.375,
+    "text": "video"
+   },
+   {
+    "start": 43.388,
+    "end": 43.925,
+    "text": "instead"
+   },
+   {
+    "start": 44.313,
+    "end": 44.526,
+    "text": "and"
+   },
+   {
+    "start": 44.538,
+    "end": 44.713,
+    "text": "Get"
+   },
+   {
+    "start": 44.726,
+    "end": 45.125,
+    "text": "report"
+   },
+   {
+    "start": 45.138,
+    "end": 45.413,
+    "text": "sends"
+   },
+   {
+    "start": 45.425,
+    "end": 45.513,
+    "text": "it"
+   },
+   {
+    "start": 45.526,
+    "end": 45.688,
+    "text": "to"
+   },
+   {
+    "start": 45.7,
+    "end": 45.838,
+    "text": "our"
+   },
+   {
+    "start": 45.851,
+    "end": 46.338,
+    "text": "server"
+   }
+  ]
+ },
+ {
+  "id": "s4",
+  "start": 46.918,
+  "speech_end": 62.148,
+  "end": 62.648,
+  "text": "On the server, FlowSME finds the forty-two moments the screen changed, and sends them to Muse Spark on Meta's API, five frames at a time. Back comes schema-checked JSON: Excel, cell B2, pasted, the vendor name.",
+  "words": [
+   {
+    "start": 46.918,
+    "end": 47.005,
+    "text": "On"
+   },
+   {
+    "start": 47.018,
+    "end": 47.093,
+    "text": "the"
+   },
+   {
+    "start": 47.093,
+    "end": 47.618,
+    "text": "server"
+   },
+   {
+    "start": 47.843,
+    "end": 48.505,
+    "text": "FlowSME"
+   },
+   {
+    "start": 48.518,
+    "end": 48.943,
+    "text": "finds"
+   },
+   {
+    "start": 48.956,
+    "end": 49.068,
+    "text": "the"
+   },
+   {
+    "start": 49.081,
+    "end": 49.618,
+    "text": "forty-two"
+   },
+   {
+    "start": 49.63,
+    "end": 50.03,
+    "text": "moments"
+   },
+   {
+    "start": 50.03,
+    "end": 50.118,
+    "text": "the"
+   },
+   {
+    "start": 50.13,
+    "end": 50.468,
+    "text": "screen"
+   },
+   {
+    "start": 50.468,
+    "end": 50.93,
+    "text": "changed"
+   },
+   {
+    "start": 51.293,
+    "end": 51.468,
+    "text": "and"
+   },
+   {
+    "start": 51.468,
+    "end": 51.78,
+    "text": "sends"
+   },
+   {
+    "start": 51.78,
+    "end": 51.956,
+    "text": "them"
+   },
+   {
+    "start": 51.968,
+    "end": 52.068,
+    "text": "to"
+   },
+   {
+    "start": 52.081,
+    "end": 52.368,
+    "text": "Muse"
+   },
+   {
+    "start": 52.38,
+    "end": 52.768,
+    "text": "Spark"
+   },
+   {
+    "start": 52.818,
+    "end": 52.968,
+    "text": "on"
+   },
+   {
+    "start": 52.98,
+    "end": 53.305,
+    "text": "Meta's"
+   },
+   {
+    "start": 53.318,
+    "end": 53.88,
+    "text": "API"
+   },
+   {
+    "start": 54.293,
+    "end": 54.555,
+    "text": "five"
+   },
+   {
+    "start": 54.568,
+    "end": 54.98,
+    "text": "frames"
+   },
+   {
+    "start": 54.993,
+    "end": 55.068,
+    "text": "at"
+   },
+   {
+    "start": 55.08,
+    "end": 55.118,
+    "text": "a"
+   },
+   {
+    "start": 55.118,
+    "end": 55.63,
+    "text": "time"
+   },
+   {
+    "start": 56.005,
+    "end": 56.268,
+    "text": "Back"
+   },
+   {
+    "start": 56.28,
+    "end": 56.643,
+    "text": "comes"
+   },
+   {
+    "start": 56.655,
+    "end": 57.255,
+    "text": "schema-checked"
+   },
+   {
+    "start": 57.268,
+    "end": 57.806,
+    "text": "JSON"
+   },
+   {
+    "start": 58.38,
+    "end": 58.843,
+    "text": "Excel"
+   },
+   {
+    "start": 59.243,
+    "end": 59.431,
+    "text": "cell"
+   },
+   {
+    "start": 59.431,
+    "end": 59.993,
+    "text": "B2"
+   },
+   {
+    "start": 60.418,
+    "end": 60.918,
+    "text": "pasted"
+   },
+   {
+    "start": 61.293,
+    "end": 61.38,
+    "text": "the"
+   },
+   {
+    "start": 61.393,
+    "end": 61.681,
+    "text": "vendor"
+   },
+   {
+    "start": 61.693,
+    "end": 62.068,
+    "text": "name"
+   }
+  ]
+ },
+ {
+  "id": "s5",
+  "start": 62.648,
+  "speech_end": 77.753,
+  "end": 78.253,
+  "text": "Muse Voice Transcribe turns the soundtrack into text, with timings. The clerk said all their suppliers are on net 30, and that sentence carries through: the task summary and the top recommendation both set the due date to the invoice date plus thirty days.",
+  "words": [
+   {
+    "start": 62.648,
+    "end": 62.985,
+    "text": "Muse"
+   },
+   {
+    "start": 62.998,
+    "end": 63.348,
+    "text": "Voice"
+   },
+   {
+    "start": 63.348,
+    "end": 64.048,
+    "text": "Transcribe"
+   },
+   {
+    "start": 64.11,
+    "end": 64.435,
+    "text": "turns"
+   },
+   {
+    "start": 64.448,
+    "end": 64.548,
+    "text": "the"
+   },
+   {
+    "start": 64.56,
+    "end": 65.198,
+    "text": "soundtrack"
+   },
+   {
+    "start": 65.21,
+    "end": 65.385,
+    "text": "into"
+   },
+   {
+    "start": 65.398,
+    "end": 65.923,
+    "text": "text"
+   },
+   {
+    "start": 66.085,
+    "end": 66.273,
+    "text": "with"
+   },
+   {
+    "start": 66.273,
+    "end": 66.985,
+    "text": "timings"
+   },
+   {
+    "start": 67.385,
+    "end": 67.448,
+    "text": "The"
+   },
+   {
+    "start": 67.46,
+    "end": 67.748,
+    "text": "clerk"
+   },
+   {
+    "start": 67.76,
+    "end": 68.098,
+    "text": "said"
+   },
+   {
+    "start": 68.11,
+    "end": 68.26,
+    "text": "all"
+   },
+   {
+    "start": 68.26,
+    "end": 68.398,
+    "text": "their"
+   },
+   {
+    "start": 68.41,
+    "end": 68.998,
+    "text": "suppliers"
+   },
+   {
+    "start": 69.01,
+    "end": 69.285,
+    "text": "are"
+   },
+   {
+    "start": 69.298,
+    "end": 69.46,
+    "text": "on"
+   },
+   {
+    "start": 69.46,
+    "end": 69.66,
+    "text": "net"
+   },
+   {
+    "start": 69.673,
+    "end": 70.073,
+    "text": "30"
+   },
+   {
+    "start": 70.323,
+    "end": 70.473,
+    "text": "and"
+   },
+   {
+    "start": 70.485,
+    "end": 70.685,
+    "text": "that"
+   },
+   {
+    "start": 70.698,
+    "end": 71.11,
+    "text": "sentence"
+   },
+   {
+    "start": 71.123,
+    "end": 71.498,
+    "text": "carries"
+   },
+   {
+    "start": 71.498,
+    "end": 71.773,
+    "text": "through"
+   },
+   {
+    "start": 72.36,
+    "end": 72.448,
+    "text": "the"
+   },
+   {
+    "start": 72.46,
+    "end": 72.81,
+    "text": "task"
+   },
+   {
+    "start": 72.823,
+    "end": 73.298,
+    "text": "summary"
+   },
+   {
+    "start": 73.373,
+    "end": 73.485,
+    "text": "and"
+   },
+   {
+    "start": 73.498,
+    "end": 73.573,
+    "text": "the"
+   },
+   {
+    "start": 73.585,
+    "end": 73.885,
+    "text": "top"
+   },
+   {
+    "start": 73.898,
+    "end": 74.523,
+    "text": "recommendation"
+   },
+   {
+    "start": 74.535,
+    "end": 74.76,
+    "text": "both"
+   },
+   {
+    "start": 74.773,
+    "end": 74.973,
+    "text": "set"
+   },
+   {
+    "start": 74.985,
+    "end": 75.06,
+    "text": "the"
+   },
+   {
+    "start": 75.073,
+    "end": 75.273,
+    "text": "due"
+   },
+   {
+    "start": 75.285,
+    "end": 75.585,
+    "text": "date"
+   },
+   {
+    "start": 75.598,
+    "end": 75.698,
+    "text": "to"
+   },
+   {
+    "start": 75.698,
+    "end": 75.785,
+    "text": "the"
+   },
+   {
+    "start": 75.798,
+    "end": 76.285,
+    "text": "invoice"
+   },
+   {
+    "start": 76.285,
+    "end": 76.56,
+    "text": "date"
+   },
+   {
+    "start": 76.573,
+    "end": 76.885,
+    "text": "plus"
+   },
+   {
+    "start": 76.885,
+    "end": 77.148,
+    "text": "thirty"
+   },
+   {
+    "start": 77.148,
+    "end": 77.673,
+    "text": "days"
+   }
+  ]
+ },
+ {
+  "id": "s6",
+  "start": 78.253,
+  "speech_end": 92.32,
+  "end": 92.821,
+  "text": "Muse Spark then names the tasks, runs a web search for tools that fit, and writes the recommendations as checked JSON. Every call is metered, and each report has a spending cap: reading this whole video cost seventeen cents.",
+  "words": [
+   {
+    "start": 78.253,
+    "end": 78.541,
+    "text": "Muse"
+   },
+   {
+    "start": 78.553,
+    "end": 78.916,
+    "text": "Spark"
+   },
+   {
+    "start": 78.928,
+    "end": 79.128,
+    "text": "then"
+   },
+   {
+    "start": 79.128,
+    "end": 79.378,
+    "text": "names"
+   },
+   {
+    "start": 79.391,
+    "end": 79.478,
+    "text": "the"
+   },
+   {
+    "start": 79.491,
+    "end": 80.041,
+    "text": "tasks"
+   },
+   {
+    "start": 80.403,
+    "end": 80.591,
+    "text": "runs"
+   },
+   {
+    "start": 80.603,
+    "end": 80.678,
+    "text": "a"
+   },
+   {
+    "start": 80.691,
+    "end": 80.941,
+    "text": "web"
+   },
+   {
+    "start": 80.941,
+    "end": 81.241,
+    "text": "search"
+   },
+   {
+    "start": 81.253,
+    "end": 81.378,
+    "text": "for"
+   },
+   {
+    "start": 81.391,
+    "end": 81.741,
+    "text": "tools"
+   },
+   {
+    "start": 81.741,
+    "end": 81.903,
+    "text": "that"
+   },
+   {
+    "start": 81.916,
+    "end": 82.253,
+    "text": "fit"
+   },
+   {
+    "start": 82.678,
+    "end": 82.878,
+    "text": "and"
+   },
+   {
+    "start": 82.991,
+    "end": 83.291,
+    "text": "writes"
+   },
+   {
+    "start": 83.303,
+    "end": 83.403,
+    "text": "the"
+   },
+   {
+    "start": 83.403,
+    "end": 84.228,
+    "text": "recommendations"
+   },
+   {
+    "start": 84.241,
+    "end": 84.441,
+    "text": "as"
+   },
+   {
+    "start": 84.453,
+    "end": 84.741,
+    "text": "checked"
+   },
+   {
+    "start": 84.741,
+    "end": 85.328,
+    "text": "JSON"
+   },
+   {
+    "start": 85.728,
+    "end": 86.003,
+    "text": "Every"
+   },
+   {
+    "start": 86.016,
+    "end": 86.441,
+    "text": "call"
+   },
+   {
+    "start": 86.453,
+    "end": 86.641,
+    "text": "is"
+   },
+   {
+    "start": 86.653,
+    "end": 87.078,
+    "text": "metered"
+   },
+   {
+    "start": 87.291,
+    "end": 87.478,
+    "text": "and"
+   },
+   {
+    "start": 87.603,
+    "end": 87.791,
+    "text": "each"
+   },
+   {
+    "start": 87.803,
+    "end": 88.216,
+    "text": "report"
+   },
+   {
+    "start": 88.216,
+    "end": 88.391,
+    "text": "has"
+   },
+   {
+    "start": 88.403,
+    "end": 88.453,
+    "text": "a"
+   },
+   {
+    "start": 88.466,
+    "end": 88.841,
+    "text": "spending"
+   },
+   {
+    "start": 88.853,
+    "end": 89.241,
+    "text": "cap"
+   },
+   {
+    "start": 89.878,
+    "end": 90.153,
+    "text": "reading"
+   },
+   {
+    "start": 90.166,
+    "end": 90.316,
+    "text": "this"
+   },
+   {
+    "start": 90.328,
+    "end": 90.503,
+    "text": "whole"
+   },
+   {
+    "start": 90.503,
+    "end": 90.841,
+    "text": "video"
+   },
+   {
+    "start": 90.853,
+    "end": 91.216,
+    "text": "cost"
+   },
+   {
+    "start": 91.228,
+    "end": 91.728,
+    "text": "seventeen"
+   },
+   {
+    "start": 91.741,
+    "end": 92.241,
+    "text": "cents"
+   }
+  ]
+ },
+ {
+  "id": "s7",
+  "start": 92.821,
+  "speech_end": 101.81,
+  "end": 102.31,
+  "text": "A few minutes later, the report is back in the Recorder: the task, the minutes saved each time, the hours a month, and the narration, time-stamped.",
+  "words": [
+   {
+    "start": 92.821,
+    "end": 92.895,
+    "text": "A"
+   },
+   {
+    "start": 92.907,
+    "end": 93.164,
+    "text": "few"
+   },
+   {
+    "start": 93.176,
+    "end": 93.434,
+    "text": "minutes"
+   },
+   {
+    "start": 93.446,
+    "end": 93.801,
+    "text": "later"
+   },
+   {
+    "start": 94.267,
+    "end": 94.353,
+    "text": "the"
+   },
+   {
+    "start": 94.353,
+    "end": 94.721,
+    "text": "report"
+   },
+   {
+    "start": 94.733,
+    "end": 94.843,
+    "text": "is"
+   },
+   {
+    "start": 94.855,
+    "end": 95.125,
+    "text": "back"
+   },
+   {
+    "start": 95.137,
+    "end": 95.186,
+    "text": "in"
+   },
+   {
+    "start": 95.198,
+    "end": 95.26,
+    "text": "the"
+   },
+   {
+    "start": 95.26,
+    "end": 95.701,
+    "text": "Recorder"
+   },
+   {
+    "start": 96.252,
+    "end": 96.338,
+    "text": "the"
+   },
+   {
+    "start": 96.35,
+    "end": 96.877,
+    "text": "task"
+   },
+   {
+    "start": 97.11,
+    "end": 97.184,
+    "text": "the"
+   },
+   {
+    "start": 97.184,
+    "end": 97.564,
+    "text": "minutes"
+   },
+   {
+    "start": 97.576,
+    "end": 97.894,
+    "text": "saved"
+   },
+   {
+    "start": 97.956,
+    "end": 98.164,
+    "text": "each"
+   },
+   {
+    "start": 98.164,
+    "end": 98.569,
+    "text": "time"
+   },
+   {
+    "start": 98.826,
+    "end": 98.936,
+    "text": "the"
+   },
+   {
+    "start": 98.948,
+    "end": 99.267,
+    "text": "hours"
+   },
+   {
+    "start": 99.279,
+    "end": 99.316,
+    "text": "a"
+   },
+   {
+    "start": 99.316,
+    "end": 99.757,
+    "text": "month"
+   },
+   {
+    "start": 99.929,
+    "end": 100.051,
+    "text": "and"
+   },
+   {
+    "start": 100.051,
+    "end": 100.113,
+    "text": "the"
+   },
+   {
+    "start": 100.125,
+    "end": 100.774,
+    "text": "narration"
+   },
+   {
+    "start": 100.934,
+    "end": 101.73,
+    "text": "time-stamped"
+   }
+  ]
+ },
+ {
+  "id": "s8",
+  "start": 102.31,
+  "speech_end": 111.361,
+  "end": 111.861,
+  "text": "The full report says what to automate first: about five hours a month if this work is done a hundred times, a quick win that pays back in about seven months.",
+  "words": [
+   {
+    "start": 102.31,
+    "end": 102.384,
+    "text": "The"
+   },
+   {
+    "start": 102.396,
+    "end": 102.714,
+    "text": "full"
+   },
+   {
+    "start": 102.727,
+    "end": 103.143,
+    "text": "report"
+   },
+   {
+    "start": 103.156,
+    "end": 103.499,
+    "text": "says"
+   },
+   {
+    "start": 103.499,
+    "end": 103.658,
+    "text": "what"
+   },
+   {
+    "start": 103.67,
+    "end": 103.781,
+    "text": "to"
+   },
+   {
+    "start": 103.793,
+    "end": 104.246,
+    "text": "automate"
+   },
+   {
+    "start": 104.258,
+    "end": 104.736,
+    "text": "first"
+   },
+   {
+    "start": 105.263,
+    "end": 105.508,
+    "text": "about"
+   },
+   {
+    "start": 105.521,
+    "end": 105.839,
+    "text": "five"
+   },
+   {
+    "start": 105.852,
+    "end": 106.146,
+    "text": "hours"
+   },
+   {
+    "start": 106.158,
+    "end": 106.195,
+    "text": "a"
+   },
+   {
+    "start": 106.207,
+    "end": 106.538,
+    "text": "month"
+   },
+   {
+    "start": 106.611,
+    "end": 106.758,
+    "text": "if"
+   },
+   {
+    "start": 106.771,
+    "end": 106.942,
+    "text": "this"
+   },
+   {
+    "start": 106.955,
+    "end": 107.249,
+    "text": "work"
+   },
+   {
+    "start": 107.298,
+    "end": 107.408,
+    "text": "is"
+   },
+   {
+    "start": 107.408,
+    "end": 107.58,
+    "text": "done"
+   },
+   {
+    "start": 107.592,
+    "end": 107.604,
+    "text": "a"
+   },
+   {
+    "start": 107.616,
+    "end": 107.91,
+    "text": "hundred"
+   },
+   {
+    "start": 107.923,
+    "end": 108.388,
+    "text": "times"
+   },
+   {
+    "start": 108.805,
+    "end": 108.854,
+    "text": "a"
+   },
+   {
+    "start": 108.866,
+    "end": 109.16,
+    "text": "quick"
+   },
+   {
+    "start": 109.173,
+    "end": 109.369,
+    "text": "win"
+   },
+   {
+    "start": 109.381,
+    "end": 109.528,
+    "text": "that"
+   },
+   {
+    "start": 109.54,
+    "end": 109.798,
+    "text": "pays"
+   },
+   {
+    "start": 109.81,
+    "end": 110.104,
+    "text": "back"
+   },
+   {
+    "start": 110.116,
+    "end": 110.214,
+    "text": "in"
+   },
+   {
+    "start": 110.227,
+    "end": 110.472,
+    "text": "about"
+   },
+   {
+    "start": 110.484,
+    "end": 110.827,
+    "text": "seven"
+   },
+   {
+    "start": 110.827,
+    "end": 111.281,
+    "text": "months"
+   }
+  ]
+ },
+ {
+  "id": "s9",
+  "start": 111.861,
+  "speech_end": 122.3,
+  "end": 122.8,
+  "text": "For the team, there's a draft SOP: a screenshot of each step, the checks, and an approval block. For whoever builds it, user stories with acceptance tests.",
+  "words": [
+   {
+    "start": 111.861,
+    "end": 111.948,
+    "text": "For"
+   },
+   {
+    "start": 111.96,
+    "end": 112.034,
+    "text": "the"
+   },
+   {
+    "start": 112.034,
+    "end": 112.443,
+    "text": "team"
+   },
+   {
+    "start": 112.641,
+    "end": 112.777,
+    "text": "there's"
+   },
+   {
+    "start": 112.789,
+    "end": 112.851,
+    "text": "a"
+   },
+   {
+    "start": 112.864,
+    "end": 113.284,
+    "text": "draft"
+   },
+   {
+    "start": 113.297,
+    "end": 113.854,
+    "text": "SOP"
+   },
+   {
+    "start": 114.324,
+    "end": 114.361,
+    "text": "a"
+   },
+   {
+    "start": 114.373,
+    "end": 115.005,
+    "text": "screenshot"
+   },
+   {
+    "start": 115.017,
+    "end": 115.116,
+    "text": "of"
+   },
+   {
+    "start": 115.215,
+    "end": 115.475,
+    "text": "each"
+   },
+   {
+    "start": 115.487,
+    "end": 115.92,
+    "text": "step"
+   },
+   {
+    "start": 116.18,
+    "end": 116.267,
+    "text": "the"
+   },
+   {
+    "start": 116.279,
+    "end": 116.849,
+    "text": "checks"
+   },
+   {
+    "start": 116.873,
+    "end": 117.195,
+    "text": "and"
+   },
+   {
+    "start": 117.269,
+    "end": 117.331,
+    "text": "an"
+   },
+   {
+    "start": 117.344,
+    "end": 117.752,
+    "text": "approval"
+   },
+   {
+    "start": 117.764,
+    "end": 118.173,
+    "text": "block"
+   },
+   {
+    "start": 118.606,
+    "end": 118.841,
+    "text": "For"
+   },
+   {
+    "start": 118.854,
+    "end": 119.237,
+    "text": "whoever"
+   },
+   {
+    "start": 119.25,
+    "end": 119.522,
+    "text": "builds"
+   },
+   {
+    "start": 119.522,
+    "end": 119.708,
+    "text": "it"
+   },
+   {
+    "start": 120.203,
+    "end": 120.462,
+    "text": "user"
+   },
+   {
+    "start": 120.475,
+    "end": 121.032,
+    "text": "stories"
+   },
+   {
+    "start": 121.044,
+    "end": 121.168,
+    "text": "with"
+   },
+   {
+    "start": 121.18,
+    "end": 121.712,
+    "text": "acceptance"
+   },
+   {
+    "start": 121.713,
+    "end": 122.22,
+    "text": "tests"
+   }
+  ]
+ },
+ {
+  "id": "s10",
+  "start": 122.8,
+  "speech_end": 135.355,
+  "end": 135.955,
+  "text": "Build, right in the Recorder, writes the workflow for the customer's own tool: n8n, Node-RED, Make, Power Automate, Logic Apps, or Windmill, and can create it there, switched off.",
+  "words": [
+   {
+    "start": 122.8,
+    "end": 123.159,
+    "text": "Build"
+   },
+   {
+    "start": 123.406,
+    "end": 123.58,
+    "text": "right"
+   },
+   {
+    "start": 123.592,
+    "end": 123.642,
+    "text": "in"
+   },
+   {
+    "start": 123.642,
+    "end": 123.716,
+    "text": "the"
+   },
+   {
+    "start": 123.716,
+    "end": 124.223,
+    "text": "Recorder"
+   },
+   {
+    "start": 124.743,
+    "end": 124.978,
+    "text": "writes"
+   },
+   {
+    "start": 124.991,
+    "end": 125.114,
+    "text": "the"
+   },
+   {
+    "start": 125.127,
+    "end": 125.56,
+    "text": "workflow"
+   },
+   {
+    "start": 125.572,
+    "end": 125.671,
+    "text": "for"
+   },
+   {
+    "start": 125.684,
+    "end": 125.758,
+    "text": "the"
+   },
+   {
+    "start": 125.758,
+    "end": 126.302,
+    "text": "customer's"
+   },
+   {
+    "start": 126.315,
+    "end": 126.501,
+    "text": "own"
+   },
+   {
+    "start": 126.513,
+    "end": 126.872,
+    "text": "tool"
+   },
+   {
+    "start": 127.441,
+    "end": 128.332,
+    "text": "n8n"
+   },
+   {
+    "start": 128.753,
+    "end": 129.236,
+    "text": "Node-RED"
+   },
+   {
+    "start": 129.607,
+    "end": 129.892,
+    "text": "Make"
+   },
+   {
+    "start": 130.127,
+    "end": 130.609,
+    "text": "Power"
+   },
+   {
+    "start": 130.609,
+    "end": 131.092,
+    "text": "Automate"
+   },
+   {
+    "start": 131.352,
+    "end": 131.711,
+    "text": "Logic"
+   },
+   {
+    "start": 131.723,
+    "end": 132.119,
+    "text": "Apps"
+   },
+   {
+    "start": 132.169,
+    "end": 132.379,
+    "text": "or"
+   },
+   {
+    "start": 132.392,
+    "end": 132.936,
+    "text": "Windmill"
+   },
+   {
+    "start": 133.307,
+    "end": 133.431,
+    "text": "and"
+   },
+   {
+    "start": 133.444,
+    "end": 133.629,
+    "text": "can"
+   },
+   {
+    "start": 133.642,
+    "end": 133.951,
+    "text": "create"
+   },
+   {
+    "start": 133.963,
+    "end": 134.05,
+    "text": "it"
+   },
+   {
+    "start": 134.05,
+    "end": 134.322,
+    "text": "there"
+   },
+   {
+    "start": 134.545,
+    "end": 134.916,
+    "text": "switched"
+   },
+   {
+    "start": 134.916,
+    "end": 135.275,
+    "text": "off"
+   }
+  ]
+ },
+ {
+  "id": "s11",
+  "start": 135.955,
+  "speech_end": 151.174,
+  "end": 151.774,
+  "text": "Does it pay off? In our own internal test, not a customer result, an invoice took thirty-six seconds by hand, and nine once the clerk only checked it: seventy-four percent less time. The owner gets the process on paper, what it costs, and the fix.",
+  "words": [
+   {
+    "start": 135.955,
+    "end": 136.094,
+    "text": "Does"
+   },
+   {
+    "start": 136.094,
+    "end": 136.182,
+    "text": "it"
+   },
+   {
+    "start": 136.195,
+    "end": 136.422,
+    "text": "pay"
+   },
+   {
+    "start": 136.422,
+    "end": 136.826,
+    "text": "off"
+   },
+   {
+    "start": 137.23,
+    "end": 137.357,
+    "text": "In"
+   },
+   {
+    "start": 137.369,
+    "end": 137.533,
+    "text": "our"
+   },
+   {
+    "start": 137.546,
+    "end": 137.773,
+    "text": "own"
+   },
+   {
+    "start": 137.773,
+    "end": 138.165,
+    "text": "internal"
+   },
+   {
+    "start": 138.177,
+    "end": 138.67,
+    "text": "test"
+   },
+   {
+    "start": 138.884,
+    "end": 139.086,
+    "text": "not"
+   },
+   {
+    "start": 139.099,
+    "end": 139.149,
+    "text": "a"
+   },
+   {
+    "start": 139.162,
+    "end": 139.604,
+    "text": "customer"
+   },
+   {
+    "start": 139.617,
+    "end": 140.021,
+    "text": "result"
+   },
+   {
+    "start": 140.21,
+    "end": 140.298,
+    "text": "an"
+   },
+   {
+    "start": 140.311,
+    "end": 140.791,
+    "text": "invoice"
+   },
+   {
+    "start": 140.791,
+    "end": 140.98,
+    "text": "took"
+   },
+   {
+    "start": 140.993,
+    "end": 141.498,
+    "text": "thirty-six"
+   },
+   {
+    "start": 141.511,
+    "end": 141.889,
+    "text": "seconds"
+   },
+   {
+    "start": 141.902,
+    "end": 142.028,
+    "text": "by"
+   },
+   {
+    "start": 142.041,
+    "end": 142.521,
+    "text": "hand"
+   },
+   {
+    "start": 142.798,
+    "end": 143.013,
+    "text": "and"
+   },
+   {
+    "start": 143.026,
+    "end": 143.341,
+    "text": "nine"
+   },
+   {
+    "start": 143.341,
+    "end": 143.594,
+    "text": "once"
+   },
+   {
+    "start": 143.594,
+    "end": 143.682,
+    "text": "the"
+   },
+   {
+    "start": 143.695,
+    "end": 144.011,
+    "text": "clerk"
+   },
+   {
+    "start": 144.099,
+    "end": 144.377,
+    "text": "only"
+   },
+   {
+    "start": 144.389,
+    "end": 144.755,
+    "text": "checked"
+   },
+   {
+    "start": 144.768,
+    "end": 144.932,
+    "text": "it"
+   },
+   {
+    "start": 145.488,
+    "end": 146.132,
+    "text": "seventy-four"
+   },
+   {
+    "start": 146.132,
+    "end": 146.561,
+    "text": "percent"
+   },
+   {
+    "start": 146.574,
+    "end": 146.776,
+    "text": "less"
+   },
+   {
+    "start": 146.776,
+    "end": 147.218,
+    "text": "time"
+   },
+   {
+    "start": 147.596,
+    "end": 147.697,
+    "text": "The"
+   },
+   {
+    "start": 147.71,
+    "end": 147.988,
+    "text": "owner"
+   },
+   {
+    "start": 148.0,
+    "end": 148.202,
+    "text": "gets"
+   },
+   {
+    "start": 148.215,
+    "end": 148.291,
+    "text": "the"
+   },
+   {
+    "start": 148.291,
+    "end": 148.758,
+    "text": "process"
+   },
+   {
+    "start": 148.771,
+    "end": 148.897,
+    "text": "on"
+   },
+   {
+    "start": 148.897,
+    "end": 149.339,
+    "text": "paper"
+   },
+   {
+    "start": 149.566,
+    "end": 149.655,
+    "text": "what"
+   },
+   {
+    "start": 149.655,
+    "end": 149.73,
+    "text": "it"
+   },
+   {
+    "start": 149.743,
+    "end": 150.248,
+    "text": "costs"
+   },
+   {
+    "start": 150.261,
+    "end": 150.488,
+    "text": "and"
+   },
+   {
+    "start": 150.5,
+    "end": 150.576,
+    "text": "the"
+   },
+   {
+    "start": 150.576,
+    "end": 151.094,
+    "text": "fix"
+   }
+  ]
+ },
+ {
+  "id": "s12",
+  "start": 151.774,
+  "speech_end": 163.563,
+  "end": 163.563,
+  "text": "With the Recorder, only the active window goes to Meta, and employees see hours, never pay rates. FlowSME: show it the work once, and get the process and the automation.",
+  "words": [
+   {
+    "start": 151.774,
+    "end": 151.876,
+    "text": "With"
+   },
+   {
+    "start": 151.889,
+    "end": 151.978,
+    "text": "the"
+   },
+   {
+    "start": 151.991,
+    "end": 152.527,
+    "text": "Recorder"
+   },
+   {
+    "start": 153.164,
+    "end": 153.407,
+    "text": "only"
+   },
+   {
+    "start": 153.419,
+    "end": 153.521,
+    "text": "the"
+   },
+   {
+    "start": 153.534,
+    "end": 153.866,
+    "text": "active"
+   },
+   {
+    "start": 153.866,
+    "end": 154.185,
+    "text": "window"
+   },
+   {
+    "start": 154.197,
+    "end": 154.491,
+    "text": "goes"
+   },
+   {
+    "start": 154.504,
+    "end": 154.606,
+    "text": "to"
+   },
+   {
+    "start": 154.618,
+    "end": 155.027,
+    "text": "Meta"
+   },
+   {
+    "start": 155.384,
+    "end": 155.537,
+    "text": "and"
+   },
+   {
+    "start": 155.537,
+    "end": 156.136,
+    "text": "employees"
+   },
+   {
+    "start": 156.149,
+    "end": 156.353,
+    "text": "see"
+   },
+   {
+    "start": 156.366,
+    "end": 156.876,
+    "text": "hours"
+   },
+   {
+    "start": 157.106,
+    "end": 157.45,
+    "text": "never"
+   },
+   {
+    "start": 157.45,
+    "end": 157.68,
+    "text": "pay"
+   },
+   {
+    "start": 157.692,
+    "end": 158.228,
+    "text": "rates"
+   },
+   {
+    "start": 158.674,
+    "end": 159.363,
+    "text": "FlowSME"
+   },
+   {
+    "start": 160.09,
+    "end": 160.345,
+    "text": "show"
+   },
+   {
+    "start": 160.358,
+    "end": 160.435,
+    "text": "it"
+   },
+   {
+    "start": 160.447,
+    "end": 160.524,
+    "text": "the"
+   },
+   {
+    "start": 160.524,
+    "end": 160.715,
+    "text": "work"
+   },
+   {
+    "start": 160.728,
+    "end": 161.136,
+    "text": "once"
+   },
+   {
+    "start": 161.379,
+    "end": 161.544,
+    "text": "and"
+   },
+   {
+    "start": 161.557,
+    "end": 161.723,
+    "text": "get"
+   },
+   {
+    "start": 161.723,
+    "end": 161.799,
+    "text": "the"
+   },
+   {
+    "start": 161.812,
+    "end": 162.463,
+    "text": "process"
+   },
+   {
+    "start": 162.476,
+    "end": 162.718,
+    "text": "and"
+   },
+   {
+    "start": 162.731,
+    "end": 162.794,
+    "text": "the"
+   },
+   {
+    "start": 162.794,
+    "end": 163.483,
+    "text": "automation"
+   }
+  ]
+ }
+]

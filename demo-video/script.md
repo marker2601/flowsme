@@ -74,3 +74,82 @@ From `demo-video/`, with ffmpeg, node and `puppeteer-core` on `NODE_PATH`, and e
   clean; random-seek frames identical to sequential ones at 30, 60, 90 and 120 s.
 - -16.0 LUFS integrated, -1.8 dBTP; no silence over 1.2 s.
 - Frames checked at every chapter's start, middle and end and at caption midpoints.
+
+# Version 2 (out/final-v2.mp4)
+
+Version 1 (`out/final.mp4`, 2:05) stays as the fallback. Version 2 adds what the first cut could not show: FlowSME
+Recorder on screen, each stage of the analysis with the real call to Meta's Model API, and the real-work problem with
+a before-and-after.
+
+## What changes in the contract
+
+- **Length:** 2:44.6 (at most 3:00). Same format, voice profile (`delivery-v2.json`: segments 1 and 2 are the approved
+  audition, unchanged), caption rules and loudness target.
+- **Real product only, one run:** run 5 below, sent from FlowSME Recorder 0.5.1 with the demo manager seat (the same
+  test video, 100 runs a month). The Recorder footage is a screen capture of the app window only; where another window
+  covered the right edge of the first captures, they are cropped to the clean area. The first-run Welcome dialog was
+  shown again (its "accepted" flag reset) to film what a recording keeps, before sign-in, so no later recording is in
+  the list behind it.
+- **The Meta API calls:** `make_api.py` builds the page from run 5's server files. Every response is verbatim from the
+  run's caches (video reading, transcript, task naming, recommendation, web search) or its log (frames, calls, cost);
+  requests show the fields `flowsme/llm.py` and `flowsme/video.py` send, trimmed and labelled as such. The endpoint
+  and cap come from the server's `server.toml` (`https://api.meta.ai/v1`, `max_cost_usd = 2.0`).
+- **Before and after:** the 36 s to 9 s per invoice (74% less time) result is the internal test made with FlowSME's
+  before-and-after comparison on our own recordings, when that feature was built (`158049b`). It is labelled on screen and in the narration as an
+  internal test, not a customer result.
+- **Hackathon labels:** Recorder app and video import, Muse Spark on video frames, Muse Voice Transcribe, the AI cost
+  meter and cap, Recorder results tabs, what to automate first and the roadmap, SOP, user stories and Build carry the
+  "Built during the hackathon" pill. Task naming, web search and recommendations (the Meta connection of `f528dda`,
+  51 minutes before kickoff) are shown because the brief asks for every stage, with a note on screen that they were
+  built before the hackathon.
+- **Claims that must not appear (added):** that the report's sources come from Meta's web search (in runs 3-5 its
+  answer had no citation marks, so FlowSME fell back to DuckDuckGo; fixed in `58862bb` for future reports); a routine
+  found four times (run 5 found none); "a hundred invoices" (the input is a hundred runs of the recorded work).
+
+## The runs (version 2)
+
+| Run | Sent from | Result | Used |
+|---|---|---|---|
+| 4 | FlowSME Recorder, More > Import a video | 37 steps, 2 tasks, no routine; Next (major project), 6.2 h a month, pays back in 8.4 months | No |
+| 5 | FlowSME Recorder, same video | 33 steps, 2 tasks (task 2 the same process as task 1); Now (quick win), 5.1-5.2 h a month ($127), pays back in 7.1 months; net-30 rule in the task summary and the recommendation | Yes |
+
+Video reading cost $0.19 (run 4) and $0.17 (run 5) from the server log; the transcript, task naming, recommendation
+and web search add an estimated $0.15-0.20 per run. Total for both versions: about $1.85 of the $5 allowed.
+
+## Narration, version 2 (locked text)
+
+| # | Starts | On screen | Narration |
+|---|---|---|---|
+| 1 | 0:00 | Title over run 5's report | Every small business runs on routines nobody ever wrote down. FlowSME watches one round of the work, and hands back the process, the SOP, and the automation. |
+| 2 | 0:11 | The input video | Hiring a consultant to shadow your staff is slow and expensive, so most small firms never do it. The same invoice gets retyped by hand, every day. This demo shows what we built during the hackathon, on Meta's models. |
+| 3 | 0:26 | Recorder: Welcome dialog and Record button; More > Import a video; report options; Get report; Activity | This is FlowSME Recorder, our Windows app. Press Record and work as usual: it keeps each click, the field, whether a value was typed, copied or pasted, a picture of the active window only, and your voice. Here, a manager imports a screen video instead, and Get report sends it to our server. |
+| 4 | 0:46 | API page: frames log, POST /chat/completions (vision), request and response, B2 paste highlighted | On the server, FlowSME finds the forty-two moments the screen changed, and sends them to Muse Spark on Meta's API, five frames at a time. Back comes schema-checked JSON: Excel, cell B2, pasted, the vendor name. |
+| 5 | 1:02 | API page: POST /asr/transcribe, the net-30 turn, then the task summary and recommendation that use it | Muse Voice Transcribe turns the soundtrack into text, with timings. The clerk said all their suppliers are on net 30, and that sentence carries through: the task summary and the top recommendation both set the due date to the invoice date plus thirty days. |
+| 6 | 1:18 | API page: task naming, web search, recommendation; cost meter and cap | Muse Spark then names the tasks, runs a web search for tools that fit, and writes the recommendations as checked JSON. Every call is metered, and each report has a spending cap: reading this whole video cost seventeen cents. |
+| 7 | 1:32 | Recorder: the row turns ready; Results; Narration tab | A few minutes later, the report is back in the Recorder: the task, the minutes saved each time, the hours a month, and the narration, time-stamped. |
+| 8 | 1:42 | Report: summary, roadmap row | The full report says what to automate first: about five hours a month if this work is done a hundred times, a quick win that pays back in about seven months. |
+| 9 | 1:51 | SOP; User stories tab | For the team, there's a draft SOP: a screenshot of each step, the checks, and an approval block. For whoever builds it, user stories with acceptance tests. |
+| 10 | 2:02 | Recorder: Build automation dialog, n8n chosen; Build output | Build, right in the Recorder, writes the workflow for the customer's own tool: n8n, Node-RED, Make, Power Automate, Logic Apps, or Windmill, and can create it there, switched off. |
+| 11 | 2:15 | Before-and-after card (internal test), what the owner gets | Does it pay off? In our own internal test, not a customer result, an invoice took thirty-six seconds by hand, and nine once the clerk only checked it: seventy-four percent less time. The owner gets the process on paper, what it costs, and the fix. |
+| 12 | 2:31 | Closing card | With the Recorder, only the active window goes to Meta, and employees see hours, never pay rates. FlowSME: show it the work once, and get the process and the automation. |
+
+## How to rebuild version 2
+
+1. `python narrate.py v2` writes `media/narration-v2/` and `timeline-v2.json` from `delivery-v2.json`.
+2. Put run 5's `report.html` and `sop.html` in `media/v2/pages/`; `make_build.py <build.zip> media/v2/pages/build.html`
+   and `make_api.py <recording folder R-...> media/v2/pages/api.html`.
+3. `python scenes.py v2` records the page scenes into `media/v2/frames/`.
+4. Put the Recorder screen captures in `media/v2/recorder/` (`welcome.mkv`, `import-menu.mkv`, `send.mkv`,
+   `results.mkv`; the cut points are in `compose.py`), then `python compose.py v2 <cropped input video>` writes
+   `out/final-v2.mp4`.
+
+## Checks on the version 2 master
+
+- 164.57 s, 4,937 frames, H.264 high yuv420p 1920×1080 30 fps, AAC 48 kHz stereo, ftyp/moov/mdat; `verify_master.py`
+  (full decode) passes; random-seek frames identical to sequential ones at frames 600, 900, 1500, 2400, 2700, 3300,
+  4200 and 4500. SHA-256 1DBFB008D8B52BDB07765444212E59BA18B0FB483F40B1B5B34A613B3AE703E8.
+- -16.0 LUFS integrated, -1.5 dBTP; no silence over 1.2 s at -45 dB.
+- 47 captions, none overlapping, longest line 42 characters; frames checked at every chapter's start, middle and end,
+  every caption midpoint, and the label bands (the chapter 6 note was shortened after it overlapped its label).
+- Product on screen about 83% of the time (the before/after and closing cards are the rest).
+- Not checked by a person yet: the full mix must be listened to before it is submitted.

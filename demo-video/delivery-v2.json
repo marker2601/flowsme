@@ -1,0 +1,103 @@
+{
+  "voice": "en-US-AvaMultilingualNeural",
+  "volume": "+0%",
+  "note": "Version 2: the same voice and settings as delivery.json; segments 1 and 2 are the approved audition, unchanged. pause_after is silence added after the segment, in seconds.",
+  "segments": [
+    {
+      "id": "s1",
+      "tone": "bright hook",
+      "rate": "+2%",
+      "pitch": "+2Hz",
+      "pause_after": 0.6,
+      "text": "Every small business runs on routines nobody ever wrote down. FlowSME watches one round of the work, and hands back the process, the SOP, and the automation."
+    },
+    {
+      "id": "s2",
+      "tone": "calmer problem",
+      "rate": "-3%",
+      "pitch": "-1Hz",
+      "pause_after": 0.6,
+      "text": "Hiring a consultant to shadow your staff is slow and expensive, so most small firms never do it. The same invoice gets retyped by hand, every day. This demo shows what we built during the hackathon, on Meta's models."
+    },
+    {
+      "id": "s3",
+      "tone": "steady explanation",
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "pause_after": 0.5,
+      "text": "This is FlowSME Recorder, our Windows app. Press Record and work as usual: it keeps each click, the field, whether a value was typed, copied or pasted, a picture of the active window only, and your voice. Here, a manager imports a screen video instead, and Get report sends it to our server."
+    },
+    {
+      "id": "s4",
+      "tone": "steady explanation",
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "pause_after": 0.5,
+      "text": "On the server, FlowSME finds the forty-two moments the screen changed, and sends them to Muse Spark on Meta's API, five frames at a time. Back comes schema-checked JSON: Excel, cell B2, pasted, the vendor name."
+    },
+    {
+      "id": "s5",
+      "tone": "steady explanation",
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "pause_after": 0.5,
+      "text": "Muse Voice Transcribe turns the soundtrack into text, with timings. The clerk said all their suppliers are on net 30, and that sentence carries through: the task summary and the top recommendation both set the due date to the invoice date plus thirty days."
+    },
+    {
+      "id": "s6",
+      "tone": "steady explanation",
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "pause_after": 0.5,
+      "text": "Muse Spark then names the tasks, runs a web search for tools that fit, and writes the recommendations as checked JSON. Every call is metered, and each report has a spending cap: reading this whole video cost seventeen cents."
+    },
+    {
+      "id": "s7",
+      "tone": "lifted outcome",
+      "rate": "+2%",
+      "pitch": "+1Hz",
+      "pause_after": 0.5,
+      "text": "A few minutes later, the report is back in the Recorder: the task, the minutes saved each time, the hours a month, and the narration, time-stamped."
+    },
+    {
+      "id": "s8",
+      "tone": "lifted outcome",
+      "rate": "+2%",
+      "pitch": "+1Hz",
+      "pause_after": 0.5,
+      "text": "The full report says what to automate first: about five hours a month if this work is done a hundred times, a quick win that pays back in about seven months."
+    },
+    {
+      "id": "s9",
+      "tone": "lifted outcome",
+      "rate": "+1%",
+      "pitch": "+1Hz",
+      "pause_after": 0.5,
+      "text": "For the team, there's a draft SOP: a screenshot of each step, the checks, and an approval block. For whoever builds it, user stories with acceptance tests."
+    },
+    {
+      "id": "s10",
+      "tone": "lifted outcome",
+      "rate": "+1%",
+      "pitch": "+1Hz",
+      "pause_after": 0.6,
+      "text": "Build, right in the Recorder, writes the workflow for the customer's own tool: n8n, Node-RED, Make, Power Automate, Logic Apps, or Windmill, and can create it there, switched off."
+    },
+    {
+      "id": "s11",
+      "tone": "calmer proof",
+      "rate": "-1%",
+      "pitch": "+0Hz",
+      "pause_after": 0.6,
+      "text": "Does it pay off? In our own internal test, not a customer result, an invoice took thirty-six seconds by hand, and nine once the clerk only checked it: seventy-four percent less time. The owner gets the process on paper, what it costs, and the fix."
+    },
+    {
+      "id": "s12",
+      "tone": "calm, confident close",
+      "rate": "-2%",
+      "pitch": "+0Hz",
+      "pause_after": 0.0,
+      "text": "With the Recorder, only the active window goes to Meta, and employees see hours, never pay rates. FlowSME: show it the work once, and get the process and the automation."
+    }
+  ]
+}
