@@ -26,6 +26,10 @@ offline. Other OpenAI-compatible providers can be configured too (see [Using an 
 
 ## Try it in five minutes
 
+**Hackathon judges:** download FlowSME Recorder and the judges' seat file from the
+[judges-demo release](https://github.com/marker2601/flowsme/releases/tag/judges-demo). The seat connects to our
+hosted FlowSME server, which runs the analysis on Meta's models.
+
 1. Install **FlowSME Recorder** (`FlowSME-Recorder-Setup-0.5.1.exe`) and open the seat file you were sent.
 2. Click **Record**, do one round of the task (say what you do and why, if you like), then **Stop**.
 3. Click **Get report**. In about two minutes: the process map, what to automate first, hours (and, for
