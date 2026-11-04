@@ -140,6 +140,10 @@ def _search(task: Task, llm: LLM | None = None) -> list[dict]:
         # The model's own cited web search: keep only sources it actually cited.
         snippets = {r["url"]: r["snippet"] for r in grounded["results"]}
         return [{**c, "snippet": snippets.get(c["url"], "")} for c in grounded["citations"][:6]]
+    if grounded and grounded["results"]:
+        # Meta's web search can answer without citation marks; the pages it found are still the best sources.
+        found = {r["url"]: r for r in grounded["results"] if r["url"]}
+        return list(found.values())[:6]
     seen, results = set(), []
     for query in queries:
         for r in search_web(query):
