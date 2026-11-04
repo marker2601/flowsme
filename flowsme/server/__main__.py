@@ -4,6 +4,7 @@
   python -m flowsme.server create-org "Acme Finance" --seats 5 --manager "Dana Lee"
   python -m flowsme.server add-manager "Acme Finance" "Sam Patel"
   python -m flowsme.server seats "Acme Finance" 10
+  python -m flowsme.server budget "Acme Finance" 50
   python -m flowsme.server list
 
 The data folder is FLOWSME_DATA, or "server-data" in the current folder. A new seat key is written once, into a
@@ -45,13 +46,17 @@ def main() -> None:
     c.add_argument("--seats", type=int, required=True, help="seats in the customer's plan")
     c.add_argument("--manager", required=True, help="the manager's name")
     c.add_argument("--currency", default="$")
+    c.add_argument("--budget", type=float, help="a total AI budget in dollars; no new reports once it's used")
     m = sub.add_parser("add-manager", help="another manager for an organisation")
     m.add_argument("org")
     m.add_argument("name")
     n = sub.add_parser("seats", help="change an organisation's number of seats")
     n.add_argument("org")
     n.add_argument("seats", type=int)
-    sub.add_parser("list", help="organisations and their seats")
+    b = sub.add_parser("budget", help="set an organisation's total AI budget in dollars ('none' for no budget)")
+    b.add_argument("org")
+    b.add_argument("usd")
+    sub.add_parser("list", help="organisations, their seats and AI spending")
     p.add_argument("--out", default=os.environ.get("FLOWSME_SEAT_OUT", "seat-files-to-send"),
                    help="where new seat files go (keep it outside the data folder; delete them once sent)")
     args = p.parse_args()
@@ -90,8 +95,11 @@ def _admin(args, store: Store, out: Path) -> None:
     sent = "Send it to them privately, then delete it: FlowSME can always make a new key."
     if args.cmd == "create-org":
         org = store.create_org(args.name, args.seats, args.currency)
+        if args.budget is not None:
+            store.set_budget(org, args.budget)
         member, key = store.add_member(org, args.manager, org["default_position"], role="manager")
-        print(f"Created {org['name']} ({org['id']}) with {org['seats']} seat{'' if org['seats'] == 1 else 's'}.")
+        print(f"Created {org['name']} ({org['id']}) with {org['seats']} seat{'' if org['seats'] == 1 else 's'}"
+              + (f" and a ${args.budget:.2f} AI budget." if args.budget is not None else "."))
         print(f"Manager seat file: {_seat_file(args.server_url, org, member, key, out)}\n{sent}")
     elif args.cmd == "add-manager":
         org = store.by_name(args.org)
@@ -101,10 +109,20 @@ def _admin(args, store: Store, out: Path) -> None:
         org = store.by_name(args.org)
         store.set_seats(org, args.seats)
         print(f"{org['name']} now has {args.seats} seats.")
+    elif args.cmd == "budget":
+        org = store.by_name(args.org)
+        try:
+            usd = None if args.usd.lower() == "none" else float(args.usd)
+        except ValueError:
+            raise ValueError("Give the budget in dollars, like 50, or 'none'.") from None
+        store.set_budget(org, usd)
+        print(f"{org['name']} now has " + ("no AI budget." if usd is None else f"a ${usd:.2f} AI budget."))
     else:
         for org in store.orgs():
+            budget = org.get("budget_usd")
             print(f"{org['id']}  {org['name']}: {len(store.employees(org))} of {org['seats']} seats used, "
-                  f"{len(store.records(org['id']))} recordings")
+                  f"{len(store.records(org['id']))} recordings, ${float(org.get('spent_usd', 0)):.2f} of AI"
+                  + (f" of a ${budget:.2f} budget" if budget is not None else ""))
 
 
 if __name__ == "__main__":

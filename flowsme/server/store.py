@@ -25,6 +25,8 @@ LOCK = threading.RLock()
 MAX_UNPACKED = 4 * 1024 ** 3  # a recording zip may unpack to at most 4 GB...
 MAX_FILES = 20_000           # ...in at most this many files (screenshots), so a zip bomb can't fill the disk
 DAILY_REPORTS = 40           # analyses a day per organisation, unless its org.json sets "daily_reports"
+REPORT_RESERVE_USD = 5.0     # the most one report may cost: a screen video has two $2 caps (reading it, then the
+                             # analysis), plus calls already under way when a cap is reached
 _CODE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
@@ -217,6 +219,36 @@ class Store:
                                  "for a bigger allowance.")
             usage["reports"] += 1
             org["usage"] = usage
+
+    def set_budget(self, org: dict, usd: float | None) -> None:
+        """A total AI budget for the organisation in dollars, or None for no budget."""
+        with self._editing(org) as org:
+            if usd is None:
+                org.pop("budget_usd", None)
+            elif not math.isfinite(usd) or usd < 0:
+                raise ValueError("A budget is a number of dollars, 0 or more.")
+            else:
+                org["budget_usd"] = float(usd)
+
+    def spend(self, org_id: str, usd: float) -> None:
+        """Add what an analysis cost to the organisation's AI spending."""
+        if usd > 0:
+            with self._editing(self.org(org_id)) as org:
+                org["spent_usd"] = round(float(org.get("spent_usd", 0)) + usd, 4)
+
+    @staticmethod
+    def check_budget(org: dict, in_flight: int) -> None:
+        """Refuse a new report unless the organisation's AI budget, if it has one, covers it and the reports
+        already being made, each counted at the most it may cost."""
+        budget = org.get("budget_usd")
+        if budget is None:
+            return
+        spent = float(org.get("spent_usd", 0))
+        if spent + REPORT_RESERVE_USD > budget:
+            raise ValueError("This team's AI budget is used up, so no new reports can be made.")
+        if spent + (in_flight + 1) * REPORT_RESERVE_USD > budget:
+            raise ValueError("The reports being made now use the rest of this team's AI budget. "
+                             "Try again when they're ready.")
 
     def who(self, key: str) -> tuple[dict, dict] | None:
         """The organisation and person a seat key belongs to, or None."""

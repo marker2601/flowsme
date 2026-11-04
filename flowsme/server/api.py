@@ -115,13 +115,15 @@ def create_app(data: Path, workers: int = 2) -> FastAPI:
     admission = threading.Lock()  # parallel requests can't all slip past the limits
 
     def allowance(org: dict, m: dict) -> None:
-        """Each report costs AI money: a few waiting per person, and a daily allowance per organisation."""
+        """Each report costs AI money: a few waiting per person, a daily allowance per organisation, and the
+        organisation's AI budget if it has one."""
         with admission:
-            waiting = sum(1 for r in store.records(org["id"])
-                          if r.get("seat") == m["seat"] and r.get("status") in ("queued", "analysing"))
+            busy = [r for r in store.records(org["id"]) if r.get("status") in ("queued", "analysing")]
+            waiting = sum(1 for r in busy if r.get("seat") == m["seat"])
             if waiting >= WAITING_PER_SEAT:
                 raise HTTPException(429, f"You have {waiting} reports being made. Wait until one is ready.")
             try:
+                store.check_budget(store.org(org["id"]), len(busy))
                 store.use_report(org)
             except ValueError as exc:
                 raise HTTPException(429, str(exc)) from None

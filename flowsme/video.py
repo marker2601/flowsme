@@ -198,12 +198,15 @@ def coarse_signatures(steps: list[Step]) -> None:
         step.signature = f"{step.app}|{step.action}"
 
 
-def video_to_session(video: Path, sessions_dir: Path, name: str, cfg: Config, log=print) -> Path:
-    """Make a FlowSME recording folder from a video file. Needs the AI model (it reads the frames)."""
+def video_to_session(video: Path, sessions_dir: Path, name: str, cfg: Config, log=print, on_llm=None) -> Path:
+    """Make a FlowSME recording folder from a video file. Needs the AI model (it reads the frames). `on_llm` is
+    given the AI client, so a caller can read what reading the video cost even if it fails."""
     video = Path(video)
     if video.suffix.lower() not in VIDEO_TYPES:
         raise SystemExit(f"FlowSME reads {', '.join(VIDEO_TYPES)} videos.")
     llm = LLM(cfg.llm)
+    if on_llm:
+        on_llm(llm)
     if not llm.available("vision"):
         raise SystemExit("Reading a video needs the AI model (it reads each frame): set up the Meta API key.")
     cache = Path(sessions_dir) / "video-cache"

@@ -26,9 +26,10 @@ from .session import load_events, load_meta
 from .workflow import app_map, mark_same_process, summarize_tasks
 
 
-def analyze_session(session_dir: Path, cfg: Config, log=print, hours_copy: bool = False) -> dict:
+def analyze_session(session_dir: Path, cfg: Config, log=print, hours_copy: bool = False, on_llm=None) -> dict:
     """Analyse a recording and write its report. `hours_copy` also writes report-hours.html, the same report
-    without money, for people who may see the hours saved but not what an hour of anyone's time costs."""
+    without money, for people who may see the hours saved but not what an hour of anyone's time costs.
+    `on_llm` is given the AI client, so a caller can read what the analysis cost even if it fails."""
     events = load_events(session_dir)
     meta = load_meta(session_dir)
     steps = build_steps(events, cfg.analysis.idle_gap_seconds)
@@ -45,6 +46,8 @@ def analyze_session(session_dir: Path, cfg: Config, log=print, hours_copy: bool 
     out = session_dir / "analysis"
     out.mkdir(exist_ok=True)
     llm = LLM(cfg.llm)
+    if on_llm:
+        on_llm(llm)
     llm.use_cache(out / "ai_cache.json")  # re-runs don't pay twice for the same request
     llm.use_shared_cache(Path(cfg.sessions_dir) / "shared_ai_cache.json")  # vendor API checks, across reports
     turns = transcribe_session(session_dir, meta, llm, log)

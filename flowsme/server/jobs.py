@@ -115,6 +115,7 @@ class Jobs:
         store.save_record(record)
 
         last_save = [0.0]
+        llms = []  # every AI client this job used, so what it cost counts against the budget, even if it fails
 
         def log(line: str) -> None:  # progress for the app; saved at most every 2 seconds
             with self.lock:
@@ -146,7 +147,7 @@ class Jobs:
 
                 folder = store.recordings_dir(org_id) / rec_id
                 source = folder / "source" / record["video"]
-                made = video_to_session(source, folder, record["title"], cfg, log=log)
+                made = video_to_session(source, folder, record["title"], cfg, log=log, on_llm=llms.append)
                 meta = json.loads((made / "meta.json").read_text(encoding="utf-8"))
                 record.update(session=made.name, seconds=meta.get("duration_seconds"))
                 with self.lock:
@@ -157,12 +158,17 @@ class Jobs:
             (session / "analysis" / "options.json").write_text(json.dumps(
                 {"runs_per_month": an.runs_per_month, "hourly_cost": an.hourly_cost, "currency": an.currency,
                  "position": position, "show_money": True}), encoding="utf-8")
-            analyze_session(session, cfg, log=log, hours_copy=True)
+            analyze_session(session, cfg, log=log, hours_copy=True, on_llm=llms.append)
             record.update(status="ready", position=position)
         except BaseException as exc:  # noqa: BLE001 - SystemExit included; the record says what went wrong
             if not isinstance(exc, (SystemExit, ValueError)):
                 traceback.print_exc(file=sys.stderr)
             record.update(status="failed", error=_public(exc))
+        spent = sum(llm.usage["cost_usd"] for llm in llms)
+        try:
+            store.spend(org_id, spent)
+        except (OSError, ValueError, KeyError):
+            print(f"FlowSME: couldn't add ${spent:.2f} to {org_id}'s AI spending", file=sys.stderr)
         with self.lock:
             store.save_record(record)
 

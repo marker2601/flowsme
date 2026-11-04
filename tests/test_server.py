@@ -259,6 +259,39 @@ def test_daily_report_allowance(server):
     assert second.status_code == 429 and "today" in second.json()["detail"]
 
 
+def test_ai_budget(server):
+    """With a budget, a report is refused once what was spent plus the most it may cost would go over."""
+    from flowsme.server.store import REPORT_RESERVE_USD
+
+    store, org = server["store"], server["org"]
+    store.spend(org["id"], 1.25)
+    store.spend(org["id"], 0.25)
+    assert store.org(org["id"])["spent_usd"] == 1.5
+    store.set_budget(store.org(org["id"]), 1.5 + REPORT_RESERVE_USD - 0.01)
+    data = recording_zip(server["tmp"])
+    refused = upload(server, "ann", data)
+    assert refused.status_code == 429 and "budget" in refused.json()["detail"]
+    store.set_budget(store.org(org["id"]), 1.5 + REPORT_RESERVE_USD)
+    first = upload(server, "ann", data)
+    assert first.status_code == 200
+    assert wait_ready(server, "ann", first.json()["id"])["status"] == "ready"
+    assert store.org(org["id"])["spent_usd"] == 1.5  # the built-in rules cost nothing
+    store.set_budget(store.org(org["id"]), None)
+    assert "budget_usd" not in store.org(org["id"])
+
+
+def test_budget_counts_reports_being_made(server):
+    from flowsme.server.store import Store
+
+    org = {"budget_usd": 12.0, "spent_usd": 1.0}
+    Store.check_budget(org, in_flight=1)  # 1 + 2 x 5 = 11
+    with pytest.raises(ValueError, match="being made"):
+        Store.check_budget(org, in_flight=2)
+    with pytest.raises(ValueError, match="used up"):
+        Store.check_budget({"budget_usd": 5.0, "spent_usd": 1.0}, in_flight=0)
+    Store.check_budget({"spent_usd": 99.0}, in_flight=5)  # no budget: no limit
+
+
 def test_report_inlines_only_screenshots(server):
     """A recorded field name that points at another file must not pull that file into the employee's page."""
     from flowsme.server.jobs import report_html

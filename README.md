@@ -75,8 +75,10 @@ uv pip install --python .venv/Scripts/python.exe -r requirements-server.txt
 The first command writes the manager's seat file to `seat-files-to-send/`, outside the data folder. Send it to the
 manager privately, then delete it: the server keeps only a hash of the key, and can always make a new one. The
 manager opens it in FlowSME Recorder and adds people from the Admin panel. Set `MODEL_API_KEY` for the server process to use Muse Spark; without
-it, reports use the built-in rules. Other server commands: `add-manager`, `seats` (change a plan's seats) and
-`list`.
+it, reports use the built-in rules. Other server commands: `add-manager`, `seats` (change a plan's seats),
+`budget` (a total AI budget in dollars: once what the team's reports cost plus the most a new one may cost, $5,
+would go over it, no new report is accepted; `create-org --budget` sets it too) and `list` (seats and AI
+spending).
 
 Build the Recorder for customers with `.venv/Scripts/python.exe packaging/build_installer.py --client`. This
 writes `dist/FlowSME-Recorder-Setup-0.5.1.exe`, which installs as "FlowSME Recorder", separate from FlowSME. Run
